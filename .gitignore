@@ -43,3 +43,18 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+
+# Node.js dependencies (สำคัญมาก)
+node_modules/
+
+# VS Code User Settings (การตั้งค่าส่วนตัว)
+.vscode/
+
+# Android Build artifacts
+android/build/
+
+# Flutter Generated Plugin Registrants (ไฟล์ที่ถูกสร้างอัตโนมัติสำหรับ Linux, Windows, macOS)
+**/generated_plugin_registrant.*
+**/generated_plugins.cmake
