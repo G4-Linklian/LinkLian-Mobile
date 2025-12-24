@@ -19,7 +19,7 @@ class AppStrings {
   static const String logout = 'ออกจากระบบ';
 
   // Assignment
-  static const String assignment = 'การบ้าน';
+  static const String homework = 'การบ้าน';
 
   // Room
   static const String classroom = 'ห้องเรียน';
