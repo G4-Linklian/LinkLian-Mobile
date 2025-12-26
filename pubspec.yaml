@@ -1,5 +1,5 @@
-name: linklian
-description: "A new Flutter project."
+name: LinkLian
+description: "LinkLian Mobile Application"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -47,6 +47,7 @@ dependencies:
   
   # JSON handling
   json_annotation: ^4.8.1
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +56,13 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.4.7
   json_serializable: ^6.7.1
+  flutter_launcher_icons: ^0.13.1
+
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -75,6 +83,7 @@ flutter:
 
   assets:
     - assets/images/
+    - .env
 
   # Uncomment when you have the font files
   fonts:

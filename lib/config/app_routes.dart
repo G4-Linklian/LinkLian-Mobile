@@ -8,4 +8,8 @@ class AppRoutes {
   static const String posts = '/posts';
   static const String createPost = '/create-post';
   static const String settings = '/settings';
+  static const String assignment = '/assignment';
+  static const String classes = '/classes';
+  static const String community = '/community';
+  
 }

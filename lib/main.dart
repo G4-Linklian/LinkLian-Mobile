@@ -4,10 +4,15 @@ import 'config/theme.dart';
 // import 'config/app_routes.dart';
 import 'core/constants/strings.dart';
 import 'features/layout/pages/layout.dart';
+// import 'routes/app_router.dart';
+// import './config/app_routes.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+
+void main() async {
   // Get.put(AuthController());
-
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
@@ -22,6 +27,8 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
+      // initialRoute: AppRoutes.initial,
+      // getPages: AppRouter.routes,
       home: const MainPage(),
     );
   }

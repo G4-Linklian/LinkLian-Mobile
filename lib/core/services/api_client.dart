@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
 import '../utils/logger.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiClient {
-  static const String baseUrl = 'https://jsonplaceholder.typicode.com';
+  static final String baseUrl = '${dotenv.env['BASE_URL']}${dotenv.env['BASE_PATH']}';
   late final Dio _dio;
 
   static final ApiClient _instance = ApiClient._internal();
@@ -27,6 +28,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
+          AppLogger.info('baseUrl: $baseUrl');
           AppLogger.info('Request: ${options.method} ${options.path}');
           AppLogger.info('Headers: ${options.headers}');
           if (options.data != null) {
