@@ -17,7 +17,7 @@ class CommuPage extends StatelessWidget {
         body: Column(
           children: [
             const Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+              padding: EdgeInsets.symmetric(horizontal: AppSizes.md),
               child: Row(
                 children: [
                   Text(

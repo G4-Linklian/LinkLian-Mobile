@@ -22,15 +22,7 @@ class ProfileController extends GetxController {
     userPhone.value = '081-234-5678';
   }
   
-  @override
-  void onReady() {
-    super.onReady();
-  }
   
-  @override
-  void onClose() {
-    super.onClose();
-  }
   
   // Load user profile from API
   void loadUserProfile() async {
