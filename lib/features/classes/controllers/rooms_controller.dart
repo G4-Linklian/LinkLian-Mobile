@@ -11,15 +11,7 @@ class RoomsController extends GetxController {
     loadRooms();
   }
   
-  @override
-  void onReady() {
-    super.onReady();
-  }
   
-  @override
-  void onClose() {
-    super.onClose();
-  }
   
   // Load rooms from API
   void loadRooms() async {

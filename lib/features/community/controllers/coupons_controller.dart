@@ -33,15 +33,7 @@ class CouponsController extends GetxController {
     ];
   }
   
-  @override
-  void onReady() {
-    super.onReady();
-  }
   
-  @override
-  void onClose() {
-    super.onClose();
-  }
   
   // Load coupons from API
   void loadCoupons() async {
