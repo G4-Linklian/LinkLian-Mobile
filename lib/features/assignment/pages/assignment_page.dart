@@ -140,7 +140,7 @@ class AssignmentPage extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () {
 
-                        controller.updateRole(roleId: 1, flagValid: false);
+                        controller.updateRole(roleId: 1, flagValid: true);
                       },
                       child: const Text("อัปเดต Role"),
                     ),
