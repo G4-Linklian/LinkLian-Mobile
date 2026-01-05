@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../utils/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'local_storage.dart';
 
 class ApiClient {
   static final String baseUrl = '${dotenv.env['BASE_URL']}${dotenv.env['BASE_PATH']}';
@@ -18,7 +19,6 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': 'Bearer token',
       },
     ));
 
@@ -28,7 +28,15 @@ class ApiClient {
   void _setupInterceptors() {
     _dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
+        onRequest: (options, handler) async {
+          final token = await LocalStorage.getToken();
+
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        } else {
+          options.headers.remove('Authorization');
+        }
+
           AppLogger.info('baseUrl: $baseUrl');
           AppLogger.info('Request: ${options.method} ${options.path}');
           AppLogger.info('Headers: ${options.headers}');

@@ -8,6 +8,8 @@ class AppSizes {
   static const double lg = 24.0;
   static const double xl = 32.0;
   static const double xxl = 48.0;
+  static const double xxxl = 56.0;
+
 
   // Font Sizes
   static const double fontDescription = 12.0; // 12/18

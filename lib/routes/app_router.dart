@@ -5,9 +5,15 @@ import '../features/classes/pages/classes_page.dart';
 import '../features/community/pages/community_page.dart';
 import '../features/profile/pages/profile_page.dart';
 import '../features/layout/pages/layout.dart';
-
+import '../features/login/pages/login_page.dart';
 class AppRouter {
   static final routes = [
+    
+    GetPage(
+  name: AppRoutes.login,
+  page: () => const LoginPage(),
+),
+
     GetPage(
       name: AppRoutes.initial,
       // page: () => const LoginPage(),

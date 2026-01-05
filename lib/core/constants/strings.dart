@@ -11,7 +11,15 @@ class AppStrings {
   static const String register = 'สมัครสมาชิก';
   static const String loginSuccess = 'เข้าสู่ระบบสำเร็จ';
   static const String loginFailed = 'เข้าสู่ระบบล้มเหลว';
-  
+  // Auth - Login 
+static const String rememberMe = 'จดจำการเข้าสู่ระบบ';
+static const String or = 'หรือ';
+static const String noAccount = 'ยังไม่มีบัญชีผู้ใช้ ?';
+static const String registerHere = 'แจ้งฝ่ายทะเบียนที่นี่';
+
+//Role
+static const String titleStudent = 'นักเรียน/นักศึกษา';
+static const String titleTeacher = 'อาจารย์/ครู';
   // Home
   static const String home = 'หน้าแรก';
   static const String profile = 'โปรไฟล์';
