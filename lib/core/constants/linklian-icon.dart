@@ -16,4 +16,12 @@ class LinkLianIcon {
   static const IconData notification = TablerIcons.bell_filled;
 
   static const IconData add = TablerIcons.square_rounded_plus_filled;
+  //auth
+  static const IconData info = TablerIcons.info_circle;          
+  static const IconData eye = TablerIcons.eye;                  
+  static const IconData eyeOff = TablerIcons.eye_off;          
+
+  //role
+  static const IconData student = TablerIcons.school;
+  static const IconData teacher = TablerIcons.book;
 }

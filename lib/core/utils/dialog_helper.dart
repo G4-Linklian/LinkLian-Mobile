@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/sizes.dart';
+import '../../features/login/widgets/otp_popup.dart';
 
 enum NotificationType { success, error, warning }
 
@@ -25,7 +26,7 @@ class DialogHelper {
       middleText: description,
       textConfirm: "ตกลง",
       confirmTextColor: AppColors.white,
-      onConfirm: () => Get.back(), 
+      onConfirm: () => Get.back(),
       buttonColor: AppColors.buttonPalette[500],
       radius: 16,
     );
@@ -56,7 +57,7 @@ class DialogHelper {
     }
 
     Get.snackbar(
-      '', // title ว่างไว้ 
+      '', // title ว่างไว้
       '', // message ว่างไว้
       titleText: const SizedBox.shrink(),
 
@@ -64,11 +65,7 @@ class DialogHelper {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              iconData,
-              color: AppColors.white,
-              size: 40,
-            ),
+            Icon(iconData, color: AppColors.white, size: 40),
             const SizedBox(height: 8),
 
             Text(
@@ -100,7 +97,7 @@ class DialogHelper {
       // padding: const EdgeInsets.symmetric(
       //   vertical: AppSizes.lg,
       //   horizontal: AppSizes.xs,
-      // ), 
+      // ),
       isDismissible: true,
       duration: const Duration(seconds: 3),
       maxWidth: Get.width * 0.8,
@@ -131,5 +128,20 @@ class DialogHelper {
   // ฟังก์ชันปิด Dialog (ใช้คู่กับ showLoading)
   static void hideLoading() {
     if (Get.isDialogOpen!) Get.back();
+  }
+
+  static void showOtpDialog() {
+    Get.dialog(
+      const OtpPopup(),
+      barrierDismissible: false, // ❌ ห้ามกดปิดเอง
+    );
+  }
+
+  static void showSelectUserGroupWarning() {
+    showNotification(
+      title: "กรุณาเลือกประเภทผู้ใช้",
+      message: "กรุณาเลือกนักเรียนหรือครูก่อนเข้าสู่ระบบ",
+      type: NotificationType.warning,
+    );
   }
 }
