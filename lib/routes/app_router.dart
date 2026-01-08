@@ -28,10 +28,6 @@ class AppRouter {
       page: () => const ClassesPage(),
     ),
     GetPage(
-      name: AppRoutes.classes,
-      page: () => const ClassesPage(),
-    ),
-    GetPage(
       name: AppRoutes.community,
       page: () => const CommuPage(),
     ),
