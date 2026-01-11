@@ -3,12 +3,15 @@ import 'package:get/get.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../core/services/local_storage.dart';
 import '../../../core/utils/dialog_helper.dart';
+import '../../../core/utils/logger.dart';
+import '../../auth/controller/auth_controller.dart';
+import '../controllers/login_controller.dart';
 
 class OtpController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
 
   final RxString otpSessionId;
-  final String email; 
+  final String email;
 
   OtpController({required String otpSessionId, required this.email})
     : otpSessionId = otpSessionId.obs;
@@ -89,6 +92,8 @@ class OtpController extends GetxController {
 
   // ================= SUBMIT OTP =================
   Future<void> submitOtp() async {
+    final loginController = Get.find<LoginController>();
+    final rememberMe = loginController.rememberMe.value;
     if (otp.value.length != 6 || isExpired.value) return;
 
     isLoading.value = true;
@@ -96,19 +101,34 @@ class OtpController extends GetxController {
       final result = await _authRepository.verifyOtp(
         otp: otp.value,
         otpSessionId: otpSessionId.value,
+        rememberMe: rememberMe,
       );
 
-      await LocalStorage.saveToken(result['token']);
+      final token = result['access_token'];
+      if (token == null || token is! String) {
+        throw Exception('Token missing from OTP response');
+      }
+
       final int userId = int.parse(result['user_id'].toString());
+      final int instId = int.parse(result['inst_id'].toString());
+      final String roleName = result['role_name'];
 
-      await LocalStorage.saveLastLoginUserId(userId);
+      // 🔥 ส่งให้ AuthController คนเดียวดูแล session
+      final authController = Get.find<AuthController>();
+print('🧠 OTP using AuthController hash = ${authController.hashCode}');
+      await authController.establishSession(
+        token: token,
+        userId: userId,
+        instId: instId,
+        roleName: roleName,
+      );
 
-      Get.back();
+      Get.back(); // ปิด dialog
       Get.delete<OtpController>();
-      Get.offAllNamed('/home');
+      // Get.offAllNamed('/home');
     } catch (e) {
       DialogHelper.showNotification(
-        title: "OTP ไม่ถูกต้อง",
+        title: "เกิดข้อผิดพลาด",
         message: e.toString(),
         type: NotificationType.error,
       );
