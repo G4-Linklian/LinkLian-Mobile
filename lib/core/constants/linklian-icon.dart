@@ -24,4 +24,12 @@ class LinkLianIcon {
   //role
   static const IconData student = TablerIcons.school;
   static const IconData teacher = TablerIcons.book;
+
+  static const IconData location = TablerIcons.map_pin_filled;
+
+  static const IconData expand = TablerIcons.chevron_down;
+  static const IconData collapse = TablerIcons.chevron_up;
+
+  static const IconData semester = TablerIcons.calendar;
+
 }

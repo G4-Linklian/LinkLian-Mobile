@@ -9,7 +9,7 @@ class AppRoutes {
   static const String createPost = '/create-post';
   static const String settings = '/settings';
   static const String assignment = '/assignment';
-  static const String classes = '/classes';
+  static const String classes = '/getClassFeed';
   static const String community = '/community';
   
 }
