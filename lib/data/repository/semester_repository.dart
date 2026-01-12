@@ -1,16 +1,8 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
 import '../model/semester_model.dart';
+import '../../core/services/api_client.dart';
 
 class SemesterRepository {
-  final String baseUrl;
-  final Future<String?> Function() getToken;
-
-  SemesterRepository({
-    required this.baseUrl,
-    required this.getToken,
-  });
+  final ApiClient _apiClient = ApiClient();
 
   /// ============================
   /// GET SEMESTER LIST
@@ -18,38 +10,22 @@ class SemesterRepository {
   Future<List<SemesterModel>> getSemesters({
     required int instId,
   }) async {
-    final token = await getToken();
-    if (token == null) {
-      throw Exception('Token not found');
-    }
-
-    final uri = Uri.parse('$baseUrl/semester/get');
-
-    final response = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
+    final response = await _apiClient.post<Map<String, dynamic>>(
+      '/semester.get',
+      data: {
         'inst_id': instId,
         'flag_valid': true,
-      }),
+      },
     );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to fetch semester');
+    final data = response.data;
+    if (data == null || data['success'] != true) {
+      throw Exception(data?['message'] ?? 'Failed to fetch semester');
     }
 
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final List list = data['data'] as List;
 
-    if (decoded['success'] != true) {
-      throw Exception(decoded['message'] ?? 'Unknown error');
-    }
-
-    final List data = decoded['data'];
-
-    return data
+    return list
         .map(
           (e) => SemesterModel.fromJson(
             e as Map<String, dynamic>,

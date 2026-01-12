@@ -27,8 +27,8 @@ class LinkLianIcon {
 
   static const IconData location = TablerIcons.map_pin_filled;
 
-  static const IconData expand = TablerIcons.chevron_down;
-  static const IconData collapse = TablerIcons.chevron_up;
+  static const IconData expand = TablerIcons.square_rounded_chevron_down;
+  static const IconData collapse = TablerIcons.square_rounded_chevron_up;
 
   static const IconData semester = TablerIcons.calendar;
 

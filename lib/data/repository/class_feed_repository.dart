@@ -1,16 +1,8 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
 import '../model/class_feed_model.dart';
+import '../../core/services/api_client.dart';
 
 class ClassFeedRepository {
-  final String baseUrl;
-  final Future<String?> Function() getToken;
-
-  ClassFeedRepository({
-    required this.baseUrl,
-    required this.getToken,
-  });
+  final ApiClient _apiClient = ApiClient();
 
   /// ============================
   /// GET CLASS FEED BY SEMESTER
@@ -18,40 +10,23 @@ class ClassFeedRepository {
   Future<List<ClassFeedModel>> getClassFeed({
     required int semesterId,
   }) async {
-    final token = await getToken();
+      print('🧪 semesterId sent to API = $semesterId');
 
-    if (token == null) {
-      throw Exception('Token not found');
-    }
-
-    final uri = Uri.parse('$baseUrl/feed/class');
-
-    final response = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
+    final response = await _apiClient.post<Map<String, dynamic>>(
+      '/class',
+      data: {
         'semester_id': semesterId,
-      }),
+      },
     );
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to fetch class feed (${response.statusCode})',
-      );
+    final data = response.data;
+    if (data == null || data['success'] != true) {
+      throw Exception(data?['message'] ?? 'Failed to fetch class feed');
     }
 
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final List list = data['data'] as List;
 
-    if (decoded['success'] != true) {
-      throw Exception(decoded['message'] ?? 'Unknown error');
-    }
-
-    final List data = decoded['data'] as List;
-
-    return data
+    return list
         .map(
           (json) => ClassFeedModel.fromJson(
             json as Map<String, dynamic>,

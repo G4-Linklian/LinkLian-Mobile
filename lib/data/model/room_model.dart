@@ -10,7 +10,7 @@ class RoomModel {
   @JsonKey(name: 'room_number')
   final String? roomNumber;
 
-  final int? floor;
+  final String? floor;
 
   @JsonKey(name: 'room_remark')
   final String? roomRemark;
