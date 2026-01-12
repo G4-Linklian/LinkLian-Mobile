@@ -21,7 +21,7 @@ class CommuPage extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'ชุมชน',
+                    'ชุมชนsiv',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
