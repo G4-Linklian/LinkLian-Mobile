@@ -14,8 +14,7 @@ class AssignmentController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchRole();
-  }
+      }
 
   Future<void> fetchRole({
     int? roleId,
@@ -55,7 +54,8 @@ class AssignmentController extends GetxController {
         type: NotificationType.error,
       );
       AppLogger.error('Error fetching role: $e');
-      throw Exception('Failed to fetch role');
+      // throw Exception('Failed to fetch role');
+      return;
     } finally {
       isLoading.value = false;
     }

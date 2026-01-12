@@ -27,27 +27,32 @@ class ApiClient {
 
     _setupInterceptors();
   }
+void _setupInterceptors() {
+  _dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final requiresAuth = options.extra?['requiresAuth'] ?? true;
 
-  void _setupInterceptors() {
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
+        if (requiresAuth) {
           final token = await LocalStorage.getToken();
-
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
             AppLogger.info('🔐 Attach token → ${options.path}');
           } else {
             options.headers.remove('Authorization');
-            AppLogger.info('🔓 No token → ${options.path}');
+            AppLogger.info('🚫 Missing token → ${options.path}');
           }
+        } else {
+          options.headers.remove('Authorization');
+          AppLogger.info('🔓 Public API → ${options.path}');
+        }
 
-          AppLogger.info('🌐 FULL URL: ${options.uri}');
-          handler.next(options);
-        },
-      ),
-    );
-  }
+        AppLogger.info('🌐 FULL URL: ${options.uri}');
+        handler.next(options);
+      },
+    ),
+  );
+}
 
   Future<Response<T>> get<T>(
     String path, {

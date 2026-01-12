@@ -7,13 +7,21 @@ import '../../../core/constants/sizes.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/constants/colors.dart';
 // import '../../../core/utils/logger.dart';
+import '../../auth/controller/auth_controller.dart';
 
 class AssignmentPage extends StatelessWidget {
   const AssignmentPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(AssignmentController());
+    final auth = Get.find<AuthController>();
+
+    // ⭐ guard เหมือน ClassesPage
+    if (auth.roleName.value == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final controller = Get.put(AssignmentController(), tag: 'assignment');
 
     return Scaffold(
       body: Obx(
@@ -139,10 +147,25 @@ class AssignmentPage extends StatelessWidget {
                     const SizedBox(height: AppSizes.md),
                     ElevatedButton(
                       onPressed: () {
-
                         controller.updateRole(roleId: 1, flagValid: true);
                       },
                       child: const Text("อัปเดต Role"),
+                    ),
+
+                    // ================= LOG OUT =================
+                    const SizedBox(height: AppSizes.xl),
+
+                    Center(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.dangerPalette[500],
+                          foregroundColor: AppColors.white,
+                        ),
+                        onPressed: () async {
+                          await Get.find<AuthController>().logout();
+                        },
+                        child: const Text('Log out'),
+                      ),
                     ),
                   ],
                 ),

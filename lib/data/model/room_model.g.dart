@@ -9,7 +9,7 @@ part of 'room_model.dart';
 RoomModel _$RoomModelFromJson(Map<String, dynamic> json) => RoomModel(
   roomLocationId: RoomModel._intFromJson(json['room_location_id']),
   roomNumber: json['room_number'] as String?,
-  floor: (json['floor'] as num?)?.toInt(),
+  floor: json['floor'] as String?,
   roomRemark: json['room_remark'] as String?,
 );
 
