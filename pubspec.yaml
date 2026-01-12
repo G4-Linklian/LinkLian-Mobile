@@ -48,7 +48,6 @@ dependencies:
   # JSON handling
   json_annotation: ^4.8.1
   flutter_dotenv: ^5.1.0
-  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

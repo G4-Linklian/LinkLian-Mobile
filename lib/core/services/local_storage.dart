@@ -8,60 +8,65 @@ class LocalStorage {
   static const String _tokenExpiredAtKey = 'token_expired_at';
   static const String _lastLoginUserIdKey = 'last_login_user_id';
 
-  static late SharedPreferences _prefs;
-
-    /// 🔥 ต้องเรียกก่อนใช้งาน
-  static Future<void> init() async {
-    _prefs = await SharedPreferences.getInstance();
-  }
-
 
   static Future<void> saveToken(String token) async {
-    await _prefs.setString(_tokenKey, token);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
   }
 
   static Future<String?> getToken() async {
-    return _prefs.getString(_tokenKey);
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
   }
 
   static Future<void> removeToken() async {
-    await _prefs.remove(_tokenKey);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
   }
 
   static Future<void> saveUserId(String userId) async {
-    await _prefs.setString(_userIdKey, userId);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userIdKey, userId);
   }
 
   static Future<String?> getUserId() async {
-    return _prefs.getString(_userIdKey);
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userIdKey);
   }
 
   static Future<void> removeUserId() async {
-    await _prefs.remove(_userIdKey);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userIdKey);
   }
 
   static Future<void> saveUserData(String userData) async {
-    await _prefs.setString(_userDataKey, userData);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userDataKey, userData);
   }
 
   static Future<String?> getUserData() async {
-    return _prefs.getString(_userDataKey);
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userDataKey);
   }
 
   static Future<void> removeUserData() async {
-    await _prefs.remove(_userDataKey);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userDataKey);
   }
 
   static Future<void> clearAll() async {
-    await _prefs.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
   }
 
   static Future<void> saveLastLoginUserId(int userId) async {
-    await _prefs.setInt('last_login_user_id', userId);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_login_user_id', userId);
   }
 
   static Future<int?> getLastLoginUserId() async {
-    return _prefs.getInt('last_login_user_id');
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('last_login_user_id');
   }
 
   /* ================= 🔥 REMEMBER ME ================= */

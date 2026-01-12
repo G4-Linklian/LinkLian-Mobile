@@ -9,8 +9,7 @@ import '../../../core/constants/logo.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/constants/linklian-icon.dart';
 import '../../../core/constants/strings.dart';
-import '../controllers/login_controller.dart';  
-import '../../auth/controller/auth_controller.dart';
+import '../controllers/login_controller.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -47,10 +46,7 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
-  // 🔥 สร้าง controller เฉพาะตอนยังไม่ login
-  final controller = Get.put(LoginController(), permanent: false);
+    final controller = Get.put(LoginController());
     return Scaffold(
       body: Container(
         width: double.infinity,
