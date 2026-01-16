@@ -1,3 +1,5 @@
+import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/features/classes/controllers/class_feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'config/theme.dart';
@@ -19,6 +21,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await LocalStorage.init();
+  //////
+  Get.put(ApiClient(), permanent: true);
   
   // 🔐 AuthController (source of truth)
   Get.put(AuthController(), permanent: true);
@@ -31,6 +35,14 @@ void main() async {
 
   Get.put<SemesterRepository>(
     SemesterRepository(),
+    permanent: true,
+  );
+
+  Get.put(
+    ClassFeedController(
+      classFeedRepository: Get.find<ClassFeedRepository>(),
+      semesterRepository: Get.find<SemesterRepository>(),
+    ),
     permanent: true,
   );
 

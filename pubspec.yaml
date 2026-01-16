@@ -38,6 +38,8 @@ dependencies:
   
   # HTTP and API
   dio: ^5.4.0
+
+  profile_picture: ^1.0.0
   
   # State Management and Storage
   shared_preferences: ^2.2.2

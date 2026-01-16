@@ -33,7 +33,7 @@ class AppColors {
   };
 
   // Success Palette (Green)
-  static const Map<int, Color> successPalette = {
+  static const Map<int, Color> successPalette = { 
     100: Color(0xFFEFFDDB),
     200: Color(0xFFDBFCB7),
     300: Color(0xFFC0F892),

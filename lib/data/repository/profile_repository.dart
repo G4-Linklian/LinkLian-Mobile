@@ -1,16 +1,19 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../model/profile_model.dart';
-
+import '../../core/services/api_client.dart';
 
 class ProfileRepository {
-  final Dio dio;
+  final ApiClient api;
 
-  ProfileRepository(this.dio);
+  ProfileRepository(this.api);
 
   /// GET /profile/:userId
   Future<ProfileModel> getProfile(int userId) async {
-    final res = await dio.get('/profile/$userId');
+    final res = await api.get(
+      '/profile/$userId',
+    );
+
     return ProfileModel.fromJson(res.data['data']);
   }
 
@@ -22,7 +25,7 @@ class ProfileRepository {
     required String lastName,
     String? phone,
   }) async {
-    await dio.put(
+    await api.put(
       '/profile/$userId',
       data: {
         'first_name': firstName,
@@ -39,7 +42,7 @@ class ProfileRepository {
       'file': await MultipartFile.fromFile(file.path),
     });
 
-    final res = await dio.post(
+    final res = await api.post(
       '/profile/$userId/avatar',
       data: formData,
     );

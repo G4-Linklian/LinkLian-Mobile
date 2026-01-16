@@ -1,144 +1,133 @@
-// import 'package:get/get.dart';
-
-// class ProfileController extends GetxController {
-//   // Observable variables
-//   var isLoading = false.obs;
-//   var userName = ''.obs;
-//   var userEmail = ''.obs;
-//   var userPhone = ''.obs;
-//   var userImage = ''.obs;
-  
-//   @override
-//   void onInit() {
-//     super.onInit();
-//     loadUserProfile();
-//     _loadSampleData();
-//   }
-  
-//   // Load sample data for testing
-//   void _loadSampleData() {
-//     userName.value = 'นาย สมชาย ใจดี';
-//     userEmail.value = 'somchai@example.com';
-//     userPhone.value = '081-234-5678';
-//   }
-  
-  
-  
-//   // Load user profile from API
-//   void loadUserProfile() async {
-//     isLoading.value = true;
-//     try {
-//       // API call will be implemented here
-//       // var userProfile = await ApiService.getUserProfile();
-//       // userName.value = userProfile['name'] ?? '';
-//       // userEmail.value = userProfile['email'] ?? '';
-//       // userPhone.value = userProfile['phone'] ?? '';
-//       // userImage.value = userProfile['image'] ?? '';
-//     } catch (e) {
-//       // Handle error
-//     } finally {
-//       isLoading.value = false;
-//     }
-//   }
-  
-//   // Update profile
-//   void updateProfile({
-//     String? name,
-//     String? email,
-//     String? phone,
-//     String? image,
-//   }) async {
-//     isLoading.value = true;
-//     try {
-//       // API call to update profile
-//       // await ApiService.updateUserProfile({
-//       //   'name': name ?? userName.value,
-//       //   'email': email ?? userEmail.value,
-//       //   'phone': phone ?? userPhone.value,
-//       //   'image': image ?? userImage.value,
-//       // });
-      
-//       if (name != null) userName.value = name;
-//       if (email != null) userEmail.value = email;
-//       if (phone != null) userPhone.value = phone;
-//       if (image != null) userImage.value = image;
-      
-//     } catch (e) {
-//       // Handle error
-//     } finally {
-//       isLoading.value = false;
-//     }
-//   }
-  
-//   // Logout user
-//   void logout() async {
-//     try {
-//       // API call to logout
-//       // await ApiService.logout();
-      
-//       // Clear user data
-//       userName.value = '';
-//       userEmail.value = '';
-//       userPhone.value = '';
-//       userImage.value = '';
-      
-//       // Navigate to login page
-//       // Get.offAllNamed('/login');
-//     } catch (e) {
-//       // Handle error
-//     }
-//   }
-// }
-import 'dart:io';
-import 'package:LinkLian/data/model/profile_model.dart';
-import 'package:LinkLian/data/repository/profile_repository.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../data/model/profile_model.dart';
+import '../../../data/repository/profile_repository.dart';
+import '../../auth/controller/auth_controller.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 
 class ProfileController extends GetxController {
   final ProfileRepository repo;
-
   ProfileController(this.repo);
 
-  final Rxn<ProfileModel> profile = Rxn<ProfileModel>();
-  final isLoading = false.obs;
+  final profile = Rxn<ProfileModel>();
+  final loading = false.obs;
+  final saving = false.obs; 
+  final ImagePicker _picker = ImagePicker();
 
-  late int userId;
+  late TextEditingController firstNameCtrl;
+  late TextEditingController lastNameCtrl;
+  late TextEditingController phoneCtrl;
+
+  bool get isStudent => profile.value?.isStudent ?? false;
+  bool get isTeacher => profile.value?.isTeacher ?? false;
+
+  // get changeAvatar => null;
 
   @override
   void onInit() {
     super.onInit();
-    userId = Get.arguments as int;
-    fetchProfile();
+    loadProfile();
   }
 
-  Future<void> fetchProfile() async {
+  Future<void> loadProfile() async {
     try {
-      isLoading.value = true;
-      profile.value = await repo.getProfile(userId);
+      loading.value = true;
+      final auth = Get.find<AuthController>();
+      final userId = auth.userId.value;
+      if (userId == null) return;
+
+      final data = await repo.getProfile(userId);
+      profile.value = data;
+
+      firstNameCtrl = TextEditingController(text: data.firstName);
+      lastNameCtrl = TextEditingController(text: data.lastName);
+      phoneCtrl = TextEditingController(text: data.phone ?? '');
     } finally {
-      isLoading.value = false;
+      loading.value = false;
     }
   }
 
-  Future<void> updateProfile({
-    required String firstName,
-    String? middleName,
-    required String lastName,
-    String? phone,
-  }) async {
-    await repo.updateProfile(
-      userId,
-      firstName: firstName,
-      middleName: middleName,
-      lastName: lastName,
-      phone: phone,
-    );
-    await fetchProfile();
+  Future<void> updateProfile({required String firstName, required String lastName, String? phone}) async {
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
+    if (userId == null) return;
+
+    try {
+      saving.value = true;
+
+      await repo.updateProfile(
+        userId,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+      );
+
+      //reload profile
+      await loadProfile();
+
+      Get.snackbar(
+        'สำเร็จ',
+        'บันทึกข้อมูลเรียบร้อยแล้ว',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'เกิดข้อผิดพลาด',
+        'ไม่สามารถบันทึกข้อมูลได้',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+      );
+    } finally {
+      saving.value = false;
+    }
   }
 
-  Future<void> changeAvatar(File file) async {
-    final url = await repo.uploadAvatar(userId, file);
-    profile.value = profile.value!.copyWith(avatarUrl: url);
+  @override
+  void onClose() {
+    firstNameCtrl.dispose();
+    lastNameCtrl.dispose();
+    phoneCtrl.dispose();
+    super.onClose();
+  }
+
+  Future<void> changeAvatar() async {
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
+    if (userId == null) return;
+
+    final XFile? picked =
+        await _picker.pickImage(source: ImageSource.gallery);
+
+    if (picked == null) return;
+
+    try {
+      saving.value = true;
+
+      final avatarUrl =
+          await repo.uploadAvatar(userId, File(picked.path));
+
+      profile.value = profile.value!.copyWith(
+        profilePic: avatarUrl,
+      );
+
+      await loadProfile();
+
+      Get.snackbar(
+        'สำเร็จ',
+        'อัปเดตรูปโปรไฟล์เรียบร้อย',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'เกิดข้อผิดพลาด',
+        'ไม่สามารถอัปโหลดรูปได้',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+      );
+    } finally {
+      saving.value = false;
+    }
   }
 }

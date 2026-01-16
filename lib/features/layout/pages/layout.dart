@@ -1,3 +1,7 @@
+import 'package:LinkLian/config/app_routes.dart';
+import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/data/repository/profile_repository.dart';
+import 'package:LinkLian/features/profile/controllers/profile_controller.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
 import '../../assignment/pages/assignment_page.dart';
@@ -41,12 +45,17 @@ void initState() {
 
   _selectedIndex = 1; // ClassesPage ทั้ง student และ teacher
 
-  if (!Get.isRegistered<ClassFeedController>()) {
-    Get.put<ClassFeedController>(
-      ClassFeedController(
-        classFeedRepository: Get.find<ClassFeedRepository>(),
-        semesterRepository: Get.find<SemesterRepository>(),
-      ),
+  if (!Get.isRegistered<ProfileRepository>()) {
+    Get.put(
+      ProfileRepository(Get.find<ApiClient>()),
+      permanent: true,
+    );
+  }
+
+  // ✅ 2. แล้วค่อย put Controller
+  if (!Get.isRegistered<ProfileController>()) {
+    Get.put(
+      ProfileController(Get.find<ProfileRepository>()),
       permanent: true,
     );
   }
@@ -152,11 +161,25 @@ bool get _hideAppBar =>
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
+        // onTap: (index) {
+        //   if (
+        //     (isStudent && index == 3) ||
+        //     (!isStudent && index == 2)
+        //   ) {
+        //     // 👉 เปิด Profile ผ่าน route
+        //     Get.toNamed(AppRoutes.profile);
+        //     return;
+        //   }
+        //   setState(() {
+        //     _selectedIndex = index;
+        //   });
+        // },
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
           });
         },
+
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primaryPalette[900],
         unselectedItemColor: AppColors.primaryPalette[800],
