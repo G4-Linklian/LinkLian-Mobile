@@ -59,3 +59,4 @@ android/build/
 **/generated_plugin_registrant.*
 **/generated_plugins.cmake
 .env
+/.env.*
