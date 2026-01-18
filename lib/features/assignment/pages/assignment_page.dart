@@ -8,6 +8,7 @@ import '../../../core/utils/dialog_helper.dart';
 import '../../../core/constants/colors.dart';
 // import '../../../core/utils/logger.dart';
 import '../../auth/controller/auth_controller.dart';
+import '../../../core/services/local_storage.dart';
 
 class AssignmentPage extends StatelessWidget {
   const AssignmentPage({super.key});
@@ -47,19 +48,22 @@ class AssignmentPage extends StatelessWidget {
                           backgroundColor: AppColors.successPalette[600],
                           foregroundColor: AppColors.white,
                         ),
-                        onPressed: () {
+                        onPressed: () async{
                           // DialogHelper.showErrorDialog(
                           //   title: "ผิดพลาด",
                           //   description: "รหัสผ่านไม่ถูกต้อง",
                           // );
 
                           // DialogHelper.showLoading("กำลังโหลดข้อมูล...");
+                          final userId = await LocalStorage.getLastLoginUserId();
 
                           DialogHelper.showNotification(
-                            title: "สร้างโพสต์สำเร็จ",
+                            title: "สร้างโพสต์สำเร็จ $userId",
                             message: null,
                             type: NotificationType.success,
                           );
+
+                          
 
                           // DialogHelper.hideLoading();
                         },

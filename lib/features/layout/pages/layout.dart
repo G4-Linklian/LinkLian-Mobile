@@ -12,7 +12,7 @@ import '../widgets/activeIcon.dart';
 import '../../classes/pages/create_post_class_page.dart';
 import '../../community/pages/create_post_commu_page.dart';
 import '../../notification/pages/notification_page.dart';
-import '../../chat/pages/chat_page.dart';
+import '../../chat/pages/chat.page.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
 import '../../classes/controllers/class_feed_controller.dart';
