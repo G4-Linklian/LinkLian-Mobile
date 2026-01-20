@@ -20,10 +20,6 @@ class ClassFeedController extends GetxController {
   int get instId => auth.instId.value!;
   String get roleName => auth.roleName.value!;
 
-  /// ============================
-  /// STATE
-  /// ============================
-
   final RxList<ClassFeedModel> classList = <ClassFeedModel>[].obs;
   final RxList<SemesterModel> semesters = <SemesterModel>[].obs;
 
@@ -32,28 +28,14 @@ class ClassFeedController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxnString errorMessage = RxnString();
 
-  /// ============================
-  /// LIFECYCLE
-  /// ============================
 
   @override
   void onInit() {
     super.onInit();
-  auth = Get.find<AuthController>(); // ✅ ต้องมีบรรทัดนี้
-
-
-    // // 🔒 guard: ต้อง login แล้วเท่านั้น
-    // if (!auth.isLoggedIn || auth.instId.value == null) {
-    //   Get.offAllNamed('/auth.login');
-    //   return;
-    // }
+  auth = Get.find<AuthController>(); 
 
     loadInitialData();
   }
-
-  /// ============================
-  /// DATA FLOW
-  /// ============================
 
   Future<void> loadInitialData() async {
     try {
@@ -61,24 +43,16 @@ class ClassFeedController extends GetxController {
       errorMessage.value = null;
 
       await fetchSemesters();
-
-      // if (selectedSemesterId.value != null) {
-      //   await fetchClassFeed();
-      // }
-    // } catch (e) {
-    //   errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// ============================
   /// FETCH SEMESTER
-  /// ============================
 
   Future<void> fetchSemesters() async {
     final result = await semesterRepository.getSemesters(
-      instId: auth.instId.value!, // 🔥 จาก AuthController
+      instId: auth.instId.value!,
     );
 
     semesters.assignAll(result);
@@ -94,10 +68,6 @@ class ClassFeedController extends GetxController {
 
   }
 
-  /// ============================
-  /// FETCH CLASS FEED
-  /// ============================
-
   Future<void> fetchClassFeed() async {
     if (selectedSemesterId.value == null) return;
 
@@ -109,9 +79,6 @@ class ClassFeedController extends GetxController {
         semesterId: selectedSemesterId.value!,
       );
 
-       print('🧪 class feed count = ${result.length}');
-    print('🧪 first item = ${result.isNotEmpty ? result.first : 'EMPTY'}');
-
       classList.assignAll(result);
     } catch (e) {
       errorMessage.value = e.toString();
@@ -120,20 +87,12 @@ class ClassFeedController extends GetxController {
     }
   }
 
-  /// ============================
-  /// CHANGE SEMESTER
-  /// ============================
-
   Future<void> changeSemester(int semesterId) async {
     if (semesterId == selectedSemesterId.value) return;
 
     selectedSemesterId.value = semesterId;
     await fetchClassFeed();
   }
-
-  /// ============================
-  /// REFRESH
-  /// ============================
 
   Future<void> refreshFeed() async {
     await fetchClassFeed();
