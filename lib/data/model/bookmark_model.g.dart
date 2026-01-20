@@ -13,7 +13,8 @@ BookmarkModel _$BookmarkModelFromJson(Map<String, dynamic> json) =>
       content: json['content'] as String,
       sectionName: json['section_name'] as String?,
       subjectName: json['subject_name'] as String?,
-      educatorName: json['educator_name'] as String?,
+      creatorName: json['creator_name'] as String?,
+      creatorId: json['creator_id'] as String?,
       savedAt: DateTime.parse(json['saved_at'] as String),
     );
 
@@ -24,6 +25,7 @@ Map<String, dynamic> _$BookmarkModelToJson(BookmarkModel instance) =>
       'content': instance.content,
       'section_name': instance.sectionName,
       'subject_name': instance.subjectName,
-      'educator_name': instance.educatorName,
+      'creator_name': instance.creatorName,
+      'creator_id': instance.creatorId,
       'saved_at': instance.savedAt.toIso8601String(),
     };

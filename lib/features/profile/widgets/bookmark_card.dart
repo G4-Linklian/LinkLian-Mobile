@@ -20,10 +20,14 @@ class BookmarkCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
+            blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
@@ -75,8 +79,8 @@ class BookmarkCard extends StatelessWidget {
                 ),
 
                 Text(
-                  item.educatorName != null
-                      ? 'ผู้สอน ${item.educatorName}'
+                  item.creatorName != null
+                      ? 'ผู้สอน ${item.creatorName}'
                       : 'ไม่ระบุผู้สอน',
                   style: const TextStyle(fontSize: 10),
                 ),

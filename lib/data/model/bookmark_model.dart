@@ -18,9 +18,14 @@ class BookmarkModel {
   @JsonKey(name: 'subject_name')
   final String? subjectName;      
 
-  @JsonKey(name: 'educator_name')
-  final String? educatorName;    
+  // @JsonKey(name: 'educator_name')
+  // final String? educatorName;    
+  @JsonKey(name: 'creator_name')
+  final String? creatorName; 
 
+  @JsonKey(name: 'creator_id')
+  final String? creatorId;  
+  
   @JsonKey(name: 'saved_at')
   final DateTime savedAt;
 
@@ -30,7 +35,9 @@ class BookmarkModel {
     required this.content,
     this.sectionName,
     this.subjectName,
-    this.educatorName,
+    // this.educatorName,
+    this.creatorName,
+    this.creatorId,
     required this.savedAt,
   });
 
