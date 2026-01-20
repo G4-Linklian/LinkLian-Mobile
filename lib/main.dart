@@ -24,10 +24,10 @@ void main() async {
   //////
   Get.put(ApiClient(), permanent: true);
   
-  // 🔐 AuthController (source of truth)
+  // AuthController (source of truth)
   Get.put(AuthController(), permanent: true);
 
-  // 📦 Repositories (no token / no baseUrl)
+  // Repositories (no token / no baseUrl)
   Get.put<ClassFeedRepository>(
     ClassFeedRepository(),
     permanent: true,
@@ -63,7 +63,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: const AuthGate(), // 👈 ใช้ widget ตรงนี้แทน
+      home: const AuthGate(), //ใช้ widget ตรงนี้แทน
       getPages: AppRouter.routes,
       // home: const MainPage(),
     );

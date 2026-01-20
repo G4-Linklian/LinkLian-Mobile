@@ -13,7 +13,7 @@ class ProfileBody extends StatelessWidget {
       return const StudentProfileSection();
     }
     if (profile.isTeacher) {
-      return TeacherProfileView(profile: profile);
+      return const TeacherProfileView();
     }
     return const SizedBox();
   }

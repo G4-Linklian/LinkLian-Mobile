@@ -1,6 +1,7 @@
 import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/data/repository/profile_repository.dart';
+import 'package:LinkLian/data/repository/teaching_schedule_repository.dart';
 import 'package:LinkLian/features/profile/controllers/profile_controller.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
@@ -19,9 +20,6 @@ import '../../notification/pages/notification_page.dart';
 import '../../chat/pages/chat_page.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
-import '../../classes/controllers/class_feed_controller.dart';
-import '../../../data/repository/class_feed_repository.dart';
-import '../../../data/repository/semester_repository.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -51,11 +49,26 @@ void initState() {
       permanent: true,
     );
   }
+  if (!Get.isRegistered<ProfileRepository>()) {
+    Get.put(
+      ProfileRepository(Get.find<ApiClient>()),
+      permanent: true,
+    );
+  }
+  if (!Get.isRegistered<TeachingScheduleRepository>()) {
+    Get.put(
+      TeachingScheduleRepository(Get.find<ApiClient>()),
+      permanent: true,
+    );
+  }
 
-  // ✅ 2. แล้วค่อย put Controller
+  //2. แล้วค่อย put Controller
   if (!Get.isRegistered<ProfileController>()) {
     Get.put(
-      ProfileController(Get.find<ProfileRepository>()),
+      ProfileController(
+        Get.find<ProfileRepository>(),
+        Get.find<TeachingScheduleRepository>(),
+      ),
       permanent: true,
     );
   }

@@ -9,7 +9,7 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
             _avatar(),
@@ -18,9 +18,30 @@ class ProfileHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(profile.fullName,
+                  if (profile.isStudent && profile.code != null && profile.code!.isNotEmpty) ...[
+                    Text(
+                      profile.code!,
                       style: const TextStyle(
-                          fontSize: 22, fontWeight: FontWeight.bold)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      profile.fullName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      profile.fullName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                   Text(profile.email,
                       style: const TextStyle(color: Colors.grey)),
                       if (profile.isTeacher &&
@@ -49,7 +70,7 @@ class ProfileHeader extends StatelessWidget {
                         ),
                       ),
                     ],
-                  if (profile.education != null) ...[
+                  if (!profile.isTeacher && profile.education != null) ...[
                     const SizedBox(height: 6),
 
                     if (profile.education!.type == 'high_school') ...[
@@ -62,9 +83,9 @@ class ProfileHeader extends StatelessWidget {
                     ],
 
                     if (profile.education!.type == 'university') ...[
-                      Text('คณะ : ${profile.education!.faculty}'),
-                      Text('สาขา : ${profile.education!.program}'),
-                      Text('ชั้นปี : ${profile.education!.year}'),
+                      // Text('คณะ : ${profile.education!.faculty}'),
+                      // Text('สาขา : ${profile.education!.program}'),
+                      Text('ระดับชั้น : ${profile.education!.level}'),
                     ],
 
                   ],
@@ -82,6 +103,8 @@ class ProfileHeader extends StatelessWidget {
       return CircleAvatar(
         radius: 42,
         backgroundImage: NetworkImage(profile.profilePic!),
+        onBackgroundImageError: (exception, stackTrace) {
+      },
       );
     }
     return CircleAvatar(

@@ -18,6 +18,8 @@ class ProfileModel {
   final int userSysId;
 
   final String email;
+  @JsonKey(name: 'code')
+  final String? code;
 
   @JsonKey(name: 'first_name')
   final String firstName;
@@ -42,11 +44,12 @@ class ProfileModel {
   @JsonKey(name: 'education')
   final EducationModel? education;
 
-  @JsonKey(name: 'teaching_schedule')
-  final List<TeachingScheduleModel>? teachingSchedule;
+  // @JsonKey(name: 'teaching_schedule')
+  // final List<TeachingScheduleModel>? teachingSchedule;
 
 
   ProfileModel({
+    this.code,
     required this.userSysId,
     required this.email,
     required this.firstName,
@@ -57,7 +60,7 @@ class ProfileModel {
     this.roleGroup,
     this.profilePic,
     this.education,
-    this.teachingSchedule,
+    // this.teachingSchedule,
   });
 
   ProfileModel copyWith({
@@ -66,10 +69,12 @@ class ProfileModel {
   String? lastName,
   String? phone,
   String? profilePic,
+  bool clearProfilePic = false,
   EducationModel? education,
-  List<TeachingScheduleModel>? teachingSchedule,
+  String? code,
+  // List<TeachingScheduleModel>? teachingSchedule,
 }) {
-  return ProfileModel(
+  final profile = ProfileModel(
     userSysId: userSysId,
     email: email,
     firstName: firstName ?? this.firstName,
@@ -77,12 +82,19 @@ class ProfileModel {
     lastName: lastName ?? this.lastName,
     roleName: roleName,
     roleGroup: roleGroup,
-    profilePic: profilePic ?? this.profilePic,
+    profilePic: clearProfilePic ? null : (profilePic ?? this.profilePic),
     education: education ?? this.education,
-    teachingSchedule: teachingSchedule ?? this.teachingSchedule,
+     code: code ?? this.code,
+    // teachingSchedule: teachingSchedule ?? this.teachingSchedule,
   );
+  return profile;
 }
-
+  String get displayName {
+    if (isStudent && code != null && code!.isNotEmpty) {
+      return code!;
+    }
+    return fullName;
+  }
 
   String get fullName =>
       middleName != null && middleName!.isNotEmpty
@@ -99,6 +111,8 @@ class ProfileModel {
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) =>
       _$ProfileModelFromJson(json);
+
+  get teachingSchedule => null;
 
   Map<String, dynamic> toJson() => _$ProfileModelToJson(this);
 }

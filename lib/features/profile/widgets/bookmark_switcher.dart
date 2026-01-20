@@ -1,24 +1,16 @@
-import 'package:LinkLian/core/constants/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:LinkLian/core/constants/colors.dart';
+import '../controllers/bookmark_controller.dart';
 import 'bookmark_card.dart';
 
-enum BookmarkType { post, community }
-enum SortType { all, newest, oldest }
-
-class BookmarkSwitcher extends StatefulWidget {
+class BookmarkSwitcher extends GetView<BookmarkController> {
   const BookmarkSwitcher({super.key});
-
-  @override
-  State<BookmarkSwitcher> createState() => _BookmarkSwitcherState();
-}
-
-class _BookmarkSwitcherState extends State<BookmarkSwitcher> {
-  BookmarkType type = BookmarkType.post;
-  SortType sort = SortType.all;
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -30,48 +22,49 @@ class _BookmarkSwitcherState extends State<BookmarkSwitcher> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
 
-              /// Filter Dropdown
-              PopupMenuButton<SortType>(
-                onSelected: (value) {
-                  setState(() => sort = value);
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: SortType.all,
-                    child: Text('ทั้งหมด'),
-                  ),
-                  PopupMenuItem(
-                    value: SortType.newest,
-                    child: Text('ล่าสุด'),
-                  ),
-                  PopupMenuItem(
-                    value: SortType.oldest,
-                    child: Text('เก่าสุด'),
-                  ),
-                ],
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryPalette[100],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _getSortLabel(sort),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+              Obx(() {
+                return PopupMenuButton<SortType>(
+                  onSelected: controller.changeSort,
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: SortType.all,
+                      child: Text('ทั้งหมด'),
+                    ),
+                    PopupMenuItem(
+                      value: SortType.newest,
+                      child: Text('ล่าสุด'),
+                    ),
+                    PopupMenuItem(
+                      value: SortType.oldest,
+                      child: Text('เก่าสุด'),
+                    ),
+                  ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryPalette[100],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.filter_list, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          _getSortLabel(controller.sortType.value),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.filter_list, size: 16),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
             ],
           ),
         ),
@@ -80,60 +73,89 @@ class _BookmarkSwitcherState extends State<BookmarkSwitcher> {
 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.primaryPalette[400],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Expanded(child: _tabButton('โพสต์', BookmarkType.post)),
-                Expanded(child: _tabButton('ชุมชน', BookmarkType.community)),
-              ],
-            ),
-          ),
+          child: Obx(() {
+            return Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.primaryPalette[400],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _tabButton(
+                      text: 'โพสต์',
+                      value: BookmarkType.post,
+                      active: controller.type.value,
+                      onTap: controller.changeType,
+                    ),
+                  ),
+                  Expanded(
+                    child: _tabButton(
+                      text: 'ชุมชน',
+                      value: BookmarkType.community,
+                      active: controller.type.value,
+                      onTap: controller.changeType,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ),
 
         const SizedBox(height: 14),
 
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Column(
-            children: _buildContent(),
-          ),
+        Obx(() {
+          if (controller.type.value == BookmarkType.community) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(
+                child: Text(
+                  'ยังไม่รองรับบุ๊กมาร์กชุมชน',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            );
+          }
+          if (controller.loading.value) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          if (controller.bookmarks.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: Text('ยังไม่มีบุ๊กมาร์ก')),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Column(
+              children: controller.bookmarks
+                  .map(
+                    (item) => BookmarkCard(
+                      item: item,
+                      onRemove: () {
+                        controller.removeBookmark(item.postId);
+                      },
+                    ),
+                  )
+                .toList(),
+              ),
+            );
+          }
         ),
       ],
     );
   }
 
-  Widget _tabButton(String text, BookmarkType value) {
-    final isActive = type == value;
 
-    return GestureDetector(
-      onTap: () => setState(() => type = value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryPalette[500] : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: isActive ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _getSortLabel(SortType sortType) {
-    switch (sortType) {
+  String _getSortLabel(SortType sort) {
+    switch (sort) {
       case SortType.all:
         return 'ทั้งหมด';
       case SortType.newest:
@@ -143,44 +165,36 @@ class _BookmarkSwitcherState extends State<BookmarkSwitcher> {
     }
   }
 
-  List<Widget> _buildContent() {
-    if (type == BookmarkType.post) {
-      switch (sort) {
-        case SortType.all:
-          return const [
-            BookmarkCard(title: 'โพสต์ A'),
-            BookmarkCard(title: 'โพสต์ B'),
-            BookmarkCard(title: 'โพสต์ C'),
-          ];
-        case SortType.newest:
-          return const [
-            BookmarkCard(title: 'โพสต์ใหม่ล่าสุด'),
-            BookmarkCard(title: 'โพสต์ก่อนหน้า'),
-          ];
-        case SortType.oldest:
-          return const [
-            BookmarkCard(title: 'โพสต์เก่าสุด'),
-            BookmarkCard(title: 'โพสต์เก่ากว่า'),
-          ];
-      }
-    } else {
-      switch (sort) {
-        case SortType.all:
-          return const [
-            BookmarkCard(title: 'ชุมชน A'),
-            BookmarkCard(title: 'ชุมชน B'),
-          ];
-        case SortType.newest:
-          return const [
-            BookmarkCard(title: 'ชุมชนล่าสุด'),
-            BookmarkCard(title: 'ชุมชนก่อนหน้า'),
-          ];
-        case SortType.oldest:
-          return const [
-            BookmarkCard(title: 'ชุมชนเก่าสุด'),
-            BookmarkCard(title: 'ชุมชนเก่ากว่า'),
-          ];
-      }
-    }
+  Widget _tabButton({
+    required String text,
+    required BookmarkType value,
+    required BookmarkType active,
+    required Function(BookmarkType) onTap,
+  }) {
+    final isActive = value == active;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => onTap(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color:
+              isActive ? AppColors.primaryPalette[500] : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
+

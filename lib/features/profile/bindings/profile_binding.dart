@@ -1,3 +1,6 @@
+import 'package:LinkLian/data/repository/bookmark_repository.dart';
+import 'package:LinkLian/data/repository/teaching_schedule_repository.dart';
+import 'package:LinkLian/features/profile/controllers/bookmark_controller.dart';
 import 'package:get/get.dart';
 import '../../../core/services/api_client.dart';
 import '../../../data/repository/profile_repository.dart';
@@ -16,8 +19,21 @@ class ProfileBinding extends Bindings {
       fenix: true,
     );
 
-    Get.lazyPut<ProfileController>(
-      () => ProfileController(Get.find<ProfileRepository>()),
+   Get.lazyPut(
+      () => ProfileController(
+        Get.find<ProfileRepository>(),
+        Get.find<TeachingScheduleRepository>(),
+      ),
+    );
+
+
+    Get.lazyPut<BookmarkRepository>(
+      () => BookmarkRepository(Get.find<ApiClient>()),
+      fenix: true,
+    );
+
+    Get.lazyPut<BookmarkController>(
+      () => BookmarkController(Get.find<BookmarkRepository>()),
     );
   }
 }

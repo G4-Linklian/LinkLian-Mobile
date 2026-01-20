@@ -1,14 +1,12 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:LinkLian/features/profile/pages/dashboard_page.dart';
 import 'package:LinkLian/features/profile/widgets/dashboard_card.dart';
 import 'package:LinkLian/features/profile/widgets/teaching_schedule_section.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
-import '../../../data/model/profile_model.dart';
+import '../controllers/profile_controller.dart';
 
-class TeacherProfileView extends StatelessWidget {
-  final ProfileModel profile;
-  const TeacherProfileView({super.key, required this.profile});
+class TeacherProfileView extends GetView<ProfileController> {
+  const TeacherProfileView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +19,20 @@ class TeacherProfileView extends StatelessWidget {
           },
         ),
 
-        TeachingScheduleSection(
-          schedules: profile.teachingSchedule ?? [],
-        ),
+        const SizedBox(height: 12),
+
+        Obx(() {
+          if (controller.loadingSchedule.value) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          return TeachingScheduleSection(
+            schedules: controller.teachingSchedules,
+          );
+        }),
       ],
     );
   }

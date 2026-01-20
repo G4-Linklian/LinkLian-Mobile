@@ -102,7 +102,7 @@ class DayScheduleSection extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                s.className ?? '-',
+                                s.className != null ? '${s.className}' : '-',
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -143,15 +143,15 @@ class DayScheduleSection extends StatelessWidget {
           ),
         ),
 
-        if (!isLast)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Divider(
-              height: 1,
-              thickness: 2,
-              color: Colors.grey.shade300,
-            ),
-          ),
+        // if (!isLast)
+        //   Padding(
+        //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        //     child: Divider(
+        //       height: 1,
+        //       thickness: 2,
+        //       color: Colors.grey.shade300,
+        //     ),
+        //   ),
       ],
     );
   }

@@ -2,19 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/model/profile_model.dart';
 import '../../../data/repository/profile_repository.dart';
+import '../../../data/repository/teaching_schedule_repository.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-
+import '../../../data/model/teaching_schedule_model.dart';
 
 class ProfileController extends GetxController {
   final ProfileRepository repo;
-  ProfileController(this.repo);
+  final TeachingScheduleRepository scheduleRepo;
+
+  ProfileController(this.repo, this.scheduleRepo);
 
   final profile = Rxn<ProfileModel>();
   final loading = false.obs;
   final saving = false.obs; 
   final ImagePicker _picker = ImagePicker();
+  final teachingSchedules = <TeachingScheduleModel>[].obs;
+  final loadingSchedule = false.obs;
 
   late TextEditingController firstNameCtrl;
   late TextEditingController lastNameCtrl;
@@ -28,7 +33,12 @@ class ProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadProfile();
+    loadAll();
+  }
+
+  Future<void> loadAll() async {
+    await loadProfile();
+    await loadTeachingSchedule();
   }
 
   Future<void> loadProfile() async {
@@ -44,8 +54,27 @@ class ProfileController extends GetxController {
       firstNameCtrl = TextEditingController(text: data.firstName);
       lastNameCtrl = TextEditingController(text: data.lastName);
       phoneCtrl = TextEditingController(text: data.phone ?? '');
+      if (data.isTeacher) {
+      await loadTeachingSchedule();
+    }
     } finally {
       loading.value = false;
+    }
+  }
+
+  Future<void> loadTeachingSchedule() async {
+    if (!isTeacher) return;
+
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
+    if (userId == null) return;
+
+    try {
+      loadingSchedule.value = true;
+      teachingSchedules.value =
+          await scheduleRepo.getByEducator(userId);
+    } finally {
+      loadingSchedule.value = false;
     }
   }
 
@@ -62,23 +91,11 @@ class ProfileController extends GetxController {
         firstName: firstName,
         lastName: lastName,
         phone: phone,
+        profilePic: profile.value?.profilePic,
       );
 
       //reload profile
       await loadProfile();
-
-      Get.snackbar(
-        'สำเร็จ',
-        'บันทึกข้อมูลเรียบร้อยแล้ว',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } catch (e) {
-      Get.snackbar(
-        'เกิดข้อผิดพลาด',
-        'ไม่สามารถบันทึกข้อมูลได้',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade100,
-      );
     } finally {
       saving.value = false;
     }
@@ -93,41 +110,99 @@ class ProfileController extends GetxController {
   }
 
   Future<void> changeAvatar() async {
+  final auth = Get.find<AuthController>();
+  final userId = auth.userId.value;
+  if (userId == null) return;
+
+  final XFile? picked =
+      await _picker.pickImage(source: ImageSource.gallery);
+  if (picked == null) return;
+
+  try {
+    saving.value = true;
+
+    final fileUrl = await repo.uploadAvatar(userId, File(picked.path));
+
+    await repo.updateProfile(
+      userId,
+      firstName: profile.value!.firstName,
+      lastName: profile.value!.lastName,
+      phone: profile.value!.phone,
+      profilePic: fileUrl, 
+    );
+
+    await loadProfile();
+
+  } finally {
+    saving.value = false;
+  }
+}
+
+  Future<void> pickImageFromGallery() async {
+    await changeAvatar();
+  }
+
+  Future<void> pickImageFromCamera() async {
     final auth = Get.find<AuthController>();
     final userId = auth.userId.value;
     if (userId == null) return;
 
-    final XFile? picked =
-        await _picker.pickImage(source: ImageSource.gallery);
-
+    final XFile? picked = await _picker.pickImage(source: ImageSource.camera);
     if (picked == null) return;
 
     try {
       saving.value = true;
 
-      final avatarUrl =
-          await repo.uploadAvatar(userId, File(picked.path));
+      final fileUrl = await repo.uploadAvatar(userId, File(picked.path));
+        profile.value = profile.value!.copyWith(profilePic: fileUrl);
+      } finally {
+        saving.value = false;
+      }
+  }
 
-      profile.value = profile.value!.copyWith(
-        profilePic: avatarUrl,
-      );
+Future<void> deleteAvatar() async {
+  final auth = Get.find<AuthController>();
+  final userId = auth.userId.value;
+  if (userId == null) return;
 
-      await loadProfile();
+  final currentProfile = profile.value;
+  if (currentProfile == null) return;
 
-      Get.snackbar(
-        'สำเร็จ',
-        'อัปเดตรูปโปรไฟล์เรียบร้อย',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } catch (e) {
-      Get.snackbar(
-        'เกิดข้อผิดพลาด',
-        'ไม่สามารถอัปโหลดรูปได้',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade100,
-      );
-    } finally {
-      saving.value = false;
+  final currentPic = currentProfile.profilePic;
+  if (currentPic == null || currentPic.isEmpty) return;
+
+  try {
+    saving.value = true;
+
+    debugPrint('🗑️ Deleting avatar...');
+
+    await repo.updateProfile(
+      userId,
+      firstName: currentProfile.firstName,
+      lastName: currentProfile.lastName,
+      middleName: currentProfile.middleName,
+      phone: currentProfile.phone,
+      clearProfilePic: true, 
+    );
+
+    imageCache.clear();
+    imageCache.clearLiveImages();
+
+    await loadProfile();
+
+  } finally {
+    saving.value = false;
+  }
+}
+  void restoreOriginalProfilePic(String? originalPic) {
+    final currentProfile = profile.value;
+    if (currentProfile == null) return;
+
+    if (originalPic == null) {
+      profile.value = currentProfile.copyWith(clearProfilePic: true);
+      debugPrint('AFTER DELETE avatar = ${profile.value?.profilePic}');
+    } else {
+      profile.value = currentProfile.copyWith(profilePic: originalPic);
     }
   }
 }

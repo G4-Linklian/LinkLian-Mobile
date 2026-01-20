@@ -1,6 +1,10 @@
+import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/data/repository/bookmark_repository.dart';
+import 'package:LinkLian/features/profile/controllers/bookmark_controller.dart';
 import 'package:LinkLian/features/profile/pages/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import '../../../data/model/profile_model.dart';
 import '../widgets/profile_header.dart';
@@ -41,6 +45,13 @@ class StudentProfileSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<BookmarkController>()) {
+      Get.put(
+        BookmarkController(
+          BookmarkRepository(Get.find<ApiClient>()),
+        ),
+      );
+    }
     return Column(
       children: [
         DashboardCard(

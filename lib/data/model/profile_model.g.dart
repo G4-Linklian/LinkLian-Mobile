@@ -7,6 +7,7 @@ part of 'profile_model.dart';
 // **************************************************************************
 
 ProfileModel _$ProfileModelFromJson(Map<String, dynamic> json) => ProfileModel(
+  code: json['code'] as String?,
   userSysId: _intFromJson(json['user_sys_id']),
   email: json['email'] as String,
   firstName: json['first_name'] as String,
@@ -19,15 +20,13 @@ ProfileModel _$ProfileModelFromJson(Map<String, dynamic> json) => ProfileModel(
   education: json['education'] == null
       ? null
       : EducationModel.fromJson(json['education'] as Map<String, dynamic>),
-  teachingSchedule: (json['teaching_schedule'] as List<dynamic>?)
-      ?.map((e) => TeachingScheduleModel.fromJson(e as Map<String, dynamic>))
-      .toList(),
 );
 
 Map<String, dynamic> _$ProfileModelToJson(ProfileModel instance) =>
     <String, dynamic>{
       'user_sys_id': _intToJson(instance.userSysId),
       'email': instance.email,
+      'code': instance.code,
       'first_name': instance.firstName,
       'middle_name': instance.middleName,
       'last_name': instance.lastName,
@@ -36,5 +35,4 @@ Map<String, dynamic> _$ProfileModelToJson(ProfileModel instance) =>
       'role_group': instance.roleGroup,
       'profile_pic': instance.profilePic,
       'education': instance.education,
-      'teaching_schedule': instance.teachingSchedule,
     };

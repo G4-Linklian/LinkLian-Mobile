@@ -13,6 +13,8 @@ class ProfilePage extends GetView<ProfileController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: const Text(
           'โปรไฟล์',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
@@ -42,13 +44,15 @@ class ProfilePage extends GetView<ProfileController> {
         }
 
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           children: [
-            ProfileHeader(profile: profile),
+            Obx(() {
+              final profile = controller.profile.value;
+              if (profile == null) return const SizedBox();
+              return ProfileHeader(profile: profile);
+            }),
             const Divider(indent: 16, endIndent: 16),
-
-            // เปลี่ยนตาม role
-            ProfileBody(profile: profile),
+            ProfileBody(profile: controller.profile.value!),
           ],
         );
       }),

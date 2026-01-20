@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/constants/linklian-icon.dart';
+import 'package:LinkLian/data/model/profile_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/profile_controller.dart';
@@ -21,6 +22,8 @@ class _AccountPageState extends State<AccountPage> {
 
   bool isEditing = false;
 
+  String? originalProfilePic;
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +41,7 @@ class _AccountPageState extends State<AccountPage> {
     middleNameCtrl = TextEditingController(text: profile.middleName ?? '');
     lastNameCtrl = TextEditingController(text: profile.lastName);
     phoneCtrl = TextEditingController(text: profile.phone ?? '');
+    originalProfilePic = profile.profilePic;
   }
 
   @override
@@ -60,7 +64,10 @@ class _AccountPageState extends State<AccountPage> {
         firstNameCtrl.text = profile.firstName;
         lastNameCtrl.text = profile.lastName;
         phoneCtrl.text = profile.phone ?? '';
+        // controller.restoreOriginalProfilePic(originalProfilePic);
       }
+    }else{
+      originalProfilePic = controller.profile.value?.profilePic;
     }
   }
 
@@ -73,6 +80,8 @@ class _AccountPageState extends State<AccountPage> {
             ? null
             : phoneCtrl.text.trim(),
       );
+
+      originalProfilePic = controller.profile.value?.profilePic;
 
       setState(() {
         isEditing = false;
@@ -148,6 +157,8 @@ class _AccountPageState extends State<AccountPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(LinkLianIcon.chevronleft, color: Colors.black),
           onPressed: () => Navigator.pop(context),
@@ -272,6 +283,76 @@ class _AvatarSection extends StatelessWidget {
     this.isEditing = false,
   });
 
+  void _showAvatarOptions(BuildContext context) {
+    final hasProfilePic = controller.profile.value?.profilePic != null && 
+                         controller.profile.value!.profilePic!.isNotEmpty;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(LinkLianIcon.photo, color: AppColors.primaryPalette[600]),
+                title: const Text('เลือกจากอัลบั้ม'),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.pickImageFromGallery();
+                },
+              ),
+              ListTile(
+                leading: Icon(LinkLianIcon.camera, color: AppColors.primaryPalette[600]),
+                title: const Text('ถ่ายรูป'),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.pickImageFromCamera();
+                },
+              ),
+              if (hasProfilePic)
+                ListTile(
+                  leading: Icon(LinkLianIcon.delete, color: AppColors.dangerPalette[500]),
+                  title: Text('ลบรูป', style: TextStyle(color: AppColors.dangerPalette[500])),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmDelete(context);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ยืนยันการลบรูป'),
+        content: const Text('คุณต้องการลบรูปโปรไฟล์ใช่หรือไม่?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              controller.deleteAvatar();
+            },
+            child: const Text('ลบ', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -282,7 +363,7 @@ class _AvatarSection extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: isEditing && !controller.saving.value
-                  ? controller.changeAvatar
+                  ? () => _showAvatarOptions(context)
                   : null,
               child: Stack(
                 alignment: Alignment.bottomRight,
@@ -297,7 +378,7 @@ class _AvatarSection extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        LinkLianIcon.camera,
+                        LinkLianIcon.pencil,
                         size: 18,
                         color: Colors.white,
                       ),
@@ -317,31 +398,41 @@ class _AvatarSection extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(profile) {
-    if (profile?.profilePic != null && profile!.profilePic!.isNotEmpty) {
-      return CircleAvatar(
-        radius: 48,
-        backgroundImage: NetworkImage(profile.profilePic!),
-      );
-    }
+  Widget _buildAvatar(ProfileModel? profile) {
+  final pic = profile?.profilePic;
 
-    if (profile != null) {
-      return CircleAvatar(
-        radius: 48,
-        child: Text(
-          profile.firstName[0] + profile.lastName[0],
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-      );
-    }
-
+  if (pic != null && pic.isNotEmpty) {
     return CircleAvatar(
       radius: 48,
       backgroundColor: Colors.grey.shade200,
-      child: const Icon(Icons.person, size: 48, color: Colors.grey),
+      child: ClipOval(
+        child: Image.network(
+          pic,
+          width: 96,
+          height: 96,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) {
+            // ✅ fallback ถ้า 404
+            return _buildInitialAvatar(profile);
+          },
+        ),
+      ),
     );
   }
+
+  return _buildInitialAvatar(profile);
+}
+
+Widget _buildInitialAvatar(ProfileModel? profile) {
+  return CircleAvatar(
+    radius: 48,
+    child: Text(
+      profile != null
+          ? profile.firstName[0] + profile.lastName[0]
+          : '',
+      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    ),
+  );
+}
+
 }
