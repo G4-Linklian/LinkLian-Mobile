@@ -47,36 +47,40 @@ class _MainPageState extends State<MainPage> {
 
     _selectedIndex = 1; // ClassesPage ทั้ง student และ teacher
 
-  if (!Get.isRegistered<ProfileRepository>()) {
-    Get.put(
-      ProfileRepository(Get.find<ApiClient>()),
-      permanent: true,
-    );
-  }
-  if (!Get.isRegistered<ProfileRepository>()) {
-    Get.put(
-      ProfileRepository(Get.find<ApiClient>()),
-      permanent: true,
-    );
-  }
-  if (!Get.isRegistered<TeachingScheduleRepository>()) {
-    Get.put(
-      TeachingScheduleRepository(Get.find<ApiClient>()),
-      permanent: true,
-    );
-  }
 
-  //2. แล้วค่อย put Controller
-  if (!Get.isRegistered<ProfileController>()) {
-    Get.put(
-      ProfileController(
-        Get.find<ProfileRepository>(),
-        Get.find<TeachingScheduleRepository>(),
-      ),
-      permanent: true,
-    );
+    if (!Get.isRegistered<ClassFeedController>()) {
+      Get.put<ClassFeedController>(
+        ClassFeedController(
+          classFeedRepository: Get.find<ClassFeedRepository>(),
+          semesterRepository: Get.find<SemesterRepository>(),
+        ),
+        permanent: true,
+      );
+    } 
+    if (!Get.isRegistered<ProfileRepository>()) {
+      Get.put(ProfileRepository(Get.find<ApiClient>()), permanent: true);
+    }
+    if (!Get.isRegistered<ProfileRepository>()) {
+      Get.put(ProfileRepository(Get.find<ApiClient>()), permanent: true);
+    }
+    if (!Get.isRegistered<TeachingScheduleRepository>()) {
+      Get.put(
+        TeachingScheduleRepository(Get.find<ApiClient>()),
+        permanent: true,
+      );
+    }
+
+    //2. แล้วค่อย put Controller
+    if (!Get.isRegistered<ProfileController>()) {
+      Get.put(
+        ProfileController(
+          Get.find<ProfileRepository>(),
+          Get.find<TeachingScheduleRepository>(),
+        ),
+        permanent: true,
+      );
+    }
   }
-}
 
   void _goTo(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));

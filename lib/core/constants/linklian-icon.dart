@@ -117,4 +117,29 @@ class LinkLianIcon {
   static const IconData filterpost = TablerIcons.filter;
   static const IconData send = TablerIcons.brand_telegram;
 
+  // settings
+  static const IconData settings = TablerIcons.settings;
+  static const IconData account = TablerIcons.user_circle;
+  static const IconData security = TablerIcons.lock;
+  static const IconData privacy = TablerIcons.shield_lock;
+  static const IconData logout = TablerIcons.logout;
+
+  static const IconData chevronleft = TablerIcons.chevron_left;
+  static const IconData chevronright = TablerIcons.chevron_right;
+
+  static const IconData dashboard = TablerIcons.layout_dashboard;
+  static const IconData filter = TablerIcons.filter;
+  static const IconData edit = TablerIcons.edit;
+  static const IconData phone = TablerIcons.phone;
+  static const IconData pencil = TablerIcons.pencil;
+  static const IconData camera = TablerIcons.camera;
+  static const IconData check = TablerIcons.check;
+  static const IconData cancel = TablerIcons.cancel;
+  static const IconData delete = TablerIcons.trash;
+  
+
+
+
+  static double? get fontSubheading => null;
+
 }

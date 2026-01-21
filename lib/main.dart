@@ -22,6 +22,7 @@ void main() async {
   await LocalStorage.init();
   await initializeDateFormatting('th', null);
 
+  Get.put(ApiClient(), permanent: true);
   Get.put(AuthController(), permanent: true);
 
   Get.put<ClassFeedRepository>(
@@ -31,14 +32,6 @@ void main() async {
 
   Get.put<SemesterRepository>(
     SemesterRepository(),
-    permanent: true,
-  );
-
-  Get.put(
-    ClassFeedController(
-      classFeedRepository: Get.find<ClassFeedRepository>(),
-      semesterRepository: Get.find<SemesterRepository>(),
-    ),
     permanent: true,
   );
 
