@@ -13,21 +13,18 @@ import 'features/auth/controller/auth_controller.dart';
 import 'data/repository/class_feed_repository.dart';
 import 'data/repository/semester_repository.dart';
 import 'features/login/pages/login_page.dart';
-import 'features/layout/pages/layout.dart';
-
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await LocalStorage.init();
-  //////
+  await initializeDateFormatting('th', null);
+
   Get.put(ApiClient(), permanent: true);
-  
-  // AuthController (source of truth)
   Get.put(AuthController(), permanent: true);
 
-  // Repositories (no token / no baseUrl)
   Get.put<ClassFeedRepository>(
     ClassFeedRepository(),
     permanent: true,
@@ -35,14 +32,6 @@ void main() async {
 
   Get.put<SemesterRepository>(
     SemesterRepository(),
-    permanent: true,
-  );
-
-  Get.put(
-    ClassFeedController(
-      classFeedRepository: Get.find<ClassFeedRepository>(),
-      semesterRepository: Get.find<SemesterRepository>(),
-    ),
     permanent: true,
   );
 
@@ -63,7 +52,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: const AuthGate(), //ใช้ widget ตรงนี้แทน
+      home: const AuthGate(), 
       getPages: AppRouter.routes,
       // home: const MainPage(),
     );

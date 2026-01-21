@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/sizes.dart';
 import '../../features/login/widgets/otp_popup.dart';
+import '../../features/classes/widgets/image_source_sheet.dart';
+import '../../features/classes/widgets/link_attach_dialog.dart';
 
 enum NotificationType { success, error, warning }
 
@@ -57,8 +59,8 @@ class DialogHelper {
     }
 
     Get.snackbar(
-      '', // title ว่างไว้
-      '', // message ว่างไว้
+      '',
+      '', 
       titleText: const SizedBox.shrink(),
 
       messageText: Center(
@@ -94,10 +96,6 @@ class DialogHelper {
       backgroundColor: bgColor,
       borderRadius: 16,
       margin: const EdgeInsets.all(AppSizes.sm),
-      // padding: const EdgeInsets.symmetric(
-      //   vertical: AppSizes.lg,
-      //   horizontal: AppSizes.xs,
-      // ),
       isDismissible: true,
       duration: const Duration(seconds: 3),
       maxWidth: Get.width * 0.8,
@@ -133,7 +131,7 @@ class DialogHelper {
   static void showOtpDialog() {
     Get.dialog(
       const OtpPopup(),
-      barrierDismissible: false, // ❌ ห้ามกดปิดเอง
+      barrierDismissible: false,
     );
   }
 
@@ -144,4 +142,23 @@ class DialogHelper {
       type: NotificationType.warning,
     );
   }
+
+  static void showImageSourceSheet({
+  required VoidCallback onCamera,
+  required VoidCallback onGallery,
+}) {
+  Get.bottomSheet(
+    ImageSourceSheet(
+      onCamera: onCamera,
+      onGallery: onGallery,
+    ),
+  );
+}
+
+static void showLinkDialog({
+  required ValueChanged<String> onSubmit,
+}) {
+  Get.dialog(LinkAttachDialog(onSubmit: onSubmit));
+}
+
 }

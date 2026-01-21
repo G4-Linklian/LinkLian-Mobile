@@ -1,3 +1,4 @@
+import 'package:LinkLian/config/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/sizes.dart';
@@ -6,7 +7,7 @@ import '../widgets/class_card.dart';
 import '../widgets/semester_selector.dart';
 import '../../auth/controller/auth_controller.dart';
 
- class ClassesPage extends StatelessWidget {
+class ClassesPage extends StatelessWidget {
   const ClassesPage({super.key});
 
   @override
@@ -45,8 +46,18 @@ import '../../auth/controller/auth_controller.dart';
                                 final c = controller.classList[index];
                                 return ClassCard(
                                   data: c,
-                                  roleName: controller.roleName, 
-                                  onTap: () {},
+                                  roleName: controller.roleName,
+                                  onTap: () {
+                                    Get.toNamed(
+                                      AppRoutes.classDetail,
+                                      arguments: {
+                                        'sectionId': c.sectionId,
+                                        'subjectName': c.subjectNameTh,
+                                        'className': c.effectiveClassName,
+
+                                      },
+                                    );
+                                  },
                                 );
                               },
                             ),

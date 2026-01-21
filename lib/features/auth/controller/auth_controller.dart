@@ -12,16 +12,14 @@ String shortToken(String token) {
 class AuthController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
 
-  /// ===== ของเดิม (ไม่ลบ) =====
+
   final RxnString token = RxnString();
   final RxnString roleName = RxnString();
   final RxnInt instId = RxnInt();
   final RxnInt userId = RxnInt();
 
-  /// ===== เพิ่มใหม่ =====
   final Rx<AuthStatus> status = AuthStatus.checking.obs;
 
-  /// ===== lifecycle =====
 @override
 void onInit() {
   super.onInit();
@@ -29,10 +27,9 @@ void onInit() {
   _tryAutoLogin();
 }
 
-  /// ===== public getters =====
+
   bool get isLoggedIn => status.value == AuthStatus.authenticated;
 
-  /// ===== ของเดิม (ยังใช้ได้) =====
   void setSession({
     required String token,
     required String roleName,
@@ -47,7 +44,6 @@ void onInit() {
     status.value = AuthStatus.authenticated;
   }
 
-  /// ===== ใช้หลัง OTP สำเร็จ (แนะนำให้ใช้แทน setSession ตรง ๆ) =====
 Future<void> establishSession({
   required String token,
   required String roleName,
@@ -64,9 +60,8 @@ Future<void> establishSession({
 
   status.value = AuthStatus.authenticated;
 
-  print('✅ Auth status changed to AUTHENTICATED');
 }
-  /// ===== Auto-login แบบใหม่ (ไม่พัง) =====
+
   Future<void> _tryAutoLogin() async {
     try {
       status.value = AuthStatus.checking;
@@ -74,36 +69,22 @@ Future<void> establishSession({
       final storedToken = await LocalStorage.getToken();
       final storedUserId = await LocalStorage.getLastLoginUserId();
 
-      print('🔐 [AUTH] tryAutoLogin');
-      print(
-        '🔐 [AUTH] storedToken = ${storedToken != null ? shortToken(storedToken) : 'null'}',
-      );
-      print('🔐 [AUTH] storedUserId = $storedUserId');
-
       if (storedToken == null || storedUserId == null) {
         _clearSession();
         return;
       }
 
-      // backend เป็นคนตัดสิน
       final res = await _authRepository.verifyAuthContext();
-      // 🔥 กรณีต้อง reset password
       if (res['require_reset_password'] == true) {
         await LocalStorage.clearAuthSession();
         status.value = AuthStatus.unauthenticated;
         return;
       }
 
-      // กรณีปกติ
       final data = res['data'];
-      print('🔐 [AUTH] verifyAuthContext OK');
-      print('🔐 [AUTH] backend user_id = ${res['data']['user_id']}');
-      print('🔐 [AUTH] role = ${res['data']['role_name']}');
-      print('🔐 [AUTH] inst_id = ${res['data']['inst_id']}');
 
       final int tokenUserId = int.parse(res['data']['user_id'].toString());
 
-      // 🔒 guard: token ต้องเป็นของ user เดียวกัน
       if (tokenUserId != storedUserId) {
         _clearSession();
         return;
@@ -125,7 +106,6 @@ Future<void> establishSession({
 
   /// ===== Logout / hot reload =====
   Future<void> logout() async {
-  // ❗ ลบแค่ state ใน memory
   token.value = null;
   roleName.value = null;
   instId.value = null;

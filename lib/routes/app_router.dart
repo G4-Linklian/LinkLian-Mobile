@@ -9,6 +9,13 @@ import '../features/profile/pages/profile_page.dart';
 import '../features/layout/pages/layout.dart';
 import '../features/login/pages/login_page.dart';
 import '../features/classes/bindings/class_feed_binding.dart';
+import '../features/classes/pages/class_detail_page.dart';
+import '../features/classes/bindings/class_detail_binding.dart';
+import '../features/classes/pages/create_post_class_page.dart';
+import '../features/classes/controllers/create_post_controller.dart';
+import '../data/repository/post_repository.dart';
+import '../features/classes/pages/comment_page.dart';
+import '../features/classes/bindings/comment_binding.dart';
 
 
 class AppRouter {
@@ -30,6 +37,25 @@ class AppRouter {
       page: () => const MainPage(),
       binding: ClassFeedBinding(),
     ),
+     GetPage(
+      name: AppRoutes.classDetail,
+      page: () => const ClassDetailPage(),
+      binding: ClassDetailBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.createPost,
+      page: () => const CreatePostClassPage(),
+      binding: BindingsBuilder(() {
+        Get.put(CreatePostController(
+          postRepository: PostRepository(),
+        ));
+      }),
+    ),
+    GetPage(
+  name: AppRoutes.comment,
+  page: () => const CommentPage(),
+  binding: CommentBinding(),
+),
     GetPage(name: AppRoutes.community, page: () => const CommuPage()),
     GetPage(
       name: AppRoutes.profile,
