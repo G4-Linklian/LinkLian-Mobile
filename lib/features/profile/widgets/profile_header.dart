@@ -9,7 +9,7 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: Row(
           children: [
             _avatar(),
@@ -18,7 +18,9 @@ class ProfileHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (profile.isStudent && profile.code != null && profile.code!.isNotEmpty) ...[
+                  if (profile.isStudent &&
+                      profile.code != null &&
+                      profile.code!.isNotEmpty) ...[
                     Text(
                       profile.code!,
                       style: const TextStyle(
@@ -42,44 +44,45 @@ class ProfileHeader extends StatelessWidget {
                       ),
                     ),
                   ],
-                  Text(profile.email,
-                      style: const TextStyle(color: Colors.grey)),
-                      if (profile.isTeacher &&
-                        profile.phone != null &&
-                        profile.phone!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      RichText(
-                        text: TextSpan(
-                          style: const TextStyle(fontSize: 12),
-                          children: [
-                            const TextSpan(
-                              text: 'ช่องทางการติดต่อ : ',
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontWeight: FontWeight.w500,
-                              ),
+                  Text(
+                    profile.email,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  if (profile.isTeacher &&
+                      profile.phone != null &&
+                      profile.phone!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(fontSize: 12),
+                        children: [
+                          const TextSpan(
+                            text: 'ช่องทางการติดต่อ : ',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w500,
                             ),
-                            TextSpan(
-                              text: profile.phone!,
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          ),
+                          TextSpan(
+                            text: profile.phone!,
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ],
                   if (!profile.isTeacher && profile.education != null) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
 
                     if (profile.education!.type == 'high_school') ...[
                       if (profile.education!.studyPlan != null)
-                        Text('แผนการเรียน : ${profile.education!.studyPlan}'),
-
-                      Text(
-                        'ระดับชั้น : ${profile.education!.level}/${profile.education!.classroom}',
-                      ),
+                        // Text('แผนการเรียน : ${profile.education!.studyPlan}'),
+                        Text(
+                          'ระดับชั้น : ${profile.education!.level}/${profile.education!.classroom}',
+                        ),
                     ],
 
                     if (profile.education!.type == 'university') ...[
@@ -87,7 +90,6 @@ class ProfileHeader extends StatelessWidget {
                       // Text('สาขา : ${profile.education!.program}'),
                       Text('ระดับชั้น : ${profile.education!.level}'),
                     ],
-
                   ],
                 ],
               ),
@@ -103,8 +105,7 @@ class ProfileHeader extends StatelessWidget {
       return CircleAvatar(
         radius: 42,
         backgroundImage: NetworkImage(profile.profilePic!),
-        onBackgroundImageError: (exception, stackTrace) {
-      },
+        onBackgroundImageError: (exception, stackTrace) {},
       );
     }
     return CircleAvatar(
