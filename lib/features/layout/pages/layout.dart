@@ -1,3 +1,8 @@
+import 'package:LinkLian/config/app_routes.dart';
+import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/data/repository/profile_repository.dart';
+import 'package:LinkLian/data/repository/teaching_schedule_repository.dart';
+import 'package:LinkLian/features/profile/controllers/profile_controller.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
 import '../../assignment/pages/assignment_page.dart';
@@ -12,7 +17,7 @@ import '../widgets/activeIcon.dart';
 import '../../classes/pages/create_post_class_page.dart';
 import '../../community/pages/create_post_commu_page.dart';
 import '../../notification/pages/notification_page.dart';
-import '../../chat/pages/chat_page.dart';
+import '../../chat/pages/chat.page.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
 import '../../classes/controllers/class_feed_controller.dart';
@@ -42,16 +47,36 @@ class _MainPageState extends State<MainPage> {
 
     _selectedIndex = 1; // ClassesPage ทั้ง student และ teacher
 
-    if (!Get.isRegistered<ClassFeedController>()) {
-      Get.put<ClassFeedController>(
-        ClassFeedController(
-          classFeedRepository: Get.find<ClassFeedRepository>(),
-          semesterRepository: Get.find<SemesterRepository>(),
-        ),
-        permanent: true,
-      );
-    }
+  if (!Get.isRegistered<ProfileRepository>()) {
+    Get.put(
+      ProfileRepository(Get.find<ApiClient>()),
+      permanent: true,
+    );
   }
+  if (!Get.isRegistered<ProfileRepository>()) {
+    Get.put(
+      ProfileRepository(Get.find<ApiClient>()),
+      permanent: true,
+    );
+  }
+  if (!Get.isRegistered<TeachingScheduleRepository>()) {
+    Get.put(
+      TeachingScheduleRepository(Get.find<ApiClient>()),
+      permanent: true,
+    );
+  }
+
+  //2. แล้วค่อย put Controller
+  if (!Get.isRegistered<ProfileController>()) {
+    Get.put(
+      ProfileController(
+        Get.find<ProfileRepository>(),
+        Get.find<TeachingScheduleRepository>(),
+      ),
+      permanent: true,
+    );
+  }
+}
 
   void _goTo(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
@@ -148,11 +173,25 @@ class _MainPageState extends State<MainPage> {
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
+        // onTap: (index) {
+        //   if (
+        //     (isStudent && index == 3) ||
+        //     (!isStudent && index == 2)
+        //   ) {
+        //     // 👉 เปิด Profile ผ่าน route
+        //     Get.toNamed(AppRoutes.profile);
+        //     return;
+        //   }
+        //   setState(() {
+        //     _selectedIndex = index;
+        //   });
+        // },
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
           });
         },
+
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primaryPalette[900],
         unselectedItemColor: AppColors.primaryPalette[800],

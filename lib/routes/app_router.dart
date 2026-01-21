@@ -1,3 +1,5 @@
+import 'package:LinkLian/features/profile/bindings/profile_binding.dart';
+import 'package:LinkLian/main.dart';
 import 'package:get/get.dart';
 import '../config/app_routes.dart';
 import '../features/assignment/pages/assignment_page.dart';
@@ -15,8 +17,13 @@ import '../data/repository/post_repository.dart';
 import '../features/classes/pages/comment_page.dart';
 import '../features/classes/bindings/comment_binding.dart';
 
+
 class AppRouter {
   static final routes = [
+    GetPage(
+      name: AppRoutes.authGate,
+      page: () => const AuthGate(),
+    ),
     GetPage(name: AppRoutes.login, page: () => const LoginPage()),
 
     GetPage(
@@ -50,6 +57,10 @@ class AppRouter {
   binding: CommentBinding(),
 ),
     GetPage(name: AppRoutes.community, page: () => const CommuPage()),
-    GetPage(name: AppRoutes.profile, page: () => const ProfilePage()),
+    GetPage(
+      name: AppRoutes.profile,
+      page: () => const ProfilePage(),
+      binding: ProfileBinding(),
+    ),
   ];
 }

@@ -1,101 +1,61 @@
+import 'package:LinkLian/core/constants/linklian-icon.dart';
+import 'package:LinkLian/features/profile/widgets/profile_body.dart';
+import 'package:LinkLian/features/profile/widgets/profile_header.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/profile_controller.dart';
+import '../widgets/profile_settings_sheet.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends GetView<ProfileController> {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ProfileController());
-    
     return Scaffold(
-      body: Obx(() => controller.isLoading.value 
-        ? const Center(child: CircularProgressIndicator())
-        : Padding(
-            padding: const EdgeInsets.all(16.0),
-            // child: Column(
-            //   crossAxisAlignment: CrossAxisAlignment.start,
-            //   children: [
-            //     const Text(
-            //       'โปรไฟล์',
-            //       style: TextStyle(
-            //         fontSize: 24,
-            //         fontWeight: FontWeight.bold,
-            //       ),
-            //     ),
-            //     const SizedBox(height: 16),
-            //     ProfileHeader(
-            //       name: controller.userName.value.isEmpty ? 'ผู้ใช้' : controller.userName.value,
-            //       email: controller.userEmail.value.isEmpty ? 'user@example.com' : controller.userEmail.value,
-            //       imageUrl: controller.userImage.value.isEmpty ? null : controller.userImage.value,
-            //       onEditTap: () {
-            //         // Navigate to edit profile
-            //       },
-            //     ),
-            //     const SizedBox(height: 16),
-            //     Expanded(
-            //       child: ListView(
-            //         children: [
-            //           ProfileMenuItem(
-            //             icon: Icons.person,
-            //             title: 'แก้ไขข้อมูลส่วนตัว',
-            //             subtitle: 'เปลี่ยนชื่อ อีเมล หรือรูปภาพ',
-            //             onTap: () {
-            //               // Navigate to edit profile
-            //             },
-            //           ),
-            //           ProfileMenuItem(
-            //             icon: Icons.security,
-            //             title: 'เปลี่ยนรหัสผ่าน',
-            //             subtitle: 'อัพเดทรหัสผ่านของคุณ',
-            //             onTap: () {
-            //               // Navigate to change password
-            //             },
-            //           ),
-            //           ProfileMenuItem(
-            //             icon: Icons.notifications,
-            //             title: 'การแจ้งเตือน',
-            //             subtitle: 'ตั้งค่าการแจ้งเตือน',
-            //             onTap: () {
-            //               // Navigate to notifications settings
-            //             },
-            //           ),
-            //           ProfileMenuItem(
-            //             icon: Icons.help,
-            //             title: 'ช่วยเหลือ',
-            //             subtitle: 'คำถามที่พบบ่อย',
-            //             onTap: () {
-            //               // Navigate to help
-            //             },
-            //           ),
-            //           ProfileMenuItem(
-            //             icon: Icons.info,
-            //             title: 'เกี่ยวกับแอป',
-            //             subtitle: 'เวอร์ชัน 1.0.0',
-            //             onTap: () {
-            //               // Show about dialog
-            //             },
-            //           ),
-            //           const SizedBox(height: 16),
-            //           ElevatedButton.icon(
-            //             onPressed: () {
-            //               controller.logout();
-            //             },
-            //             icon: const Icon(Icons.logout),
-            //             label: const Text('ออกจากระบบ'),
-            //             style: ElevatedButton.styleFrom(
-            //               backgroundColor: Colors.red,
-            //               foregroundColor: Colors.white,
-            //             ),
-            //           ),
-            //         ],
-            //       ),
-            //     ),
-            //   ],
-            // ),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'โปรไฟล์',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(LinkLianIcon.settings, color: Colors.black),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                isScrollControlled: true,
+                builder: (_) => const SettingsBottomSheetWithIcon(), 
+              );
+            },
           ),
+        ],
       ),
+      body: Obx(() {
+        if (controller.loading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final profile = controller.profile.value;
+        if (profile == null) {
+          return const Center(child: Text('ไม่พบข้อมูลโปรไฟล์'));
+        }
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          children: [
+            Obx(() {
+              final profile = controller.profile.value;
+              if (profile == null) return const SizedBox();
+              return ProfileHeader(profile: profile);
+            }),
+            const Divider(indent: 16, endIndent: 16),
+            ProfileBody(profile: controller.profile.value!),
+          ],
+        );
+      }),
     );
   }
 }

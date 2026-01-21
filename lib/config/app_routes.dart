@@ -11,6 +11,9 @@ class AppRoutes {
   static const String assignment = '/assignment';
   static const String classes = '/class-feed';
   static const String community = '/community';
-  static const String classDetail = '/class-detail';
+static const String classDetail = '/class-detail';
   static const String comment = '/comment';
+  //static String? get authGate => null;
+  static const String authGate = '/auth-gate';
+
 }

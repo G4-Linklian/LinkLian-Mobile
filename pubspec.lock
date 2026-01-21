@@ -457,13 +457,13 @@ packages:
     source: hosted
     version: "4.7.2"
   image_picker:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: image_picker
-      sha256: "784210112be18ea55f69d7076e2c656a4e24949fa9e76429fe53af0c0f4fa320"
+      sha256: b6951e25b795d053a6ba03af5f710069c99349de9341af95155d52665cb4607c
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "0.8.9"
   image_picker_android:
     dependency: transitive
     description:
@@ -476,10 +476,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_for_web
-      sha256: "66257a3191ab360d23a55c8241c91a6e329d31e94efa7be9cf7a212e65850214"
+      sha256: "98f50d6b9f294c8ba35e25cc0d13b04bfddd25dbc8d32fa9d566a6572f2c081c"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.1"
+    version: "2.1.12"
   image_picker_ios:
     dependency: transitive
     description:
@@ -752,6 +752,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.3"
+  profile_picture:
+    dependency: "direct main"
+    description:
+      name: profile_picture
+      sha256: "6959c23c0c69f9736defa07dab6bed3ade6b3c267dc7880e8ccf9db7a93ec2bb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   pub_semver:
     dependency: transitive
     description:
@@ -998,7 +1006,7 @@ packages:
     source: hosted
     version: "1.0.1"
   web_socket_channel:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: web_socket_channel
       sha256: d645757fb0f4773d602444000a8131ff5d48c9e47adfe9772652dd1a4f2d45c8
