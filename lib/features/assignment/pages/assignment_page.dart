@@ -17,7 +17,7 @@ class AssignmentPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
 
-    // ⭐ guard เหมือน ClassesPage
+    // guard เหมือน ClassesPage
     if (auth.roleName.value == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -62,8 +62,6 @@ class AssignmentPage extends StatelessWidget {
                             message: null,
                             type: NotificationType.success,
                           );
-
-                          
 
                           // DialogHelper.hideLoading();
                         },
