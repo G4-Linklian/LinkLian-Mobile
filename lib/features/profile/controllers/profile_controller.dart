@@ -173,9 +173,21 @@ class ProfileController extends GetxController {
   Future<void> updateProfile({
     required String firstName,
     required String lastName,
-    String? phone,
+    required String phone,
   }) async {
-    final userId = _getUserId();
+    if (firstName.trim().isEmpty || lastName.trim().isEmpty) {
+      throw Exception('กรุณาใส่ชื่อและนามสกุล');
+    }
+    if (phone.trim().isEmpty) {
+      throw Exception('กรุณากรอกเบอร์โทรศัพท์');
+    }
+
+    if (!RegExp(r'^0[0-9]{9}$').hasMatch(phone)) {
+      throw Exception('กรุณากรอกเบอร์โทรให้ถูกต้อง');
+    }
+
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
     if (userId == null) return;
 
     try {
