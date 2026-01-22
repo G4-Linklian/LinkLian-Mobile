@@ -11,7 +11,7 @@ class ClassDetailController extends GetxController {
   final Rx<int?> sectionId = Rx<int?>(null);
   final Rx<String> subjectNameTh = Rx<String>('');
   final Rx<String> effectiveClassName = Rx<String>('');
-  
+
   final Rx<ClassPostFilter> selectedFilter = ClassPostFilter.all.obs;
   final isLoading = false.obs;
   final RxList<PostModel> posts = <PostModel>[].obs;
@@ -33,12 +33,12 @@ class ClassDetailController extends GetxController {
 
   void _initializeFromArguments() {
     final args = Get.arguments as Map<String, dynamic>?;
-    
+
     if (args != null && args['sectionId'] != null) {
       sectionId.value = args['sectionId'] as int;
-      
+
       // หา class detail จาก ClassFeedController
-      _fetchClassDetailFromFeed();
+      fetchClassDetailFromFeed();
 
       // Fetch posts
       fetchPosts().then((_) {
@@ -52,7 +52,7 @@ class ClassDetailController extends GetxController {
   }
 
   /// FETCH CLASS DETAIL FROM FEED
-  void _fetchClassDetailFromFeed() {
+  void fetchClassDetailFromFeed() {
     try {
       if (sectionId.value == null) return;
 
@@ -62,7 +62,7 @@ class ClassDetailController extends GetxController {
       }
 
       final feedController = Get.find<ClassFeedController>();
-      
+
       final classDetail = feedController.classList.firstWhereOrNull(
         (c) => c.sectionId == sectionId.value,
       );
@@ -78,26 +78,26 @@ class ClassDetailController extends GetxController {
     }
   }
 
-void removePostOptimistic(int postId) {
-  posts.removeWhere((p) => p.postId == postId);
-}
+  void removePostOptimistic(int postId) {
+    posts.removeWhere((p) => p.postId == postId);
+  }
 
-void updatePostOptimistic(PostModel updatedPost) {
-  final index = posts.indexWhere(
-    (p) => p.postContentId == updatedPost.postContentId,
-  );
+  void updatePostOptimistic(PostModel updatedPost) {
+    final index = posts.indexWhere(
+      (p) => p.postContentId == updatedPost.postContentId,
+    );
 
-  if (index == -1) return;
+    if (index == -1) return;
 
-  posts[index] = updatedPost;
-  posts.refresh();
-}
+    posts[index] = updatedPost;
+    posts.refresh();
+  }
 
   /// FETCH CLASS DETAIL FALLBACK
   Future<void> _fetchClassDetailFallback() async {
     try {
       if (sectionId.value == null) return;
-      
+
       isLoading.value = true;
 
       final classDetail = await _classFeedRepository.getClassDetail(
@@ -121,9 +121,18 @@ void updatePostOptimistic(PostModel updatedPost) {
   }
 
   /// FETCH POSTS
-  Future<void> fetchPosts() async {
+  Future<void> fetchPosts({bool keepScroll = false}) async {
+    double? savedOffset;
+
+    if (keepScroll && scrollController.hasClients) {
+      savedOffset = scrollController.offset;
+    }
+
     try {
-      isLoading.value = true;
+      // โหลดเฉพาะกรณีที่ไม่ keepScroll
+      if (!keepScroll) {
+        isLoading.value = true;
+      }
 
       if (sectionId.value == null) {
         throw Exception('sectionId is null');
@@ -138,7 +147,18 @@ void updatePostOptimistic(PostModel updatedPost) {
     } catch (e) {
       Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดโพสต์ได้');
     } finally {
-      isLoading.value = false;
+      if (!keepScroll) {
+        isLoading.value = false;
+      }
+
+      if (savedOffset != null && scrollController.hasClients) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final offset = savedOffset!;
+          final max = scrollController.position.maxScrollExtent;
+
+          scrollController.jumpTo(offset > max ? max : offset);
+        });
+      }
     }
   }
 
@@ -169,9 +189,8 @@ void updatePostOptimistic(PostModel updatedPost) {
         'กำลังสรุป',
         'กำลังสรุปโพสต์ ${selectedPostIdsForAI.length} รายการ...',
       );
-
     } catch (e) {
-      print('❌ Error generating summary: $e');
+      // print('❌ Error generating summary: $e');
       Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถสรุปเนื้อหาได้');
     }
   }

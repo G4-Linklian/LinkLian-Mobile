@@ -6,11 +6,7 @@ class BookmarkCard extends StatelessWidget {
   final BookmarkModel item;
   final VoidCallback onRemove;
 
-  const BookmarkCard({
-    super.key,
-    required this.item,
-    required this.onRemove,
-  });
+  const BookmarkCard({super.key, required this.item, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -20,10 +16,7 @@ class BookmarkCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1.5,
-        ),
+        border: Border.all(color: Colors.grey.shade200, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -42,10 +35,7 @@ class BookmarkCard extends StatelessWidget {
               color: Colors.red.shade50,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.picture_as_pdf,
-              color: Colors.red,
-            ),
+            child: const Icon(Icons.picture_as_pdf, color: Colors.red),
           ),
 
           const SizedBox(width: 12),

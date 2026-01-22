@@ -44,6 +44,9 @@ PostAttachmentModel _$PostAttachmentModelFromJson(Map<String, dynamic> json) =>
     PostAttachmentModel(
       fileUrl: json['file_url'] as String,
       fileType: json['file_type'] as String,
+      fileName: json['file_name'] as String?,
+      fileBlobName: json['file_blob_name'] as String?,
+      fileSize: (json['file_size'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$PostAttachmentModelToJson(
@@ -51,4 +54,7 @@ Map<String, dynamic> _$PostAttachmentModelToJson(
     <String, dynamic>{
       'file_url': instance.fileUrl,
       'file_type': instance.fileType,
+      'file_name': instance.fileName,
+      'file_blob_name': instance.fileBlobName,
+      'file_size': instance.fileSize,
     };

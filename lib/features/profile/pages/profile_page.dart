@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/profile_controller.dart';
 import '../widgets/profile_settings_sheet.dart';
+import '../controllers/bookmark_controller.dart';
+import '../widgets/bookmark_card.dart';
 
 class ProfilePage extends GetView<ProfileController> {
   const ProfilePage({super.key});
@@ -27,7 +29,7 @@ class ProfilePage extends GetView<ProfileController> {
                 context: context,
                 backgroundColor: Colors.transparent,
                 isScrollControlled: true,
-                builder: (_) => const SettingsBottomSheetWithIcon(), 
+                builder: (_) => const SettingsBottomSheetWithIcon(),
               );
             },
           ),

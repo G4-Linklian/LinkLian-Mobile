@@ -1,9 +1,7 @@
 import 'package:LinkLian/core/services/api_client.dart';
-import 'package:LinkLian/features/classes/controllers/class_feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'config/theme.dart';
-import 'config/app_routes.dart';
 import 'core/constants/strings.dart';
 import 'features/layout/pages/layout.dart';
 import 'routes/app_router.dart';
@@ -14,9 +12,10 @@ import 'data/repository/class_feed_repository.dart';
 import 'data/repository/semester_repository.dart';
 import 'features/login/pages/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'data/repository/bookmark_repository.dart';
+import 'features/profile/controllers/bookmark_controller.dart';
 
 void main() async {
-  
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await LocalStorage.init();
@@ -25,25 +24,24 @@ void main() async {
   Get.put(ApiClient(), permanent: true);
   Get.put(AuthController(), permanent: true);
 
-  Get.put<ClassFeedRepository>(
-    ClassFeedRepository(),
+  Get.put<ClassFeedRepository>(ClassFeedRepository(), permanent: true);
+
+  Get.put<SemesterRepository>(SemesterRepository(), permanent: true);
+  Get.put<BookmarkRepository>(
+    BookmarkRepository(Get.find<ApiClient>()),
     permanent: true,
   );
-
-  Get.put<SemesterRepository>(
-    SemesterRepository(),
+  Get.put<BookmarkController>(
+    BookmarkController(Get.find<BookmarkRepository>()),
     permanent: true,
   );
 
   runApp(const MyApp());
 }
 
-
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
@@ -52,13 +50,12 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: const AuthGate(), 
+      home: const AuthGate(),
       getPages: AppRouter.routes,
       // home: const MainPage(),
     );
   }
 }
-
 
 class AuthGate extends GetView<AuthController> {
   const AuthGate({super.key});
@@ -81,4 +78,3 @@ class AuthGate extends GetView<AuthController> {
     });
   }
 }
-

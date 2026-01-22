@@ -26,10 +26,7 @@ class BookmarkSwitcher extends GetView<BookmarkController> {
                 return PopupMenuButton<SortType>(
                   onSelected: controller.changeSort,
                   itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: SortType.all,
-                      child: Text('ทั้งหมด'),
-                    ),
+                    PopupMenuItem(value: SortType.all, child: Text('ทั้งหมด')),
                     PopupMenuItem(
                       value: SortType.newest,
                       child: Text('ล่าสุด'),
@@ -144,15 +141,13 @@ class BookmarkSwitcher extends GetView<BookmarkController> {
                       },
                     ),
                   )
-                .toList(),
-              ),
-            );
-          }
-        ),
+                  .toList(),
+            ),
+          );
+        }),
       ],
     );
   }
-
 
   String _getSortLabel(SortType sort) {
     switch (sort) {
@@ -179,8 +174,7 @@ class BookmarkSwitcher extends GetView<BookmarkController> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color:
-              isActive ? AppColors.primaryPalette[500] : Colors.transparent,
+          color: isActive ? AppColors.primaryPalette[500] : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -197,4 +191,3 @@ class BookmarkSwitcher extends GetView<BookmarkController> {
     );
   }
 }
-

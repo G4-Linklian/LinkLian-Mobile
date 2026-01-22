@@ -47,7 +47,6 @@ class _MainPageState extends State<MainPage> {
 
     _selectedIndex = 1; // ClassesPage ทั้ง student และ teacher
 
-
     if (!Get.isRegistered<ClassFeedController>()) {
       Get.put<ClassFeedController>(
         ClassFeedController(
@@ -56,7 +55,7 @@ class _MainPageState extends State<MainPage> {
         ),
         permanent: true,
       );
-    } 
+    }
     if (!Get.isRegistered<ProfileRepository>()) {
       Get.put(ProfileRepository(Get.find<ApiClient>()), permanent: true);
     }

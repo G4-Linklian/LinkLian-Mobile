@@ -17,7 +17,7 @@ import '../../auth/controller/auth_controller.dart';
 import '../../../core/utils/post_permission.dart';
 import '../../../data/repository/post_repository.dart';
 import '../../../core/utils/dialog_helper.dart';
-
+import '../../profile/controllers/bookmark_controller.dart';
 
 class CardPost extends StatefulWidget {
   final PostModel post;
@@ -30,11 +30,12 @@ class CardPost extends StatefulWidget {
 
 class _CardPostState extends State<CardPost> {
   int _currentAttachmentIndex = 0;
-  final RxBool _isSelected = false.obs;
-  final RxBool _isBookmarked = false.obs;
   String? _localPdfPath;
   bool _isPdfLoading = false;
-  bool _isExpanded = false; 
+  bool _isExpanded = false;
+  late final BookmarkController bookmarkController;
+  late final PostPermission permission;
+  late final ClassDetailController classController;
 
   bool _isImage(String type) {
     final t = type.toLowerCase();
@@ -50,16 +51,21 @@ class _CardPostState extends State<CardPost> {
     return t == 'pdf' || t.contains('pdf');
   }
 
-  late final PostPermission permission;
-
   @override
   void initState() {
     super.initState();
     final auth = Get.find<AuthController>();
     permission = PostPermission(post: widget.post, auth: auth);
+    bookmarkController = Get.find<BookmarkController>();
+    classController = Get.find<ClassDetailController>();
   }
 
-  // Helper ตรวจสอบว่า post มาจากครูหรือนักเรียน
+  bool get _isCurrentUserTeacher {
+    final auth = Get.find<AuthController>();
+    final role = auth.roleName.value?.toLowerCase() ?? '';
+    return role == 'teacher' || role == 'instructor';
+  }
+
   bool get _isTeacherPost {
     final roleName = widget.post.roleName?.toLowerCase() ?? '';
     return roleName == 'teacher' || roleName == 'instructor';
@@ -98,7 +104,7 @@ class _CardPostState extends State<CardPost> {
                     if (permission.canShowMore) _buildMoreButton(context),
                     if (permission.canSelectAI) ...[
                       const SizedBox(width: 8),
-                      Obx(() => _buildRadio()),
+                      _buildRadio(),
                     ],
                   ],
                 ),
@@ -222,29 +228,40 @@ class _CardPostState extends State<CardPost> {
                     splashRadius: 20,
                   ),
                 ),
-
                 const Spacer(),
 
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Obx(
-                    () => IconButton(
-                      onPressed: () {
-                        _isBookmarked.value = !_isBookmarked.value;
-                      },
-                      icon: Icon(
-                        _isBookmarked.value
-                            ? Icons.bookmark
-                            : Icons.bookmark_border,
-                        color: AppColors.primaryPalette[600],
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(),
-                      splashRadius: 20,
-                    ),
+                // BOOKMARK BUTTON - แสดงเฉพาะนักเรียน (ไม่แสดงสำหรับครู)
+                if (!_isCurrentUserTeacher)
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Obx(() {
+                      // ตรวจสอบ bookmark status
+                      final isBookmarked = bookmarkController.isBookmarked(
+                        widget.post.postId,
+                      );
+
+                      return IconButton(
+                        onPressed: () async {
+                          // เรียก toggle bookmark
+                          await bookmarkController.toggleBookmark(
+                            postId: widget.post.postId,
+                            postContentId: widget.post.postContentId,
+                          );
+                        },
+                        icon: Icon(
+                          isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                          color: isBookmarked
+                              ? AppColors.primaryPalette[600]
+                              : AppColors.primaryPalette[600],
+                          size: 24,
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(),
+                        splashRadius: 20,
+                      );
+                    }),
                   ),
-                ),
               ],
             ),
           ),
@@ -354,31 +371,37 @@ class _CardPostState extends State<CardPost> {
   }
 
   Widget _buildRadio() {
-    return InkWell(
-      onTap: () {
-        _isSelected.value = !_isSelected.value;
-        widget.onSelectForAI?.call(widget.post.postId);
-      },
-      child: Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: _isSelected.value
-                ? AppColors.primaryPalette[600]!
-                : Colors.grey.shade400,
-            width: 2,
+    return Obx(() {
+      final controller = Get.find<ClassDetailController>();
+      final isSelected = controller.selectedPostIdsForAI.contains(
+        widget.post.postId,
+      );
+
+      return InkWell(
+        onTap: widget.onSelectForAI == null
+            ? null
+            : () => widget.onSelectForAI!(widget.post.postId),
+        child: Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primaryPalette[600]!
+                  : Colors.grey.shade400,
+              width: 2,
+            ),
+            color: isSelected
+                ? AppColors.primaryPalette[600]
+                : Colors.transparent,
           ),
-          color: _isSelected.value
-              ? AppColors.primaryPalette[600]
-              : Colors.transparent,
+          child: isSelected
+              ? const Icon(Icons.check, size: 16, color: Colors.white)
+              : null,
         ),
-        child: _isSelected.value
-            ? const Icon(Icons.check, size: 16, color: Colors.white)
-            : null,
-      ),
-    );
+      );
+    });
   }
 
   // ===== ATTACHMENTS PREVIEW =====
@@ -531,9 +554,12 @@ class _CardPostState extends State<CardPost> {
       items.add(
         PopupMenuItem(
           onTap: _onDeletePost,
-          child:  ListTile(
-            leading: Icon(Icons.delete, color: AppColors.dangerPalette[500]), 
-            title: Text('ลบโพสต์', style: TextStyle(color: AppColors.dangerPalette[700])),
+          child: ListTile(
+            leading: Icon(Icons.delete, color: AppColors.dangerPalette[500]),
+            title: Text(
+              'ลบโพสต์',
+              style: TextStyle(color: AppColors.dangerPalette[700]),
+            ),
           ),
         ),
       );
@@ -669,22 +695,12 @@ class _CardPostState extends State<CardPost> {
         'mode': CreatePostMode.edit,
         'post': widget.post,
         'source': CreatePostSource.classDetail,
-        'sectionId': Get.find<ClassDetailController>().sectionId.value,
+        'sectionId': classController.sectionId.value,
       },
     );
 
     if (result?['success'] == true && result?['edited'] == true) {
-      final controller = Get.find<ClassDetailController>();
-
-      final updatedPost = widget.post.copyWith(
-        title: result['post']['title'],
-        content: result['post']['content'],
-        postType: result['post']['post_type'],
-        attachments: widget.post.attachments,
-      );
-
-      controller.updatePostOptimistic(updatedPost);
-
+      await classController.fetchPosts(keepScroll: true);
       DialogHelper.showNotification(
         title: 'แก้ไขโพสต์สำเร็จ',
         message: 'โพสต์ของคุณถูกอัปเดตแล้ว',
@@ -716,7 +732,6 @@ class _CardPostState extends State<CardPost> {
 
     if (confirm != true) return;
 
-    final classController = Get.find<ClassDetailController>();
     final postId = widget.post.postId;
     final postContentId = widget.post.postContentId;
     try {

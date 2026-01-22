@@ -108,9 +108,21 @@ class PostAttachmentModel {
   @JsonKey(name: 'file_type')
   final String fileType;
 
+  @JsonKey(name: 'file_name')
+  final String? fileName;
+
+  @JsonKey(name: 'file_blob_name')
+  final String? fileBlobName;
+
+  @JsonKey(name: 'file_size')
+  final int? fileSize;
+
   const PostAttachmentModel({
     required this.fileUrl,
     required this.fileType,
+    this.fileName,
+    this.fileBlobName,
+    this.fileSize,
   });
 
   factory PostAttachmentModel.fromJson(Map<String, dynamic> json) =>
