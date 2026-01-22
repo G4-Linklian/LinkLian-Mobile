@@ -2,17 +2,22 @@ import 'package:get/get.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../../data/model/bookmark_model.dart';
 import '../../../data/repository/bookmark_repository.dart';
+import '../../../core/utils/dialog_helper.dart';
 
 enum BookmarkType { post, community }
+
 enum SortType { all, newest, oldest }
 
 class BookmarkController extends GetxController {
   final BookmarkRepository repo;
   BookmarkController(this.repo);
 
+  // เก็บ bookmark ทั้งหมด (แสดงใน BookmarkSwitcher)
   final bookmarks = <BookmarkModel>[].obs;
-  final loading = false.obs;
 
+  final bookmarkedPostIds = <int>{}.obs;
+
+  final loading = false.obs;
   final sortType = SortType.all.obs;
   final type = BookmarkType.post.obs;
 
@@ -22,17 +27,23 @@ class BookmarkController extends GetxController {
 
     final auth = Get.find<AuthController>();
 
+    // ตรวจสอบเมื่อ userId เปลี่ยน
     ever<int?>(auth.userId, (userId) {
       if (userId != null) {
         _fetchBookmarks(userId);
+      } else {
+        bookmarks.clear();
+        bookmarkedPostIds.clear();
       }
     });
 
+    // โหลด bookmark ครั้งแรก
     if (auth.userId.value != null) {
       _fetchBookmarks(auth.userId.value!);
     }
   }
 
+  /// ดึงข้อมูล bookmark จาก backend
   Future<void> _fetchBookmarks(int userId) async {
     try {
       loading.value = true;
@@ -49,33 +60,144 @@ class BookmarkController extends GetxController {
         sortOrder: sortOrder,
       );
 
-      bookmarks.value = result;
-      print(bookmarks.map((e) => e.title).toList());
+      bookmarks.assignAll(result);
+
+      /// Update bookmarkedPostIds
+      bookmarkedPostIds
+        ..clear()
+        ..addAll(result.map((b) => b.postId));
+
+      print('✅ Loaded ${result.length} bookmarks');
+    } catch (e) {
+      print('❌ Error fetching bookmarks: $e');
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่สามารถโหลดบุ๊กมาร์กได้',
+        type: NotificationType.error,
+      );
     } finally {
       loading.value = false;
     }
   }
 
-  Future<void> removeBookmark(int postId) async {
+  /// ใช้ใน CardPost - ตรวจสอบว่า post ถูก bookmark หรือไม่
+  bool isBookmarked(int postId) {
+    return bookmarkedPostIds.contains(postId);
+  }
+
+  /// Toggle bookmark (ใช้ใน CardPost)
+  /// ถ้า bookmark อยู่ → ลบ
+  /// ถ้าไม่ bookmark → สร้างใหม่
+  Future<void> toggleBookmark({
+    required int postId,
+    required int postContentId,
+  }) async {
     final auth = Get.find<AuthController>();
     final userId = auth.userId.value;
-    if (userId == null) return;
+
+    if (userId == null) {
+      DialogHelper.showNotification(
+        title: 'เตือน',
+        message: 'กรุณาเข้าสู่ระบบก่อน',
+        type: NotificationType.warning,
+      );
+      return;
+    }
+
+    final wasBookmarked = isBookmarked(postId);
 
     try {
-      await repo.deleteBookmark(
-        userId: userId,
-        postId: postId,
-      );
+      // Optimistic update - อัปเดต UI ก่อน
+      if (wasBookmarked) {
+        bookmarkedPostIds.remove(postId);
+        bookmarks.removeWhere((b) => b.postId == postId);
+      } else {
+        bookmarkedPostIds.add(postId);
+      }
 
-      bookmarks.removeWhere((b) => b.postId == postId);
+      // เรียก API
+      final result = await repo.createBookmark(userId: userId, postId: postId);
+
+      // ตรวจสอบ response
+      if (result['success'] != true) {
+        throw Exception(result['message'] ?? 'Unknown error');
+      }
+
+      final action = result['data']['action']; // 'created' หรือ 'removed'
+
+      if (action == 'created') {
+        // สร้าง bookmark สำเร็จ
+        print('✅ Bookmark created for post $postId');
+        DialogHelper.showNotification(
+          title: 'สำเร็จ',
+          message: 'บันทึกโพสต์เรียบร้อยแล้ว',
+          type: NotificationType.success,
+        );
+
+        // Refresh bookmark list เพื่อได้ข้อมูลทั้งหมด
+        await _fetchBookmarks(userId);
+      } else if (action == 'removed') {
+        // ลบ bookmark สำเร็จ
+        print('✅ Bookmark removed for post $postId');
+        DialogHelper.showNotification(
+          title: 'สำเร็จ',
+          message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
+          type: NotificationType.success,
+        );
+      }
     } catch (e) {
-      Get.snackbar(
-        'เกิดข้อผิดพลาด',
-        'ไม่สามารถลบบุ๊กมาร์กได้',
+      print('❌ Error toggling bookmark: $e');
+
+      if (wasBookmarked) {
+        bookmarkedPostIds.add(postId);
+      } else {
+        bookmarkedPostIds.remove(postId);
+      }
+
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่สามารถบันทึกบุ๊กมาร์กได้',
+        type: NotificationType.error,
       );
     }
   }
 
+  /// ลบ bookmark จาก BookmarkSwitcher
+  Future<void> removeBookmark(int postId) async {
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
+
+    if (userId == null) return;
+
+    try {
+      // Optimistic update
+      bookmarks.removeWhere((b) => b.postId == postId);
+      bookmarkedPostIds.remove(postId);
+
+      // เรียก API
+      await repo.deleteBookmark(userId: userId, postId: postId);
+
+      print('✅ Bookmark removed for post $postId');
+      DialogHelper.showNotification(
+        title: 'สำเร็จ',
+        message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
+        type: NotificationType.success,
+      );
+    } catch (e) {
+      print('❌ Error removing bookmark: $e');
+
+      // Rollback
+      await _fetchBookmarks(userId);
+
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่สามารถลบบุ๊กมาร์กได้',
+        type: NotificationType.error,
+      );
+    }
+  }
+
+  /// เปลี่ยนการเรียงลำดับ
   void changeSort(SortType value) {
     sortType.value = value;
 
@@ -85,7 +207,14 @@ class BookmarkController extends GetxController {
     }
   }
 
+  /// เปลี่ยนประเภท bookmark
   void changeType(BookmarkType value) {
     type.value = value;
+  }
+
+  @override
+  void onClose() {
+    bookmarkedPostIds.clear();
+    super.onClose();
   }
 }

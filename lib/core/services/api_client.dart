@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import '../utils/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'local_storage.dart';
+import 'dart:io';
+import 'package:http_parser/http_parser.dart';
 
 class ApiClient {
   static final String baseUrl =
@@ -37,14 +39,14 @@ void _setupInterceptors() {
           final token = await LocalStorage.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
-            AppLogger.info('🔐 Attach token → ${options.path}');
+            AppLogger.info('Attach token → ${options.path}');
           } else {
             options.headers.remove('Authorization');
             AppLogger.info('🚫 Missing token → ${options.path}');
           }
         } else {
           options.headers.remove('Authorization');
-          AppLogger.info('🔓 Public API → ${options.path}');
+          AppLogger.info(' Public API → ${options.path}');
         }
 
         AppLogger.info('🌐 FULL URL: ${options.uri}');
@@ -124,5 +126,62 @@ void _setupInterceptors() {
     } catch (e) {
       rethrow;
     }
+  }
+}
+
+extension MultipartApi on ApiClient {
+  Future<Response<dynamic>> uploadMultipart(
+    String path, {
+    required List<File> files,
+    required String fieldName,
+    Map<String, dynamic>? fields,
+    bool requiresAuth = true,
+  }) async {
+    final formData = FormData();
+
+    for (final file in files) {
+      String fileName = file.path.split('/').last;
+
+      if (!fileName.contains('.')) {
+        fileName = '$fileName.jpg';
+      }
+
+      AppLogger.info(
+  ' Upload file → '
+  'name=$fileName, '
+  'path=${file.path}, '
+  'size=${await file.length()} bytes',
+);
+
+      formData.files.add(
+        MapEntry(
+          fieldName,
+          await MultipartFile.fromFile(
+            file.path,
+            filename: fileName,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        ),
+      );
+    }
+
+    if (fields != null) {
+      fields.forEach((key, value) {
+        formData.fields.add(MapEntry(key, value.toString()));
+      });
+    }
+
+    final options = Options(
+      contentType: 'multipart/form-data',
+      extra: {'requiresAuth': requiresAuth},
+    );
+
+    AppLogger.info('📤 Upload multipart → $path');
+
+    return _dio.post(
+      path,
+      data: formData,
+      options: options,
+    );
   }
 }

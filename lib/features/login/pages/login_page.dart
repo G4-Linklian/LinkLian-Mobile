@@ -9,7 +9,7 @@ import '../../../core/constants/logo.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/constants/linklian-icon.dart';
 import '../../../core/constants/strings.dart';
-import '../controllers/login_controller.dart';  
+import '../controllers/login_controller.dart';
 import '../../auth/controller/auth_controller.dart';
 
 class LoginPage extends StatelessWidget {
@@ -20,14 +20,13 @@ class LoginPage extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent, 
+      backgroundColor: Colors.transparent,
       isDismissible: true,
       enableDrag: true,
 
       builder: (_) {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-
 
           onTap: () => Navigator.of(context).pop(),
 
@@ -47,10 +46,8 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
-  // 🔥 สร้าง controller เฉพาะตอนยังไม่ login
-  final controller = Get.put(LoginController(), permanent: false);
+    // 🔥 สร้าง controller เฉพาะตอนยังไม่ login
+    final controller = Get.put(LoginController(), permanent: false);
     return Scaffold(
       body: Container(
         width: double.infinity,

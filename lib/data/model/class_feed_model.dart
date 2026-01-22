@@ -29,10 +29,30 @@ class ClassFeedModel {
   final String semester;
 
   @JsonKey(name: 'schedules')
-final List<ClassScheduleModel> schedules;
+  final List<ClassScheduleModel> schedules;
 
-  /// สำหรับครูเท่านั้น (nullable)
   final String? position;
+
+  @JsonKey(name: 'edu_type')
+  final String? eduType;
+
+  @JsonKey(name: 'level_num')
+  final int? levelNum;
+
+  @JsonKey(name: 'level_name')
+  final String? levelName;
+
+  @JsonKey(name: 'class_name')
+  final String? className;
+
+  @JsonKey(name: 'program_type')
+  final String? programType;
+
+  @JsonKey(name: 'study_plan_name')
+  final String? studyPlanName;
+
+  @JsonKey(name: 'display_class_name')
+  final String? displayClassName;
 
   const ClassFeedModel({
     required this.sectionId,
@@ -43,8 +63,17 @@ final List<ClassScheduleModel> schedules;
     required this.learningAreaName,
     required this.semester,
     required this.schedules,
+    this.displayClassName,
     this.position,
+    this.eduType,
+    this.levelNum,
+    this.levelName,
+    this.className,
+    this.programType,
+    this.studyPlanName,
   });
+
+  String get effectiveClassName => displayClassName ?? sectionName;
 
   static int _intFromJson(dynamic value) {
     if (value is int) return value;
@@ -59,6 +88,6 @@ final List<ClassScheduleModel> schedules;
 
   @override
   String toString() {
-    return 'ClassFeedModel(sectionId: $sectionId, sectionName: $sectionName)';
+    return 'ClassFeedModel(sectionId: $sectionId, displayClassName: $displayClassName)';
   }
 }

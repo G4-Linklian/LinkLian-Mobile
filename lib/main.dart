@@ -1,9 +1,7 @@
 import 'package:LinkLian/core/services/api_client.dart';
-import 'package:LinkLian/features/classes/controllers/class_feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'config/theme.dart';
-import 'config/app_routes.dart';
 import 'core/constants/strings.dart';
 import 'features/layout/pages/layout.dart';
 import 'routes/app_router.dart';
@@ -13,48 +11,37 @@ import 'features/auth/controller/auth_controller.dart';
 import 'data/repository/class_feed_repository.dart';
 import 'data/repository/semester_repository.dart';
 import 'features/login/pages/login_page.dart';
-import 'features/layout/pages/layout.dart';
-
+import 'package:intl/date_symbol_data_local.dart';
+import 'data/repository/bookmark_repository.dart';
+import 'features/profile/controllers/bookmark_controller.dart';
 
 void main() async {
-  
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await LocalStorage.init();
-  //////
+  await initializeDateFormatting('th', null);
+
   Get.put(ApiClient(), permanent: true);
-  
-  // AuthController (source of truth)
   Get.put(AuthController(), permanent: true);
 
-  // Repositories (no token / no baseUrl)
-  Get.put<ClassFeedRepository>(
-    ClassFeedRepository(),
+  Get.put<ClassFeedRepository>(ClassFeedRepository(), permanent: true);
+
+  Get.put<SemesterRepository>(SemesterRepository(), permanent: true);
+  Get.put<BookmarkRepository>(
+    BookmarkRepository(Get.find<ApiClient>()),
     permanent: true,
   );
-
-  Get.put<SemesterRepository>(
-    SemesterRepository(),
-    permanent: true,
-  );
-
-  Get.put(
-    ClassFeedController(
-      classFeedRepository: Get.find<ClassFeedRepository>(),
-      semesterRepository: Get.find<SemesterRepository>(),
-    ),
+  Get.put<BookmarkController>(
+    BookmarkController(Get.find<BookmarkRepository>()),
     permanent: true,
   );
 
   runApp(const MyApp());
 }
 
-
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
@@ -63,13 +50,12 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: const AuthGate(), //ใช้ widget ตรงนี้แทน
+      home: const AuthGate(),
       getPages: AppRouter.routes,
       // home: const MainPage(),
     );
   }
 }
-
 
 class AuthGate extends GetView<AuthController> {
   const AuthGate({super.key});
@@ -92,4 +78,3 @@ class AuthGate extends GetView<AuthController> {
     });
   }
 }
-

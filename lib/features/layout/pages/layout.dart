@@ -20,6 +20,10 @@ import '../../notification/pages/notification_page.dart';
 import '../../chat/pages/chat.page.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
+import '../../classes/controllers/class_feed_controller.dart';
+import '../../../data/repository/class_feed_repository.dart';
+import '../../../data/repository/semester_repository.dart';
+import '../../classes/bindings/create_post_binding.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -37,76 +41,75 @@ class _MainPageState extends State<MainPage> {
     return role == 'high school student' || role == 'uni student';
   }
 
-@override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  _selectedIndex = 1; // ClassesPage ทั้ง student และ teacher
+    _selectedIndex = 1; // ClassesPage ทั้ง student และ teacher
 
-  if (!Get.isRegistered<ProfileRepository>()) {
-    Get.put(
-      ProfileRepository(Get.find<ApiClient>()),
-      permanent: true,
-    );
-  }
-  if (!Get.isRegistered<ProfileRepository>()) {
-    Get.put(
-      ProfileRepository(Get.find<ApiClient>()),
-      permanent: true,
-    );
-  }
-  if (!Get.isRegistered<TeachingScheduleRepository>()) {
-    Get.put(
-      TeachingScheduleRepository(Get.find<ApiClient>()),
-      permanent: true,
-    );
-  }
+    if (!Get.isRegistered<ClassFeedController>()) {
+      Get.put<ClassFeedController>(
+        ClassFeedController(
+          classFeedRepository: Get.find<ClassFeedRepository>(),
+          semesterRepository: Get.find<SemesterRepository>(),
+        ),
+        permanent: true,
+      );
+    }
+    if (!Get.isRegistered<ProfileRepository>()) {
+      Get.put(ProfileRepository(Get.find<ApiClient>()), permanent: true);
+    }
+    if (!Get.isRegistered<ProfileRepository>()) {
+      Get.put(ProfileRepository(Get.find<ApiClient>()), permanent: true);
+    }
+    if (!Get.isRegistered<TeachingScheduleRepository>()) {
+      Get.put(
+        TeachingScheduleRepository(Get.find<ApiClient>()),
+        permanent: true,
+      );
+    }
 
-  //2. แล้วค่อย put Controller
-  if (!Get.isRegistered<ProfileController>()) {
-    Get.put(
-      ProfileController(
-        Get.find<ProfileRepository>(),
-        Get.find<TeachingScheduleRepository>(),
-      ),
-      permanent: true,
-    );
+    //2. แล้วค่อย put Controller
+    if (!Get.isRegistered<ProfileController>()) {
+      Get.put(
+        ProfileController(
+          Get.find<ProfileRepository>(),
+          Get.find<TeachingScheduleRepository>(),
+        ),
+        permanent: true,
+      );
+    }
   }
-}
 
   void _goTo(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
   }
 
   List<Widget> get _pages {
-  if (isStudent) {
-    return const [
-      AssignmentPage(),
-      ClassesPage(),
-      CommuPage(),
-      ProfilePage(),
-    ];
-  } else {
-    return const [
-      AssignmentPage(),
-      ClassesPage(),
-      ProfilePage(),
-    ];
+    if (isStudent) {
+      return const [
+        AssignmentPage(),
+        ClassesPage(),
+        CommuPage(),
+        ProfilePage(),
+      ];
+    } else {
+      return const [AssignmentPage(), ClassesPage(), ProfilePage()];
+    }
   }
-}
-bool get _hideAddIcon {
-  if (isStudent) {
-    // student: แสดงเฉพาะ class (1) และ community (2)
-    return !(_selectedIndex == 1 || _selectedIndex == 2);
-  } else {
-    // teacher: แสดงเฉพาะ assignment (0) และ class (1)
-    return !(_selectedIndex == 0 || _selectedIndex == 1);
-  }
-}
 
-bool get _hideAppBar =>
-    (!isStudent && _selectedIndex == 2) ||
-    (isStudent && _selectedIndex == 3);
+  bool get _hideAddIcon {
+    if (isStudent) {
+      // student: แสดงเฉพาะ class (1) และ community (2)
+      return !(_selectedIndex == 1 || _selectedIndex == 2);
+    } else {
+      // teacher: แสดงเฉพาะ assignment (0) และ class (1)
+      return !(_selectedIndex == 0 || _selectedIndex == 1);
+    }
+  }
+
+  bool get _hideAppBar =>
+      (!isStudent && _selectedIndex == 2) || (isStudent && _selectedIndex == 3);
 
   @override
   Widget build(BuildContext context) {
@@ -131,13 +134,12 @@ bool get _hideAppBar =>
                     GestureDetector(
                       onTap: () {
                         if (_selectedIndex == 1) {
-                          _goTo(
-                            const CreatePostClassPage(),
-                          ); 
-                        } else if (_selectedIndex == 2) {
-                          _goTo(
-                            const CreatePostCommuPage(),
+                          Get.to(
+                            () => const CreatePostClassPage(),
+                            binding: CreatePostBinding(),
                           );
+                        } else if (_selectedIndex == 2) {
+                          _goTo(const CreatePostCommuPage());
                         }
                       },
                       child: Icon(
@@ -200,45 +202,45 @@ bool get _hideAppBar =>
         selectedFontSize: 12,
         unselectedFontSize: 12,
         items: isStudent
-    ? const [
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.homework),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
-          label: AppStrings.homework,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.classroom),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
-          label: AppStrings.classroom,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.community),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.community),
-          label: AppStrings.community,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.profile),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
-          label: AppStrings.profile,
-        ),
-      ]
-    : const [
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.homework),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
-          label: AppStrings.homework,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.classroom),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
-          label: AppStrings.classroom,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.profile),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
-          label: AppStrings.profile,
-        ),
-      ],
+            ? const [
+                BottomNavigationBarItem(
+                  icon: Icon(LinkLianIcon.homework),
+                  activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
+                  label: AppStrings.homework,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(LinkLianIcon.classroom),
+                  activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
+                  label: AppStrings.classroom,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(LinkLianIcon.community),
+                  activeIcon: ActiveNavIcon(icon: LinkLianIcon.community),
+                  label: AppStrings.community,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(LinkLianIcon.profile),
+                  activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
+                  label: AppStrings.profile,
+                ),
+              ]
+            : const [
+                BottomNavigationBarItem(
+                  icon: Icon(LinkLianIcon.homework),
+                  activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
+                  label: AppStrings.homework,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(LinkLianIcon.classroom),
+                  activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
+                  label: AppStrings.classroom,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(LinkLianIcon.profile),
+                  activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
+                  label: AppStrings.profile,
+                ),
+              ],
       ),
     );
   }

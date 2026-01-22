@@ -8,9 +8,7 @@ import '../../../core/constants/style.dart';
 import '../../../core/constants/linklian-icon.dart';
 import '../../../core/constants/linklian-bg.dart';
 
-// ============================
 // UTILITY FUNCTIONS
-// ============================
 
 String dayOfWeekToText(int d) {
   switch (d) {
@@ -37,9 +35,7 @@ String formatTime(String time) {
   return time.length >= 5 ? time.substring(0, 5).replaceAll(':', '.') : time;
 }
 
-// ============================
 // HELPER WIDGETS
-// ============================
 
 class _CollapsedSchedule extends StatelessWidget {
   final List<ClassScheduleModel> schedules;
@@ -48,18 +44,17 @@ class _CollapsedSchedule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     if (schedules.isEmpty) {
       return Text('ไม่พบตารางเรียน', style: AppTextStyles.descriptionRegular);
     }
 
-    // ถ้ามี 1 วัน → แสดงวัน + เวลา (ความกว้างเท่า expand)
+    // ถ้ามี 1 วัน → แสดงวัน + เวลา
     if (schedules.length == 1) {
       final s = schedules.first;
       return Row(
         children: [
           SizedBox(
-            width: 90, // 🔥 ความกว้างเท่า expand
+            width: 90,
             child: Text(
               dayOfWeekToText(s.dayOfWeek),
               style: AppTextStyles.descriptionRegular,
@@ -73,13 +68,13 @@ class _CollapsedSchedule extends StatelessWidget {
       );
     }
 
-    // ถ้ามากกว่า 1 วัน → แสดงแค่วัน
-    final days = schedules.map((e) => dayOfWeekToText(e.dayOfWeek)).toSet().toList();
+    // ถ้ามากกว่า 1 วัน แสดงแค่วัน
+    final days = schedules
+        .map((e) => dayOfWeekToText(e.dayOfWeek))
+        .toSet()
+        .toList();
 
-    return Text(
-      days.join(', '),
-      style: AppTextStyles.descriptionRegular,
-    );
+    return Text(days.join(', '), style: AppTextStyles.descriptionRegular);
   }
 }
 
@@ -95,7 +90,7 @@ class _ExpandedSchedule extends StatelessWidget {
     }
 
     return Column(
-      key: const ValueKey('expanded_schedule'), // 🔥 Key สำหรับ AnimatedSwitcher
+      key: const ValueKey('expanded_schedule'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: schedules.map((s) {
         return Padding(
@@ -187,26 +182,27 @@ class _ClassCardState extends State<ClassCard> {
   @override
   Widget build(BuildContext context) {
     final schedules = widget.data.schedules;
-    final canExpand = schedules.length > 1; // 🔥 ถ้ามี 1 วัน = ไม่สามารถ expand
+    final canExpand = schedules.length > 1;
 
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 600), // 🔥 เพิ่มเป็น 600ms (ช้าลง)
-      curve: Curves.easeInOutBack, // 🔥 มี bounce effect เล็กน้อย
-      alignment: Alignment.topCenter, // 🔥 expand จากด้านบน
-      clipBehavior: Clip.none, // 🔥 ให้ bounce ออกนอกขอบได้
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSizes.md),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-          image: DecorationImage(
-            image: NetworkImage(LinkLianBg.classCardDefault),
-            fit: BoxFit.cover,
-          ),
-        ),
-          child: Container(
-            padding: const EdgeInsets.only(
-              top: AppSizes.md,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutBack,
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.none,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: AppSizes.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+            image: DecorationImage(
+              image: NetworkImage(LinkLianBg.classCardDefault),
+              fit: BoxFit.cover,
             ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.only(top: AppSizes.md),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppSizes.radiusXl),
               gradient: LinearGradient(
@@ -231,7 +227,7 @@ class _ClassCardState extends State<ClassCard> {
                     children: [
                       Text(
                         isTeacher
-                            ? widget.data.sectionName
+                            ? widget.data.effectiveClassName 
                             : widget.data.subjectNameTh,
                         style: AppTextStyles.titleBold,
                       ),
@@ -241,7 +237,7 @@ class _ClassCardState extends State<ClassCard> {
                       Text(
                         isTeacher
                             ? widget.data.subjectNameTh
-                            : widget.data.sectionName,
+                            : widget.data.effectiveClassName, 
                         style: AppTextStyles.descriptionRegular.copyWith(
                           color: AppColors.black.withOpacity(0.6),
                         ),
@@ -257,7 +253,9 @@ class _ClassCardState extends State<ClassCard> {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.white,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusLg,
+                          ),
                         ),
                         child: Text(
                           'ภาคเรียน ${widget.data.semester}',
@@ -288,21 +286,19 @@ class _ClassCardState extends State<ClassCard> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 🔥 CHEVRON ICON (แทน classroom)
                             GestureDetector(
                               onTap: canExpand
                                   ? () {
                                       setState(() => isExpanded = !isExpanded);
-                                      widget.onTap?.call();
                                     }
                                   : null,
                               child: AnimatedRotation(
-                                turns: isExpanded ? 0.5 : 0.0, // 🔥 หมุน 180° เมื่อ expand
-                                duration: const Duration(milliseconds: 500), // 🔥 ให้ช้ากว่าการขยายนิดหน่อย
-                                curve: Curves.easeInOutBack, // 🔥 มี bounce เล็กน้อย
+                                turns: isExpanded ? 0.5 : 0.0,
+                                duration: const Duration(milliseconds: 500),
+                                curve: Curves.easeInOutBack,
                                 child: Icon(
                                   canExpand
-                                      ? LinkLianIcon.expand // เริ่มต้นเป็น chevron_down เสมอ
+                                      ? LinkLianIcon.expand
                                       : LinkLianIcon.classroom,
                                   size: AppSizes.iconSm,
                                 ),
@@ -318,14 +314,18 @@ class _ClassCardState extends State<ClassCard> {
                                 crossFadeState: isExpanded
                                     ? CrossFadeState.showFirst
                                     : CrossFadeState.showSecond,
-                                alignment: Alignment.topLeft, // 🔥 ชิดซ้ายบน
+                                alignment: Alignment.topLeft,
                                 firstChild: SizedBox(
-                                  width: double.infinity, // 🔥 บังคับให้มี width
-                                  child: _ExpandedSchedule(schedules: schedules),
+                                  width: double.infinity,
+                                  child: _ExpandedSchedule(
+                                    schedules: schedules,
+                                  ),
                                 ),
                                 secondChild: SizedBox(
-                                  width: double.infinity, // 🔥 บังคับให้มี width
-                                  child: _CollapsedSchedule(schedules: schedules),
+                                  width: double.infinity,
+                                  child: _CollapsedSchedule(
+                                    schedules: schedules,
+                                  ),
                                 ),
                               ),
                             ),
@@ -344,6 +344,7 @@ class _ClassCardState extends State<ClassCard> {
             ),
           ),
         ),
+      ),
     );
   }
 }

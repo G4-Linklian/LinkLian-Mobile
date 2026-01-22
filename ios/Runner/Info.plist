@@ -45,5 +45,24 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- กล้อง -->
+<key>NSCameraUsageDescription</key>
+<string>ใช้กล้องเพื่อถ่ายรูปแนบในโพสต์</string>
+
+<!-- เลือกรูปจากคลัง -->
+<key>NSPhotoLibraryUsageDescription</key>
+<string>ใช้รูปจากคลังเพื่อแนบในโพสต์</string>
+
+<!-- บันทึกรูป (จำเป็นกับ iOS บางเวอร์ชัน) -->
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>บันทึกรูปลงในคลัง</string>
+
+<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+</dict>
+
 </dict>
 </plist>

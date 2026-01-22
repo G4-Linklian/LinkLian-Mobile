@@ -20,10 +20,6 @@ class ClassFeedController extends GetxController {
   int get instId => auth.instId.value!;
   String get roleName => auth.roleName.value!;
 
-  /// ============================
-  /// STATE
-  /// ============================
-
   final RxList<ClassFeedModel> classList = <ClassFeedModel>[].obs;
   final RxList<SemesterModel> semesters = <SemesterModel>[].obs;
 
@@ -32,28 +28,39 @@ class ClassFeedController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxnString errorMessage = RxnString();
 
-  /// ============================
-  /// LIFECYCLE
-  /// ============================
-
   @override
   void onInit() {
     super.onInit();
-  auth = Get.find<AuthController>(); // ✅ ต้องมีบรรทัดนี้
-
-
-    // // 🔒 guard: ต้อง login แล้วเท่านั้น
-    // if (!auth.isLoggedIn || auth.instId.value == null) {
-    //   Get.offAllNamed('/auth.login');
-    //   return;
-    // }
-
-    loadInitialData();
+    _setupListeners();
   }
 
-  /// ============================
-  /// DATA FLOW
-  /// ============================
+  /// Setup listeners for user/instId changes
+  void _setupListeners() {
+    auth = Get.find<AuthController>();
+
+    // Listen to instId changes (when user changes)
+    ever<int?>(auth.instId, (instId) {
+      if (instId != null) {
+        _clearClassData();
+        loadInitialData();
+      } else {
+        _clearClassData();
+      }
+    });
+
+    // Load if instId already available
+    if (auth.instId.value != null) {
+      loadInitialData();
+    }
+  }
+
+  /// Clear all class data
+  void _clearClassData() {
+    classList.clear();
+    semesters.clear();
+    selectedSemesterId.value = null;
+    errorMessage.value = null;
+  }
 
   Future<void> loadInitialData() async {
     try {
@@ -61,42 +68,32 @@ class ClassFeedController extends GetxController {
       errorMessage.value = null;
 
       await fetchSemesters();
-
-      // if (selectedSemesterId.value != null) {
-      //   await fetchClassFeed();
-      // }
-    // } catch (e) {
-    //   errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// ============================
   /// FETCH SEMESTER
-  /// ============================
-
   Future<void> fetchSemesters() async {
-    final result = await semesterRepository.getSemesters(
-      instId: auth.instId.value!, // 🔥 จาก AuthController
-    );
+    try {
+      final result = await semesterRepository.getSemesters(
+        instId: auth.instId.value!,
+      );
 
-    semesters.assignAll(result);
+      semesters.assignAll(result);
 
-    final openSemester = semesters.firstWhereOrNull(
-      (s) => s.status == 'open',
-    );
+      final openSemester = semesters.firstWhereOrNull(
+        (s) => s.status == 'open',
+      );
 
-    selectedSemesterId.value =
-        openSemester?.semesterId ?? semesters.first.semesterId;
+      selectedSemesterId.value =
+          openSemester?.semesterId ?? semesters.first.semesterId;
 
-    await fetchClassFeed();
-
+      await fetchClassFeed();
+    } catch (e) {
+      errorMessage.value = e.toString();
+    }
   }
-
-  /// ============================
-  /// FETCH CLASS FEED
-  /// ============================
 
   Future<void> fetchClassFeed() async {
     if (selectedSemesterId.value == null) return;
@@ -109,9 +106,6 @@ class ClassFeedController extends GetxController {
         semesterId: selectedSemesterId.value!,
       );
 
-       print('🧪 class feed count = ${result.length}');
-    print('🧪 first item = ${result.isNotEmpty ? result.first : 'EMPTY'}');
-
       classList.assignAll(result);
     } catch (e) {
       errorMessage.value = e.toString();
@@ -120,10 +114,6 @@ class ClassFeedController extends GetxController {
     }
   }
 
-  /// ============================
-  /// CHANGE SEMESTER
-  /// ============================
-
   Future<void> changeSemester(int semesterId) async {
     if (semesterId == selectedSemesterId.value) return;
 
@@ -131,11 +121,13 @@ class ClassFeedController extends GetxController {
     await fetchClassFeed();
   }
 
-  /// ============================
-  /// REFRESH
-  /// ============================
-
   Future<void> refreshFeed() async {
     await fetchClassFeed();
+  }
+
+  @override
+  void onClose() {
+    _clearClassData();
+    super.onClose();
   }
 }
