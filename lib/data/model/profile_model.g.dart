@@ -7,20 +7,20 @@ part of 'profile_model.dart';
 // **************************************************************************
 
 ProfileModel _$ProfileModelFromJson(Map<String, dynamic> json) => ProfileModel(
-  code: json['code'] as String?,
-  userSysId: _intFromJson(json['user_sys_id']),
-  email: json['email'] as String,
-  firstName: json['first_name'] as String,
-  middleName: json['middle_name'] as String?,
-  lastName: json['last_name'] as String,
-  phone: json['phone'] as String?,
-  roleName: json['role_name'] as String,
-  roleGroup: json['role_group'] as String?,
-  profilePic: json['profile_pic'] as String?,
-  education: json['education'] == null
-      ? null
-      : EducationModel.fromJson(json['education'] as Map<String, dynamic>),
-);
+      code: json['code'] as String?,
+      userSysId: _intFromJson(json['user_sys_id']),
+      email: json['email'] as String,
+      firstName: json['first_name'] as String,
+      middleName: json['middle_name'] as String?,
+      lastName: json['last_name'] as String,
+      phone: json['phone'] as String?,
+      roleName: json['role_name'] as String,
+      roleGroup: json['role_group'] as String?,
+      profilePic: json['profile_pic'] as String?,
+      education: json['education'] == null
+          ? null
+          : EducationModel.fromJson(json['education'] as Map<String, dynamic>),
+    );
 
 Map<String, dynamic> _$ProfileModelToJson(ProfileModel instance) =>
     <String, dynamic>{

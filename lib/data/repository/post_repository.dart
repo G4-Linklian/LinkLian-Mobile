@@ -37,8 +37,7 @@ class PostRepository {
       '/class',
       queryParameters: {
         'section_id': sectionId,
-        if (filterType != null && filterType.isNotEmpty)
-          'type': filterType,
+        if (filterType != null && filterType.isNotEmpty) 'type': filterType,
       },
     );
 
@@ -54,6 +53,7 @@ class PostRepository {
     required int postContentId,
     required String title,
     required String content,
+    List<Map<String, dynamic>>? attachments, 
   }) async {
     final res = await _apiClient.put<Map<String, dynamic>>(
       '/post',
@@ -61,6 +61,7 @@ class PostRepository {
         'post_content_id': postContentId,
         'title': title,
         'content': content,
+        'attachments': attachments, 
       },
     );
     return res.data!;
@@ -73,10 +74,7 @@ class PostRepository {
   }) async {
     await _apiClient.delete(
       '/post',
-      data: {
-        'post_id': postId,
-        'post_content_id': postContentId,
-      },
+      data: {'post_id': postId, 'post_content_id': postContentId},
     );
   }
 }

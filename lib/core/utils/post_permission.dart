@@ -15,14 +15,15 @@ class PostPermission {
   bool get isAdmin => auth.roleName.value == 'admin';
 
   bool get isStudent =>
-      auth.roleName.value == 'high school student' || auth.roleName.value == 'uni student';
+      auth.roleName.value == 'high school student' ||
+      auth.roleName.value == 'uni student';
 
   /// CRUD
   bool get canEdit => isOwner || isAdmin;
   bool get canDelete => isOwner || isAdmin;
 
   /// UI / Feature
-  bool get canSelectAI => !isTeacher && !isAdmin;
+  bool get canSelectAI => isStudent;
   bool get canReport => !isOwner;
   bool get canShowMore => canEdit || canDelete || canReport;
 }

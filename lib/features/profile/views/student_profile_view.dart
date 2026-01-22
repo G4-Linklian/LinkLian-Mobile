@@ -21,7 +21,6 @@ class StudentProfileView extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         ProfileHeader(profile: profile),
-
         const SizedBox(height: 12),
 
         // Dashboard
@@ -30,10 +29,9 @@ class StudentProfileView extends StatelessWidget {
             Get.to(() => const DashboardPage());
           },
         ),
-
         const Divider(indent: 16, endIndent: 16),
 
-        // Bookmark / Community switch
+        //Bookmark Switcher
         const BookmarkSwitcher(),
       ],
     );
@@ -45,19 +43,17 @@ class StudentProfileSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Register BookmarkController ถ้ายังไม่มี
     if (!Get.isRegistered<BookmarkController>()) {
-      Get.put(
-        BookmarkController(
-          BookmarkRepository(Get.find<ApiClient>()),
-        ),
-      );
+      Get.put(BookmarkController(BookmarkRepository(Get.find<ApiClient>())));
     }
+
     return Column(
       children: [
-        DashboardCard(
-          onTap: () => Get.to(() => const DashboardPage()),
-        ),
+        DashboardCard(onTap: () => Get.to(() => const DashboardPage())),
         const SizedBox(height: 16),
+
+        // BookmarkSwitcher แสดงบุ๊กมาร์ก
         const BookmarkSwitcher(),
       ],
     );

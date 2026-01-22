@@ -9,31 +9,18 @@ import '../controllers/profile_controller.dart';
 class ProfileBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<ApiClient>(
-      () => ApiClient(),
-      fenix: true,
-    );
+    Get.lazyPut<ApiClient>(() => ApiClient(), fenix: true);
 
     Get.lazyPut<ProfileRepository>(
       () => ProfileRepository(Get.find<ApiClient>()),
       fenix: true,
     );
 
-   Get.lazyPut(
+    Get.lazyPut(
       () => ProfileController(
         Get.find<ProfileRepository>(),
         Get.find<TeachingScheduleRepository>(),
       ),
-    );
-
-
-    Get.lazyPut<BookmarkRepository>(
-      () => BookmarkRepository(Get.find<ApiClient>()),
-      fenix: true,
-    );
-
-    Get.lazyPut<BookmarkController>(
-      () => BookmarkController(Get.find<BookmarkRepository>()),
     );
   }
 }

@@ -28,13 +28,38 @@ class ClassFeedController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxnString errorMessage = RxnString();
 
-
   @override
   void onInit() {
     super.onInit();
-  auth = Get.find<AuthController>(); 
+    _setupListeners();
+  }
 
-    loadInitialData();
+  /// Setup listeners for user/instId changes
+  void _setupListeners() {
+    auth = Get.find<AuthController>();
+
+    // Listen to instId changes (when user changes)
+    ever<int?>(auth.instId, (instId) {
+      if (instId != null) {
+        _clearClassData();
+        loadInitialData();
+      } else {
+        _clearClassData();
+      }
+    });
+
+    // Load if instId already available
+    if (auth.instId.value != null) {
+      loadInitialData();
+    }
+  }
+
+  /// Clear all class data
+  void _clearClassData() {
+    classList.clear();
+    semesters.clear();
+    selectedSemesterId.value = null;
+    errorMessage.value = null;
   }
 
   Future<void> loadInitialData() async {
@@ -49,23 +74,25 @@ class ClassFeedController extends GetxController {
   }
 
   /// FETCH SEMESTER
-
   Future<void> fetchSemesters() async {
-    final result = await semesterRepository.getSemesters(
-      instId: auth.instId.value!,
-    );
+    try {
+      final result = await semesterRepository.getSemesters(
+        instId: auth.instId.value!,
+      );
 
-    semesters.assignAll(result);
+      semesters.assignAll(result);
 
-    final openSemester = semesters.firstWhereOrNull(
-      (s) => s.status == 'open',
-    );
+      final openSemester = semesters.firstWhereOrNull(
+        (s) => s.status == 'open',
+      );
 
-    selectedSemesterId.value =
-        openSemester?.semesterId ?? semesters.first.semesterId;
+      selectedSemesterId.value =
+          openSemester?.semesterId ?? semesters.first.semesterId;
 
-    await fetchClassFeed();
-
+      await fetchClassFeed();
+    } catch (e) {
+      errorMessage.value = e.toString();
+    }
   }
 
   Future<void> fetchClassFeed() async {
@@ -96,5 +123,11 @@ class ClassFeedController extends GetxController {
 
   Future<void> refreshFeed() async {
     await fetchClassFeed();
+  }
+
+  @override
+  void onClose() {
+    _clearClassData();
+    super.onClose();
   }
 }

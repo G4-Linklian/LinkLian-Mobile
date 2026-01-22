@@ -98,7 +98,13 @@ class CreatePostController extends GetxController {
 
       attachments.assignAll(
         post.attachments?.map((a) {
-              return {'file_url': a.fileUrl, 'file_type': a.fileType};
+              return {
+                'file_url': a.fileUrl,
+                'file_type': a.fileType,
+                'file_name': a.fileName ?? 'ไฟล์แนบ',
+                'file_blob_name': a.fileBlobName,
+                'file_size': a.fileSize ?? 0,
+              };
             }).toList() ??
             [],
       );
@@ -175,8 +181,8 @@ class CreatePostController extends GetxController {
   }
 
   Future<Map<String, dynamic>> _createPost() async {
-    final isTeacher = auth.roleName.value == 'teacher' ||
-        auth.roleName.value == 'instructor';
+    final isTeacher =
+        auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
 
     String effectiveTitle;
     if (isTeacher) {
@@ -201,6 +207,7 @@ class CreatePostController extends GetxController {
         postContentId: editingPostContentId!,
         title: title.value,
         content: content.value,
+        attachments: attachments,
       );
     } catch (e) {
       rethrow;

@@ -5,7 +5,6 @@ import '../../../core/constants/sizes.dart';
 import '../controllers/class_feed_controller.dart';
 import '../widgets/class_card.dart';
 import '../widgets/semester_selector.dart';
-import '../../auth/controller/auth_controller.dart';
 
 class ClassesPage extends StatelessWidget {
   const ClassesPage({super.key});
@@ -54,7 +53,6 @@ class ClassesPage extends StatelessWidget {
                                         'sectionId': c.sectionId,
                                         'subjectName': c.subjectNameTh,
                                         'className': c.effectiveClassName,
-
                                       },
                                     );
                                   },

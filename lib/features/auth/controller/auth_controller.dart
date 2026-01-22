@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../core/services/local_storage.dart';
+import 'package:flutter/foundation.dart';
 
 enum AuthStatus { checking, unauthenticated, authenticated }
 
@@ -12,7 +13,6 @@ String shortToken(String token) {
 class AuthController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
 
-
   final RxnString token = RxnString();
   final RxnString roleName = RxnString();
   final RxnInt instId = RxnInt();
@@ -20,13 +20,23 @@ class AuthController extends GetxController {
 
   final Rx<AuthStatus> status = AuthStatus.checking.obs;
 
-@override
-void onInit() {
-  super.onInit();
-  print('🧠 AuthController hash = ${hashCode}');
-  _tryAutoLogin();
-}
+  @override
+  void onInit() {
+    super.onInit();
+    // print('🧠 AuthController hash = ${hashCode}');
+    _tryAutoLogin();
+    _loadFromStorage();
+  }
 
+  Future<void> _loadFromStorage() async {
+    final storedToken = await LocalStorage.getToken();
+
+    debugPrint('🔐 Load token from storage = $storedToken');
+
+    if (storedToken == null) return;
+
+    token.value = storedToken;
+  }
 
   bool get isLoggedIn => status.value == AuthStatus.authenticated;
 
@@ -44,23 +54,22 @@ void onInit() {
     status.value = AuthStatus.authenticated;
   }
 
-Future<void> establishSession({
-  required String token,
-  required String roleName,
-  required int instId,
-  required int userId,
-}) async {
-  await LocalStorage.saveToken(token);
-  await LocalStorage.saveLastLoginUserId(userId);
+  Future<void> establishSession({
+    required String token,
+    required String roleName,
+    required int instId,
+    required int userId,
+  }) async {
+    await LocalStorage.saveToken(token);
+    await LocalStorage.saveLastLoginUserId(userId);
 
-  this.token.value = token;
-  this.userId.value = userId;
-  this.roleName.value = roleName;
-  this.instId.value = instId;
+    this.token.value = token;
+    this.userId.value = userId;
+    this.roleName.value = roleName;
+    this.instId.value = instId;
 
-  status.value = AuthStatus.authenticated;
-
-}
+    status.value = AuthStatus.authenticated;
+  }
 
   Future<void> _tryAutoLogin() async {
     try {
@@ -100,18 +109,19 @@ Future<void> establishSession({
       _clearSession();
     }
   }
+
   Future<void> refreshAuth() async {
     await _tryAutoLogin();
   }
 
   /// ===== Logout / hot reload =====
   Future<void> logout() async {
-  token.value = null;
-  roleName.value = null;
-  instId.value = null;
-  userId.value = null;
-  status.value = AuthStatus.unauthenticated;
-}
+    token.value = null;
+    roleName.value = null;
+    instId.value = null;
+    userId.value = null;
+    status.value = AuthStatus.unauthenticated;
+  }
 
   void _clearSession() {
     token.value = null;
