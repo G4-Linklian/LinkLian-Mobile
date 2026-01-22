@@ -16,7 +16,7 @@ class ProfileController extends GetxController {
 
   final profile = Rxn<ProfileModel>();
   final loading = false.obs;
-  final saving = false.obs; 
+  final saving = false.obs;
   final ImagePicker _picker = ImagePicker();
   final teachingSchedules = <TeachingScheduleModel>[].obs;
   final loadingSchedule = false.obs;
@@ -55,8 +55,8 @@ class ProfileController extends GetxController {
       lastNameCtrl = TextEditingController(text: data.lastName);
       phoneCtrl = TextEditingController(text: data.phone ?? '');
       if (data.isTeacher) {
-      await loadTeachingSchedule();
-    }
+        await loadTeachingSchedule();
+      }
     } finally {
       loading.value = false;
     }
@@ -71,14 +71,27 @@ class ProfileController extends GetxController {
 
     try {
       loadingSchedule.value = true;
-      teachingSchedules.value =
-          await scheduleRepo.getByEducator(userId);
+      teachingSchedules.value = await scheduleRepo.getByEducator(userId);
     } finally {
       loadingSchedule.value = false;
     }
   }
 
-  Future<void> updateProfile({required String firstName, required String lastName, String? phone}) async {
+  Future<void> updateProfile({
+    required String firstName,
+    required String lastName,
+    String? phone,
+  }) async {
+    if (firstName.trim().isEmpty || lastName.trim().isEmpty) {
+      throw Exception('กรุณาใส่ชื่อและนามสกุล');
+    }
+
+    if (phone != null &&
+        phone.isNotEmpty &&
+        !RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
+      throw Exception('กรุณากรอกเบอร์โทรให้ถูกต้อง');
+    }
+
     final auth = Get.find<AuthController>();
     final userId = auth.userId.value;
     if (userId == null) return;
@@ -110,33 +123,31 @@ class ProfileController extends GetxController {
   }
 
   Future<void> changeAvatar() async {
-  final auth = Get.find<AuthController>();
-  final userId = auth.userId.value;
-  if (userId == null) return;
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
+    if (userId == null) return;
 
-  final XFile? picked =
-      await _picker.pickImage(source: ImageSource.gallery);
-  if (picked == null) return;
+    final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
 
-  try {
-    saving.value = true;
+    try {
+      saving.value = true;
 
-    final fileUrl = await repo.uploadAvatar(userId, File(picked.path));
+      final fileUrl = await repo.uploadAvatar(userId, File(picked.path));
 
-    await repo.updateProfile(
-      userId,
-      firstName: profile.value!.firstName,
-      lastName: profile.value!.lastName,
-      phone: profile.value!.phone,
-      profilePic: fileUrl, 
-    );
+      await repo.updateProfile(
+        userId,
+        firstName: profile.value!.firstName,
+        lastName: profile.value!.lastName,
+        phone: profile.value!.phone,
+        profilePic: fileUrl,
+      );
 
-    await loadProfile();
-
-  } finally {
-    saving.value = false;
+      await loadProfile();
+    } finally {
+      saving.value = false;
+    }
   }
-}
 
   Future<void> pickImageFromGallery() async {
     await changeAvatar();
@@ -154,46 +165,46 @@ class ProfileController extends GetxController {
       saving.value = true;
 
       final fileUrl = await repo.uploadAvatar(userId, File(picked.path));
-        profile.value = profile.value!.copyWith(profilePic: fileUrl);
-      } finally {
-        saving.value = false;
-      }
+      profile.value = profile.value!.copyWith(profilePic: fileUrl);
+    } finally {
+      saving.value = false;
+    }
   }
 
-Future<void> deleteAvatar() async {
-  final auth = Get.find<AuthController>();
-  final userId = auth.userId.value;
-  if (userId == null) return;
+  Future<void> deleteAvatar() async {
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
+    if (userId == null) return;
 
-  final currentProfile = profile.value;
-  if (currentProfile == null) return;
+    final currentProfile = profile.value;
+    if (currentProfile == null) return;
 
-  final currentPic = currentProfile.profilePic;
-  if (currentPic == null || currentPic.isEmpty) return;
+    final currentPic = currentProfile.profilePic;
+    if (currentPic == null || currentPic.isEmpty) return;
 
-  try {
-    saving.value = true;
+    try {
+      saving.value = true;
 
-    debugPrint('🗑️ Deleting avatar...');
+      debugPrint('🗑️ Deleting avatar...');
 
-    await repo.updateProfile(
-      userId,
-      firstName: currentProfile.firstName,
-      lastName: currentProfile.lastName,
-      middleName: currentProfile.middleName,
-      phone: currentProfile.phone,
-      clearProfilePic: true, 
-    );
+      await repo.updateProfile(
+        userId,
+        firstName: currentProfile.firstName,
+        lastName: currentProfile.lastName,
+        middleName: currentProfile.middleName,
+        phone: currentProfile.phone,
+        clearProfilePic: true,
+      );
 
-    imageCache.clear();
-    imageCache.clearLiveImages();
+      imageCache.clear();
+      imageCache.clearLiveImages();
 
-    await loadProfile();
-
-  } finally {
-    saving.value = false;
+      await loadProfile();
+    } finally {
+      saving.value = false;
+    }
   }
-}
+
   void restoreOriginalProfilePic(String? originalPic) {
     final currentProfile = profile.value;
     if (currentProfile == null) return;

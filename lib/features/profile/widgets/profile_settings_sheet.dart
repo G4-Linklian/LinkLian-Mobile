@@ -14,12 +14,12 @@ class SettingsBottomSheetWithIcon extends StatelessWidget {
       clipBehavior: Clip.none,
       alignment: Alignment.topCenter,
       children: [
-        // Bottom Sheet 
+        // Bottom Sheet
         Padding(
           padding: const EdgeInsets.only(top: 30),
           child: const SettingsBottomSheet(),
         ),
-         
+
         Positioned(
           top: 0,
           left: 24,
@@ -38,7 +38,7 @@ class SettingsBottomSheetWithIcon extends StatelessWidget {
               ],
             ),
             child: const Icon(
-              LinkLianIcon.settings, 
+              LinkLianIcon.settings,
               color: Colors.white,
               size: 32,
             ),
@@ -58,14 +58,12 @@ class SettingsBottomSheet extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
       decoration: const BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar 
+          // Handle bar
           Container(
             width: 40,
             height: 4,
@@ -82,10 +80,7 @@ class SettingsBottomSheet extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 2),
               child: Text(
                 'ตั้งค่า',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -95,8 +90,12 @@ class SettingsBottomSheet extends StatelessWidget {
           _SettingItem(
             icon: LinkLianIcon.account,
             title: 'บัญชี',
-            onTap: () {
-              Get.to(() => const AccountPage());
+            onTap: () async {
+              final result = await Get.to(() => const AccountPage());
+
+              if (result == true && context.mounted) {
+                Navigator.pop(context);
+              }
             },
           ),
 
@@ -132,10 +131,7 @@ class SettingsBottomSheet extends StatelessWidget {
 
           const Text(
             'เวอร์ชัน 0.0.0',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black45,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.black45),
           ),
         ],
       ),
@@ -179,9 +175,7 @@ class _SettingItem extends StatelessWidget {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: isDanger
-              ? AppColors.dangerPalette[500]
-              : AppColors.black,
+          color: isDanger ? AppColors.dangerPalette[500] : AppColors.black,
         ),
       ),
       onTap: onTap,
