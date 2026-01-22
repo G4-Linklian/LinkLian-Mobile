@@ -110,6 +110,10 @@ class _AccountPageState extends State<AccountPage> {
       _showResultDialog(success: false, message: 'กรุณากรอกชื่อและนามสกุล');
       return;
     }
+    if (phone.isEmpty) {
+      _showResultDialog(success: false, message: 'กรุณากรอกเบอร์โทรศัพท์');
+      return;
+    }
     if (phone.isNotEmpty && !RegExp(r'^0[0-9]{9}$').hasMatch(phone)) {
       _showResultDialog(success: false, message: 'กรุณากรอกเบอร์โทรให้ถูกต้อง');
       return;
@@ -146,7 +150,7 @@ class _AccountPageState extends State<AccountPage> {
         await controller.updateProfile(
           firstName: firstName,
           lastName: lastName,
-          phone: phone.isEmpty ? null : phone,
+          phone: phone, 
         );
       }
 
@@ -308,7 +312,7 @@ class _AccountPageState extends State<AccountPage> {
               TextFormField(
                 controller: firstNameCtrl,
                 enabled: isEditing,
-                inputFormatters: [NoEmojiInputFormatter(),],
+                inputFormatters: [NoEmojiInputFormatter()],
                 decoration: const InputDecoration(
                   labelText: 'ชื่อ',
                   prefixIcon: Icon(Icons.person),
@@ -320,7 +324,7 @@ class _AccountPageState extends State<AccountPage> {
               TextFormField(
                 controller: lastNameCtrl,
                 enabled: isEditing,
-                inputFormatters: [NoEmojiInputFormatter(),],
+                inputFormatters: [NoEmojiInputFormatter()],
                 decoration: const InputDecoration(
                   labelText: 'นามสกุล',
                   prefixIcon: Icon(Icons.person),
@@ -473,37 +477,37 @@ class _AvatarSection extends StatelessWidget {
     return Center(
       child: Column(
         children: [
-            GestureDetector(
-              onTap: isEditing ? () => _showAvatarOptions(context) : null,
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  _buildAvatar(profile),
-                  if (isEditing)
-                    Container(
-                      padding: EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryPalette[600],
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        LinkLianIcon.pencil,
-                        size: 18,
-                        color: Colors.white,
-                      ),
+          GestureDetector(
+            onTap: isEditing ? () => _showAvatarOptions(context) : null,
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                _buildAvatar(profile),
+                if (isEditing)
+                  Container(
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryPalette[600],
+                      shape: BoxShape.circle,
                     ),
-                ],
-              ),
+                    child: const Icon(
+                      LinkLianIcon.pencil,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
-            if (isEditing)
-              const Text(
-                'เปลี่ยนรูปโปรไฟล์',
-                style: TextStyle(color: Colors.grey),
-              ),
-          ],
-        ),
-      );
+          ),
+          const SizedBox(height: 8),
+          if (isEditing)
+            const Text(
+              'เปลี่ยนรูปโปรไฟล์',
+              style: TextStyle(color: Colors.grey),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAvatar(ProfileModel? profile) {
