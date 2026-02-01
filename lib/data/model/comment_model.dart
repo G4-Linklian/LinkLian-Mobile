@@ -96,8 +96,65 @@ class CommentModel {
     return int.parse(v.toString());
   }
 
-  factory CommentModel.fromJson(Map<String, dynamic> json) =>
-      _$CommentModelFromJson(json);
+  factory CommentModel.fromJson(Map<String, dynamic> json) {
+    // Parse nested children recursively for tree structure
+    final childrenJson = json['children'] as List? ?? [];
+    final childrenList = childrenJson
+        .map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
+        .toList();
 
-  Map<String, dynamic> toJson() => _$CommentModelToJson(this);
+    // Use actual children length if available, otherwise parse from backend
+    final actualChildrenCount = childrenList.isNotEmpty 
+        ? childrenList.length 
+        : _parseChildrenCount(json['children_count']);
+
+    return CommentModel(
+      commentId: _parseInt(json['comment_id']),
+      postId: _parseInt(json['post_id']),
+      userSysId: _parseInt(json['user_sys_id']),
+      isAnonymous: json['is_anonymous'] as bool? ?? false,
+      commentText: json['comment_text'] as String? ?? '',
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+      flagValid: json['flag_valid'] as bool? ?? true,
+      parentId: json['parent_id'] != null ? _parseInt(json['parent_id']) : null,
+      childrenCount: actualChildrenCount,
+      displayName: json['display_name'] as String?,
+      profilePic: json['profile_pic'] as String?,
+      children: childrenList,
+    );
+  }
+
+  /// Helper to parse int from int or String
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  /// Helper to parse children_count which may come as int or String
+  static int _parseChildrenCount(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'comment_id': commentId,
+      'post_id': postId,
+      'user_sys_id': userSysId,
+      'is_anonymous': isAnonymous,
+      'comment_text': commentText,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'flag_valid': flagValid,
+      'parent_id': parentId,
+      'children_count': childrenCount,
+      'display_name': displayName,
+      'profile_pic': profilePic,
+      'children': children.map((c) => c.toJson()).toList(),
+    };
+  }
 }

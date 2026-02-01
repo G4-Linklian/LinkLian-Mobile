@@ -1,79 +1,100 @@
+import 'package:dio/dio.dart';
 import '../../core/services/api_client.dart';
 import '../model/comment_model.dart';
 
 class CommentRepository {
   final ApiClient _apiClient = ApiClient();
 
-  /// GET COMMENTS  ใช้ GET method กับ query parameters
+  /// GET COMMENTS - Fetches comment tree for a post with pagination
   Future<CommentPageResult> getComments({
     required int postId,
-    int? parentId,
-    int? nextCursor,
+    int offset = 0,
     int limit = 10,
   }) async {
     final res = await _apiClient.get<Map<String, dynamic>>(
-      '/post.comment.get',
+      '/post-comment',
       queryParameters: {
-        'post_id': postId,
-        if (parentId != null) 'parent_id': parentId,
-        if (nextCursor != null) 'next_cursor': nextCursor,
-        'limit': limit,
-        'flag_valid': 'true',
+        'post_id': postId.toString(),
+        'offset': offset.toString(),
+        'limit': limit.toString(),
       },
     );
 
     final data = res.data!;
-    int? parsedNextCursor;
-    final rawCursor = data['next_cursor'];
-    if (rawCursor != null) {
-      if (rawCursor is int) {
-        parsedNextCursor = rawCursor;
-      } else if (rawCursor is String) {
-        parsedNextCursor = int.tryParse(rawCursor);
-      }
+    
+    // Backend returns nested tree structure
+    final List<CommentModel> comments = [];
+    final rawData = data['data'] as List? ?? [];
+    
+    for (final item in rawData) {
+      comments.add(CommentModel.fromJson(item as Map<String, dynamic>));
     }
 
+    final hasMore = data['hasMore'] as bool? ?? false;
+
     return CommentPageResult(
-      comments: (data['data'] as List)
-          .map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      nextCursor: parsedNextCursor,
-      hasMore: data['has_more'] ?? false,
+      comments: comments,
+      nextCursor: null,
+      hasMore: hasMore,
     );
   }
 
   /// CREATE COMMENT / REPLY
-  Future<void> createComment({
+  Future<Map<String, dynamic>> createComment({
     required int postId,
     required int userId,
     required String text,
     bool isAnonymous = false,
     int? parentId,
   }) async {
-    await _apiClient.post(
-      '/post.comment.create',
+    final res = await _apiClient.post<Map<String, dynamic>>(
+      '/post-comment',
       data: {
         'post_id': postId,
-        'user_sys_id': userId,
         'comment_text': text,
         'is_anonymous': isAnonymous,
         if (parentId != null) 'parent_id': parentId,
       },
+      options: Options(headers: {'x-user-id': userId.toString()}),
     );
+
+    return res.data ?? {};
   }
 
-  /// DELETE COMMENT
-  Future<void> deleteComment({
+  /// UPDATE COMMENT
+  Future<Map<String, dynamic>> updateComment({
+    required int commentId,
+    required int userId,
+    String? commentText,
+    bool? flagValid,
+  }) async {
+    final res = await _apiClient.put<Map<String, dynamic>>(
+      '/post-comment',
+      data: {
+        'comment_id': commentId,
+        if (commentText != null) 'comment_text': commentText,
+        if (flagValid != null) 'flag_valid': flagValid,
+      },
+      options: Options(headers: {'x-user-id': userId.toString()}),
+    );
+
+    return res.data ?? {};
+  }
+
+  /// DELETE COMMENT (soft delete)
+  Future<Map<String, dynamic>> deleteComment({
     required int commentId,
     required int userSysId,
   }) async {
-    await _apiClient.delete(
-      '/post.comment.delete',
+    final res = await _apiClient.delete<Map<String, dynamic>>(
+      '/post-comment',
       data: {
         'comment_id': commentId,
-        'user_sys_id': userSysId,
       },
+      options: Options(headers: {'x-user-id': userSysId.toString()}),
     );
+
+    return res.data ?? {};
   }
 }
 

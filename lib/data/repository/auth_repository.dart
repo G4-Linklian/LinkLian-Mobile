@@ -9,7 +9,7 @@ class AuthRepository {
   // ===============================
   Future<Map<String, dynamic>> verifyAuthContext() async {
     final response = await _apiClient.post<Map<String, dynamic>>(
-      '/auth.verify',
+      '/auth/verify',
     );
 
     if (response.data == null) {
@@ -32,9 +32,9 @@ class AuthRepository {
     final existingToken = await LocalStorage.getToken();
 
     final response = await _apiClient.post<Map<String, dynamic>>(
-      '/auth.login',
+      '/auth/login',
       data: {
-        'email': email,
+        'username': email,  // NestJS ใช้ 'username'
         'password': password,
         'user_group': userGroup,
         'remember_me': rememberMe,
@@ -60,7 +60,7 @@ class AuthRepository {
     required String confirmPassword,
   }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
-      '/auth.reset-password',
+      '/auth/reset-password',
       data: {
         'email': email,
         'password': password,
@@ -83,7 +83,7 @@ class AuthRepository {
     print('🧪 [TEST] email = $email');
 
     final response = await _apiClient.post<Map<String, dynamic>>(
-      '/auth.forgot-password',
+      '/auth/forgot-password',
       data: {'email': email},
       requiresAuth: false,
     );
@@ -104,7 +104,7 @@ class AuthRepository {
     required bool rememberMe,
   }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
-      '/auth.verify-otp',
+      '/auth/verify-otp',
       data: {
         'otp': otp,
         'otp_session_id': otpSessionId,
@@ -125,7 +125,7 @@ class AuthRepository {
   // ===============================
   Future<Map<String, dynamic>> resendOtp({required String otpSessionId}) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
-      '/auth.resend-otp',
+      '/auth/resend-otp',
       data: {'otp_session_id': otpSessionId},
       requiresAuth: false,
     );

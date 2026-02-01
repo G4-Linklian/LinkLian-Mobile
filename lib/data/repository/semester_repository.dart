@@ -10,22 +10,28 @@ class SemesterRepository {
   Future<List<SemesterModel>> getSemesters({
     required int instId,
   }) async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      '/semester.get',
-      data: {
+    print('📅 [SemesterRepo] Fetching semesters for instId: $instId');
+    
+    // API returns List directly, not { success, data }
+    final response = await _apiClient.get<List<dynamic>>(
+      '/semester',
+      queryParameters: {
         'inst_id': instId,
         'flag_valid': true,
       },
     );
 
     final data = response.data;
-    if (data == null || data['success'] != true) {
-      throw Exception(data?['message'] ?? 'Failed to fetch semester');
+    print('📅 [SemesterRepo] Response length: ${data?.length}');
+    
+    if (data == null) {
+      print('❌ [SemesterRepo] Response data is null');
+      throw Exception('Failed to fetch semester');
     }
 
-    final List list = data['data'] as List;
+    print('📅 [SemesterRepo] Got ${data.length} semesters');
 
-    return list
+    return data
         .map(
           (e) => SemesterModel.fromJson(
             e as Map<String, dynamic>,

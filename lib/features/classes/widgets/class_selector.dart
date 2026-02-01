@@ -101,136 +101,152 @@ class ClassSelector extends StatelessWidget {
   void _showClassDropdownMenu(BuildContext context) {
     if (controller.isSectionLocked.value) return;
 
-
     final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
+    // ใช้ screen coordinates โดยตรง
+    final buttonPosition = button.localToGlobal(Offset.zero);
+    final buttonSize = button.size;
 
-    final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
-
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromLTWH(
-        buttonPosition.dx,
-        buttonPosition.dy + button.size.height + 16, // 🔥 +16px
-        button.size.width,
-        0,
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    showMenu<int>(
+    showDialog(
       context: context,
-      position: position,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: AppColors.primaryPalette[700]!,
-          width: 1.5,
-        ),
-      ),
-      constraints: BoxConstraints(
-        maxHeight: Get.height * 0.5,
-        minWidth: 250,
-        maxWidth: Get.width * 0.8,
-      ),
-      items: [
-        // ==================== ตัวเลือก "ทั้งหมด" ====================
-        PopupMenuItem<int>(
-          value: -1,
-          child: Row(
-            children: [
-              Obx(() {
-                final isAllSelected = controller.selectedSectionIds.isEmpty;
-                return Icon(
-                  isAllSelected
-                      ? TablerIcons.circle_check_filled
-                      : TablerIcons.circle,
-                  size: 20,
-                  color: isAllSelected
-                      ? AppColors.primaryPalette[500]
-                      : AppColors.gray,
-                );
-              }),
-              const SizedBox(width: 12),
-              const Text(
-                'ทั้งหมด',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-
-        // ==================== Class อื่นๆ ====================
-        ...List.generate(classFeedController.classList.length, (index) {
-          final classItem = classFeedController.classList[index];
-
-          return PopupMenuItem<int>(
-            value: index,
-            child: Obx(() {
-              final isSelected = controller.selectedSectionIds.contains(
-                classItem.sectionId,
-              );
-
-              return Row(
-                children: [
-                  // Checkbox Icon
-                  Icon(
-                    isSelected
-                        ? TablerIcons.circle_check_filled
-                        : TablerIcons.circle,
-                    size: 20,
-                    color: isSelected
-                        ? AppColors.primaryPalette[500]
-                        : AppColors.gray,
+      barrierColor: Colors.transparent,
+      barrierDismissible: true,
+      useSafeArea: false, // ไม่ใช้ safe area เพื่อให้ position ถูกต้อง
+      builder: (dialogContext) {
+        return Stack(
+          children: [
+            Positioned(
+              left: buttonPosition.dx,
+              top: buttonPosition.dy + buttonSize.height + 4,
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: Get.height * 0.5,
+                    minWidth: 250,
+                    maxWidth: Get.width * 0.8,
                   ),
-
-                  const SizedBox(width: 12),
-
-                  // ชื่อวิชา + Section
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${classItem.subjectCode} ${classItem.subjectNameTh}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          classItem.sectionName,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.primaryPalette[700]!,
-                          ),
-                        ),
-                      ],
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primaryPalette[700]!,
+                      width: 1.5,
                     ),
                   ),
-                ],
-              );
-            }),
-          );
-        }),
-      ],
-    ).then((value) {
-      if (value == null) return;
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      // ==================== ตัวเลือก "ทั้งหมด" ====================
+                      InkWell(
+                        onTap: () {
+                          controller.selectedSectionIds.clear();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Obx(() {
+                                final isAllSelected = controller.selectedSectionIds.isEmpty;
+                                return Icon(
+                                  isAllSelected
+                                      ? TablerIcons.circle_check_filled
+                                      : TablerIcons.circle,
+                                  size: 20,
+                                  color: isAllSelected
+                                      ? AppColors.primaryPalette[500]
+                                      : AppColors.gray,
+                                );
+                              }),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'ทั้งหมด',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
 
-      if (value == -1) {
-        // เลือก "ทั้งหมด" → clear ทุกตัว
-        controller.selectedSectionIds.clear();
-      } else {
-        // เลือก class → toggle
-        final classItem = classFeedController.classList[value];
+                      const Divider(height: 1),
 
-        if (controller.selectedSectionIds.contains(classItem.sectionId)) {
-          controller.selectedSectionIds.remove(classItem.sectionId);
-        } else {
-          controller.selectedSectionIds.add(classItem.sectionId);
-        }
-      }
-    });
+                      // ==================== Class อื่นๆ ====================
+                      ...List.generate(classFeedController.classList.length, (index) {
+                        final classItem = classFeedController.classList[index];
+
+                        return InkWell(
+                          onTap: () {
+                            if (controller.selectedSectionIds.contains(classItem.sectionId)) {
+                              controller.selectedSectionIds.remove(classItem.sectionId);
+                            } else {
+                              controller.selectedSectionIds.add(classItem.sectionId);
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            child: Obx(() {
+                              final isSelected = controller.selectedSectionIds.contains(
+                                classItem.sectionId,
+                              );
+
+                              return Row(
+                                children: [
+                                  // Checkbox Icon
+                                  Icon(
+                                    isSelected
+                                        ? TablerIcons.circle_check_filled
+                                        : TablerIcons.circle,
+                                    size: 20,
+                                    color: isSelected
+                                        ? AppColors.primaryPalette[500]
+                                        : AppColors.gray,
+                                  ),
+
+                                  const SizedBox(width: 12),
+
+                                  // ชื่อวิชา + Section
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${classItem.subjectCode} ${classItem.subjectNameTh}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        Text(
+                                          classItem.sectionName,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.primaryPalette[700]!,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

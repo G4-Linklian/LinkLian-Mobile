@@ -10,6 +10,7 @@ class RoomModel {
   @JsonKey(name: 'room_number')
   final String? roomNumber;
 
+  @JsonKey(fromJson: _floorFromJson)
   final String? floor;
 
   @JsonKey(name: 'room_remark')
@@ -24,6 +25,13 @@ class RoomModel {
 
   static int _intFromJson(dynamic v) =>
       v is int ? v : int.parse(v.toString());
+
+  static String? _floorFromJson(dynamic v) {
+    if (v == null) return null;
+    if (v is String) return v.isEmpty ? null : v;
+    if (v is int) return v == 0 ? null : v.toString();
+    return v.toString();
+  }
 
   factory RoomModel.fromJson(Map<String, dynamic> json) =>
       _$RoomModelFromJson(json);

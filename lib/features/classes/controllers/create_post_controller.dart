@@ -1,12 +1,11 @@
 import 'package:get/get.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 import '../../../data/repository/post_repository.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../../core/services/api_client.dart';
 import '../controllers/class_feed_controller.dart';
-import '../../../core/utils/dialog_helper.dart';
-import 'package:dio/dio.dart';
-import '../controllers/class_detail_controller.dart';
 import '../../../data/model/post_model.dart';
 
 enum CreatePostSource { classFeed, classDetail }
@@ -20,7 +19,7 @@ class CreatePostController extends GetxController {
   int? editingPostContentId;
   late final AuthController auth;
   late final ClassFeedController classFeedController;
-  late final CreatePostSource source;
+  CreatePostSource source = CreatePostSource.classFeed; // Not late
 
   int? fromSectionId;
 
@@ -37,12 +36,20 @@ class CreatePostController extends GetxController {
 
   final RxBool isLoading = false.obs;
   final isSectionLocked = false.obs;
+  final RxList<String> uploadWarnings = <String>[].obs; // เพิ่ม warnings list
 
   List<int> get effectiveSectionIds {
     if (selectedSectionIds.isEmpty) {
       return classFeedController.classList.map((c) => c.sectionId).toList();
     }
     return selectedSectionIds;
+  }
+
+  /// Check if user has entered any content
+  bool get hasContent {
+    return title.value.trim().isNotEmpty || 
+           content.value.trim().isNotEmpty || 
+           attachments.isNotEmpty;
   }
 
   @override
@@ -67,10 +74,22 @@ class CreatePostController extends GetxController {
 
     final args = Get.arguments as Map<String, dynamic>?;
 
+    // ===== SET SOURCE (DEFAULT TO CLASS FEED) =====
+    source = CreatePostSource.classFeed; // Default
+
     if (args == null) {
-      source = CreatePostSource.classFeed;
+      debugPrint('📝 No arguments, using default source: classFeed');
       return;
     }
+
+    // Override source if provided in arguments
+    if (args['source'] != null) {
+      source = args['source'] as CreatePostSource;
+      debugPrint('📝 Source from args: $source');
+    }
+
+    fromSectionId = args['sectionId'] as int?;
+    debugPrint('📝 fromSectionId: $fromSectionId');
 
     // CREATE MODE
     final presetIds = args['presetSectionIds'];
@@ -78,11 +97,13 @@ class CreatePostController extends GetxController {
       final validIds = presetIds.whereType<int>().toList();
       if (validIds.isNotEmpty) {
         selectedSectionIds.assignAll(validIds);
+        debugPrint('📝 Preset section IDs: $validIds');
       }
     }
 
     if (args['lockSection'] == true) {
       isSectionLocked.value = true;
+      debugPrint('📝 Section locked');
     }
 
     // EDIT MODE
@@ -101,50 +122,133 @@ class CreatePostController extends GetxController {
               return {
                 'file_url': a.fileUrl,
                 'file_type': a.fileType,
-                'file_name': a.fileName ?? 'ไฟล์แนบ',
+                'original_name': a.originalName ?? a.fileName ?? 'ไฟล์แนบ',
+                'file_name': a.originalName ?? a.fileName ?? 'ไฟล์แนบ',
                 'file_blob_name': a.fileBlobName,
-                'file_size': a.fileSize ?? 0,
+                'file_size': a.fileSize ?? 0, // ใช้ค่าที่มีอยู่ หรือ 0 ถ้าไม่มี
               };
             }).toList() ??
             [],
       );
 
+      // Fetch file sizes from blob if not available
+      _fetchFileSizesFromBlob();
+
       if (args['sectionId'] != null) {
         selectedSectionIds.assignAll([args['sectionId'] as int]);
         isSectionLocked.value = true;
       }
-    }
 
-    // COMMON
-    source = args['source'] ?? CreatePostSource.classFeed;
-    fromSectionId = args['sectionId'] as int?;
+      debugPrint('📝 Edit mode initialized');
+    }
   }
 
-  /// UPLOAD FILE
-  Future<void> uploadFiles(List<File> files) async {
+  /// UPLOAD FILE (Strict Mode)
+  Future<bool> uploadFiles(List<File> files) async {
+    uploadWarnings.clear(); // Clear previous warnings
+    
     try {
+      debugPrint('📤 Starting upload... files: ${files.length}');
+      
       final res = await apiClient.uploadMultipart(
         '/uploadFile/social-feed/fileattachment',
         files: files,
         fieldName: 'files',
       );
 
-      final uploadedFiles = res.data['files'] as List;
+      debugPrint('📤 Upload response: ${res.data}');
 
-      for (int i = 0; i < uploadedFiles.length; i++) {
-        final f = uploadedFiles[i];
-        final file = files[i];
-
-        attachments.add({
-          'file_url': f['fileUrl'],
-          'file_type': f['fileType'],
-          'file_name': f['originalName'],
-          'file_blob_name': f['fileName'],
-          'file_size': await file.length(),
-        });
+      final data = res.data;
+      if (data == null) {
+        debugPrint('❌ Upload response is null');
+        return false;
       }
-    } catch (e) {
-      Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถอัปโหลดไฟล์');
+
+      // Handle various response formats
+      List? uploadedFiles;
+      
+      if (data is Map) {
+        if (data.containsKey('files')) {
+          uploadedFiles = data['files'] as List?;
+        } else if (data.containsKey('data') && data['data'] is Map) {
+          uploadedFiles = data['data']['files'] as List?;
+        } else if (data.containsKey('data') && data['data'] is List) {
+          uploadedFiles = data['data'] as List?;
+        }
+      } else if (data is List) {
+        uploadedFiles = data;
+      }
+
+      if (uploadedFiles == null || uploadedFiles.isEmpty) {
+        debugPrint('❌ No files in response');
+        return false;
+      }
+
+      // Add uploaded files to attachments (strict validation)
+      int successCount = 0;
+      int failedCount = 0;
+      
+      for (int i = 0; i < files.length; i++) {
+        try {
+          if (i >= uploadedFiles.length) {
+            debugPrint('⚠️ File $i not in response');
+            failedCount++;
+            uploadWarnings.add('ไฟล์ ${files[i].path.split('/').last} อัปโหลดไม่สำเร็จ');
+            continue;
+          }
+
+          final f = uploadedFiles[i];
+          final file = files[i];
+
+          final fileUrl = f['fileUrl'] ?? f['file_url'] ?? '';
+          final fileType = f['fileType'] ?? f['file_type'] ?? '';
+          final originalName = f['originalName'] ?? f['original_name'] ?? file.path.split('/').last;
+          final fileName = f['fileName'] ?? f['file_name'] ?? '';
+
+          if (fileUrl.isEmpty || fileType.isEmpty) {
+            debugPrint('⚠️ File $i has empty URL or type');
+            failedCount++;
+            uploadWarnings.add('ไฟล์ $originalName มีข้อมูลไม่สมบูรณ์');
+            continue;
+          }
+
+          attachments.add({
+            'file_url': fileUrl,
+            'file_type': fileType,
+            'original_name': originalName,
+            'file_name': originalName,
+            'file_blob_name': fileName,
+            'file_size': await file.length(),
+          });
+          
+          successCount++;
+          debugPrint('✅ Added attachment: $originalName');
+        } catch (e) {
+          debugPrint('⚠️ Error processing file $i: $e');
+          failedCount++;
+          uploadWarnings.add('ไฟล์ ${files[i].path.split('/').last} เกิดข้อผิดพลาด');
+        }
+      }
+
+      debugPrint('✅ Upload result: $successCount success, $failedCount failed');
+
+      // Return true only if ALL files succeeded
+      if (failedCount > 0 && successCount == 0) {
+        // ALL FAILED
+        debugPrint('❌ All files failed to upload');
+        return false;
+      } else if (failedCount > 0) {
+        // PARTIAL SUCCESS
+        debugPrint('⚠️ Some files failed: $successCount/${ files.length} succeeded');
+        return true; // Still return true but with warnings
+      }
+      
+      // ALL SUCCESS
+      return successCount > 0;
+    } catch (e, stack) {
+      debugPrint('❌ Upload error: $e');
+      debugPrint('❌ Stack: $stack');
+      return false;
     }
   }
 
@@ -153,28 +257,84 @@ class CreatePostController extends GetxController {
     if (index < 0 || index >= attachments.length) return;
 
     final file = attachments[index];
-
-    try {
-      await apiClient.delete(
-        '/deleteFile/social-feed',
-        data: {
-          'fileNames': [file['file_blob_name']],
-        },
-      );
-    } catch (e) {}
+    
+    // ไม่ต้องลบจาก Blob ถ้าเป็น Link
+    final isLink = file['file_type'] == 'link';
+    
+    if (!isLink && file['file_blob_name'] != null) {
+      try {
+        await apiClient.delete(
+          '/deleteFile/social-feed',
+          data: {
+            'fileNames': [file['file_blob_name']],
+          },
+        );
+      } catch (e) {
+        debugPrint('⚠️ Failed to delete file from blob: $e');
+      }
+    }
 
     attachments.removeAt(index);
+  }
+
+  /// FETCH FILE SIZES FROM BLOB (for edit mode)
+  Future<void> _fetchFileSizesFromBlob() async {
+    try {
+      debugPrint('📏 Fetching file sizes from blob...');
+      
+      for (int i = 0; i < attachments.length; i++) {
+        final attachment = attachments[i];
+        final fileUrl = attachment['file_url'] as String?;
+        
+        if (fileUrl == null || fileUrl.isEmpty) continue;
+        if (attachment['file_size'] != null && attachment['file_size'] > 0) continue;
+        
+        try {
+          // Use HTTP HEAD request to get file size
+          final response = await http.head(Uri.parse(fileUrl));
+          
+          if (response.statusCode == 200) {
+            final contentLength = response.headers['content-length'];
+            if (contentLength != null) {
+              final fileSize = int.tryParse(contentLength) ?? 0;
+              
+              // Update attachment with real file size
+              attachments[i] = {
+                ...attachment,
+                'file_size': fileSize,
+              };
+              
+              debugPrint('📏 File size fetched: ${attachment['file_name']} = $fileSize bytes');
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ Failed to fetch size for: ${attachment['file_name']}');
+        }
+      }
+      
+      debugPrint('✅ File sizes fetched successfully');
+    } catch (e) {
+      debugPrint('❌ Error fetching file sizes: $e');
+    }
   }
 
   Future<Map<String, dynamic>> submitPost() async {
     try {
       isLoading.value = true;
+      debugPrint('📝 Submitting post... mode=${mode.value}');
 
+      Map<String, dynamic> result;
       if (mode.value == CreatePostMode.edit) {
-        return await _updatePost();
+        result = await _updatePost();
+      } else {
+        result = await _createPost();
       }
 
-      return await _createPost();
+      debugPrint('✅ Submit result: $result');
+      return result;
+    } catch (e) {
+      debugPrint('❌ Submit error: $e');
+      rethrow;
     } finally {
       isLoading.value = false;
     }
@@ -191,6 +351,7 @@ class CreatePostController extends GetxController {
       effectiveTitle = content.value.trim();
     }
 
+    // ส่ง sectionIds (รองรับ multiple sections)
     return postRepository.createPost(
       sectionIds: effectiveSectionIds,
       title: effectiveTitle,
@@ -203,11 +364,12 @@ class CreatePostController extends GetxController {
 
   Future<Map<String, dynamic>> _updatePost() async {
     try {
+      // ใช้ postContentId สำหรับ update
       return await postRepository.updatePost(
         postContentId: editingPostContentId!,
         title: title.value,
         content: content.value,
-        attachments: attachments,
+        attachments: attachments.toList(),
       );
     } catch (e) {
       rethrow;

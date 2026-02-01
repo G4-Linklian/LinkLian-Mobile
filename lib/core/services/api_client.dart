@@ -4,6 +4,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'local_storage.dart';
 import 'dart:io';
 import 'package:http_parser/http_parser.dart';
+import 'package:get/get.dart' hide Response, FormData, MultipartFile;
+import '../../features/auth/controller/auth_controller.dart';
 
 class ApiClient {
   static final String baseUrl =
@@ -29,11 +31,25 @@ class ApiClient {
 
     _setupInterceptors();
   }
+
+  /// Helper to get current user ID from AuthController
+  int? _getCurrentUserId() {
+    try {
+      if (Get.isRegistered<AuthController>()) {
+        return Get.find<AuthController>().userId.value;
+      }
+    } catch (e) {
+      AppLogger.info('⚠️ Cannot get userId: $e');
+    }
+    return null;
+  }
+
 void _setupInterceptors() {
   _dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final requiresAuth = options.extra?['requiresAuth'] ?? true;
+        final extra = options.extra;
+        final requiresAuth = extra['requiresAuth'] ?? true;
 
         if (requiresAuth) {
           final token = await LocalStorage.getToken();
@@ -44,8 +60,16 @@ void _setupInterceptors() {
             options.headers.remove('Authorization');
             AppLogger.info('🚫 Missing token → ${options.path}');
           }
+
+          // Add x-user-id header for authenticated requests
+          final userId = _getCurrentUserId();
+          if (userId != null) {
+            options.headers['x-user-id'] = userId.toString();
+            AppLogger.info('👤 Attach x-user-id: $userId → ${options.path}');
+          }
         } else {
           options.headers.remove('Authorization');
+          options.headers.remove('x-user-id');
           AppLogger.info(' Public API → ${options.path}');
         }
 

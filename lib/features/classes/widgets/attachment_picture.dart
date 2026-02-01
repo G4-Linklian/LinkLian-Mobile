@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../controllers/create_post_controller.dart';
@@ -75,7 +76,33 @@ class CreatePostImagePickerButton extends StatelessWidget {
     if (image == null) return;
 
     DialogHelper.showLoading('กำลังอัปโหลดรูป...');
-    await controller.uploadFiles([File(image.path)]);
-    DialogHelper.hideLoading();
+    
+    try {
+      debugPrint('📷 Picked image: ${image.path}');
+      final success = await controller.uploadFiles([File(image.path)]);
+      
+      // Always hide loading first
+      DialogHelper.hideLoading();
+      
+      if (!success) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        DialogHelper.showNotification(
+          title: 'อัปโหลดไม่สำเร็จ',
+          message: 'กรุณาลองใหม่อีกครั้ง',
+          type: NotificationType.error,
+        );
+      } else {
+        debugPrint('✅ Upload completed successfully');
+      }
+    } catch (e) {
+      debugPrint('❌ Upload exception: $e');
+      DialogHelper.hideLoading();
+      await Future.delayed(const Duration(milliseconds: 100));
+      DialogHelper.showNotification(
+        title: 'อัปโหลดไม่สำเร็จ',
+        message: 'กรุณาลองใหม่อีกครั้ง',
+        type: NotificationType.error,
+      );
+    }
   }
 }

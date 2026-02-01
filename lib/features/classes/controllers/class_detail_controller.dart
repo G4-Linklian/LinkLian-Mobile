@@ -14,8 +14,13 @@ class ClassDetailController extends GetxController {
 
   final Rx<ClassPostFilter> selectedFilter = ClassPostFilter.all.obs;
   final isLoading = false.obs;
+  final isLoadingMore = false.obs;
+  final hasMore = true.obs;
   final RxList<PostModel> posts = <PostModel>[].obs;
   final RxSet<int> selectedPostIdsForAI = <int>{}.obs;
+
+  int _offset = 0;
+  final int _limit = 10;
 
   final PostRepository _postRepository = PostRepository();
   final ClassFeedRepository _classFeedRepository = ClassFeedRepository();
@@ -121,7 +126,17 @@ class ClassDetailController extends GetxController {
   }
 
   /// FETCH POSTS
-  Future<void> fetchPosts({bool keepScroll = false}) async {
+  Future<void> fetchPosts({bool loadMore = false, bool keepScroll = false}) async {
+    if (loadMore && !hasMore.value) {
+      debugPrint('⚠️ [ClassDetail] No more posts to load');
+      return;
+    }
+
+    if (loadMore && isLoadingMore.value) {
+      debugPrint('⚠️ [ClassDetail] Already loading more');
+      return;
+    }
+
     double? savedOffset;
 
     if (keepScroll && scrollController.hasClients) {
@@ -129,27 +144,55 @@ class ClassDetailController extends GetxController {
     }
 
     try {
-      // โหลดเฉพาะกรณีที่ไม่ keepScroll
-      if (!keepScroll) {
+      if (loadMore) {
+        isLoadingMore.value = true;
+        // เพิ่ม delay เล็กน้อยเพื่อให้เห็น loading indicator
+        await Future.delayed(const Duration(milliseconds: 300));
+      } else {
         isLoading.value = true;
+        _offset = 0;
+        posts.clear();
+        hasMore.value = true;
       }
 
       if (sectionId.value == null) {
         throw Exception('sectionId is null');
       }
 
+      debugPrint('📝 [ClassDetail] Fetching posts: offset=$_offset, limit=$_limit');
+
       final result = await _postRepository.getPostInClass(
         sectionId: sectionId.value!,
         filterType: selectedFilter.value.apiValue,
+        offset: _offset,
+        limit: _limit,
       );
 
-      posts.assignAll(result);
+      debugPrint('📝 [ClassDetail] Got ${result.length} posts (hasMore: $hasMore)');
+      debugPrint('📝 [ClassDetail] Current total: ${posts.length} posts');
+
+      if (result.length < _limit) {
+        hasMore.value = false;
+        debugPrint('✅ [ClassDetail] No more posts to load');
+      }
+
+      if (loadMore) {
+        posts.addAll(result);
+        debugPrint('📝 [ClassDetail] Added ${result.length} posts, new total: ${posts.length}');
+      } else {
+        posts.assignAll(result);
+        debugPrint('📝 [ClassDetail] Replaced with ${result.length} posts');
+      }
+
+      _offset += result.length;
+      debugPrint('📝 [ClassDetail] New offset: $_offset');
+
     } catch (e) {
       Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดโพสต์ได้');
+      debugPrint('❌ [ClassDetail] Error: $e');
     } finally {
-      if (!keepScroll) {
-        isLoading.value = false;
-      }
+      isLoading.value = false;
+      isLoadingMore.value = false;
 
       if (savedOffset != null && scrollController.hasClients) {
         WidgetsBinding.instance.addPostFrameCallback((_) {

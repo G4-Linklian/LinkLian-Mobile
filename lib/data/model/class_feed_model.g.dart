@@ -13,7 +13,7 @@ ClassFeedModel _$ClassFeedModelFromJson(Map<String, dynamic> json) =>
       subjectCode: json['subject_code'] as String,
       subjectNameTh: json['subject_name_th'] as String,
       subjectNameEn: json['subject_name_en'] as String,
-      learningAreaName: json['learning_area_name'] as String,
+      learningAreaName: json['learning_area_name'] as String?,
       semester: json['semester'] as String,
       schedules: (json['schedules'] as List<dynamic>)
           .map((e) => ClassScheduleModel.fromJson(e as Map<String, dynamic>))

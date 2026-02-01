@@ -1,94 +1,84 @@
-import '../model/bookmark_model.dart';
 import '../../core/services/api_client.dart';
+import '../model/bookmark_model.dart';
 
 class BookmarkRepository {
   final ApiClient api;
+
   BookmarkRepository(this.api);
 
-  /// ดึงรายการ bookmark ของ user
+  /// Get bookmarks with filters (similar to old POST /bookmark.get)
   Future<List<BookmarkModel>> getBookmarks({
     required int userId,
+    int? postId,
+    int? sectionId,
+    bool flagValid = true,
+    int offset = 0,
+    int limit = 50,
+    String sortBy = 'saved_at',
     String? sortOrder,
   }) async {
-    final Map<String, dynamic> body = {
-      'user_sys_id': userId,
-      'flag_valid': true,
-    };
-
-    if (sortOrder != null) {
-      body['sort_by'] = 'saved_at';
-      body['sort_order'] = sortOrder;
-    }
-
-    final res = await api.post(
-      '/bookmark.get',
-      data: body,
+    final response = await api.get<Map<String, dynamic>>(
+      '/bookmarks',
+      queryParameters: {
+        'user_sys_id': userId,
+        if (postId != null) 'post_id': postId,
+        if (sectionId != null) 'section_id': sectionId,
+        'flag_valid': flagValid,
+        'offset': offset,
+        'limit': limit,
+        'sort_by': sortBy,
+        if (sortOrder != null) 'sort_order': sortOrder,
+      },
     );
 
-    final List list = res.data['data'] ?? [];
-    return list.map((e) => BookmarkModel.fromJson(e)).toList();
+    final data = response.data;
+    if (data == null || data['success'] != true) {
+      throw Exception(data?['message'] ?? 'Failed to fetch bookmarks');
+    }
+
+    final List list = data['data'] as List? ?? [];
+    return list.map((e) => BookmarkModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Toggle bookmark (create if not exists, delete if exists)
   Future<Map<String, dynamic>> createBookmark({
     required int userId,
     required int postId,
   }) async {
-    final res = await api.post(
-      '/bookmark.create',
+    final response = await api.post<Map<String, dynamic>>(
+      '/bookmarks/toggle',
       data: {
         'user_sys_id': userId,
         'post_id': postId,
       },
     );
 
-    if (res.data['success'] == true) {
-      return {
-        'success': true,
-        'message': res.data['message'],
-        'data': res.data['data'],
-      };
+    final data = response.data;
+    if (data == null || data['success'] != true) {
+      throw Exception(data?['message'] ?? 'Failed to toggle bookmark');
     }
 
-    throw Exception(res.data['message'] ?? 'Failed to create bookmark');
+    return data;
   }
 
-  /// ลบ bookmark
-  Future<void> deleteBookmark({
+  /// Delete bookmark
+  Future<Map<String, dynamic>> deleteBookmark({
     required int userId,
     required int postId,
   }) async {
-    final res = await api.post(
-      '/bookmark.delete',
+    final response = await api.delete<Map<String, dynamic>>(
+      '/bookmarks',
       data: {
         'user_sys_id': userId,
         'post_id': postId,
       },
     );
 
-    if (res.data['success'] != true) {
-      throw Exception(res.data['message'] ?? 'Failed to delete bookmark');
+    final data = response.data;
+    if (data == null || data['success'] != true) {
+      throw Exception(data?['message'] ?? 'Failed to delete bookmark');
     }
-  }
 
-  /// ตรวจสอบว่า post ถูก bookmark หรือไม่
-  Future<bool> isBookmarked({
-    required int userId,
-    required int postId,
-  }) async {
-    try {
-      final res = await api.post(
-        '/bookmark.get',
-        data: {
-          'user_sys_id': userId,
-          'post_id': postId,
-          'flag_valid': true,
-        },
-      );
-
-      final List list = res.data['data'] ?? [];
-      return list.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
+    return data;
   }
 }

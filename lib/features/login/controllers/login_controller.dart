@@ -42,7 +42,7 @@ class LoginController extends GetxController {
         userGroup: selectedUserGroup.value,
       );
 
-      // ต้อง reset password
+      // ต้อง reset password (flag_valid = false)
       if (result['require_reset_password'] == true) {
         Get.back(); // 👈 ปิด login sheet
 
@@ -52,19 +52,9 @@ class LoginController extends GetxController {
         );
         return;
       }
-      // 2️⃣ role ไม่ตรง
-      if (result['require_role_reselect'] == true) {
-        DialogHelper.showNotification(
-          title: 'เลือกประเภทผู้ใช้ไม่ตรง',
-          message: 'กรุณาเลือกประเภทผู้ใช้ใหม่',
-          type: NotificationType.warning,
-        );
-        selectedUserGroup.value = null;
-        return;
-      }
 
-      // ต้อง OTP
-      if (result['require_otp'] == true) {
+      // ต้อง OTP (ตรวจสอบว่ามี otp_session_id)
+      if (result['otp_session_id'] != null) {
         Get.back();
         final otpSessionId = result['otp_session_id'];
 
@@ -76,32 +66,32 @@ class LoginController extends GetxController {
         return;
       }
 
-      // ===== login สำเร็จแบบไม่ต้อง OTP =====
-if (result['skip_otp'] == true) {
-  Get.back();
-  
-  final token = result['access_token'] as String;
-  
-  // 🔥 รองรับทั้ง int และ String
-  final userId = result['user_id'] is int 
-      ? result['user_id'] as int
-      : int.parse(result['user_id'].toString());
-      
-  final roleName = result['role_name'] as String;
-  
-  final instId = result['inst_id'] is int
-      ? result['inst_id'] as int
-      : int.parse(result['inst_id'].toString());
+      // ===== login สำเร็จแบบไม่ต้อง OTP (มี valid token) =====
+      if (result['access_token'] != null) {
+        Get.back();
+        
+        final token = result['access_token'] as String;
+        
+        // 🔥 รองรับทั้ง int และ String
+        final userId = result['user_id'] is int 
+            ? result['user_id'] as int
+            : int.parse(result['user_id'].toString());
+            
+        final roleName = result['role_name'] as String;
+        
+        final instId = result['inst_id'] is int
+            ? result['inst_id'] as int
+            : int.parse(result['inst_id'].toString());
 
-  await auth.establishSession(
-    token: token,
-    roleName: roleName,
-    instId: instId,
-    userId: userId,
-  );
+        await auth.establishSession(
+          token: token,
+          roleName: roleName,
+          instId: instId,
+          userId: userId,
+        );
 
-  return;
-}
+        return;
+      }
     } catch (e) {
       DialogHelper.showNotification(
         title: "เข้าสู่ระบบไม่สำเร็จ",

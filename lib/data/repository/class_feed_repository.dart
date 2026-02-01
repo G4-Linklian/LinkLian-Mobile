@@ -1,76 +1,95 @@
 import '../model/class_feed_model.dart';
 import '../../core/services/api_client.dart';
+import '../../features/auth/controller/auth_controller.dart';
+import 'package:get/get.dart';
 
 class ClassFeedRepository {
   final ApiClient _apiClient = ApiClient();
 
-  /// GET CLASS FEED BY SEMESTER
-  Future<List<ClassFeedModel>> getClassFeed({required int semesterId}) async {
-    print('🧪 semesterId sent to API = $semesterId');
+  /// GET CLASS FEED BY SEMESTER (based on user role)
+  Future<List<ClassFeedModel>> getClassFeed({
+    required int semesterId,
+    int offset = 0,
+    int limit = 10,
+  }) async {
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
+    final roleName = auth.roleName.value;
+    
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
 
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      '/class',
-      data: {'semester_id': semesterId},
+    print('🧪 semesterId sent to API = $semesterId, userId = $userId, role = $roleName, offset = $offset, limit = $limit');
+
+    // Determine endpoint based on role
+    final isTeacher = roleName == 'teacher' || roleName == 'instructor';
+    final endpoint = isTeacher 
+        ? '/social-feed/feed/teacher'
+        : '/social-feed/feed/student';
+
+    // API returns List directly
+    final response = await _apiClient.get<List<dynamic>>(
+      endpoint,
+      queryParameters: {
+        'user_id': userId,
+        'semester_id': semesterId,
+        'offset': offset,
+        'limit': limit,
+      },
     );
 
     final data = response.data;
-    if (data == null || data['success'] != true) {
-      throw Exception(data?['message'] ?? 'Failed to fetch class feed');
+    print('🏫 [ClassFeedRepo] Got response: ${data?.length} items');
+    
+    if (data == null) {
+      throw Exception('Failed to fetch class feed');
     }
 
-    final List list = data['data'] as List;
-
-    return list
+    return data
         .map((json) => ClassFeedModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
-  /// GET CLASS DETAIL
+  /// GET CLASS DETAIL (posts in section)
   Future<ClassFeedModel?> getClassDetail({required int sectionId}) async {
     try {
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        '/class',
+      final response = await _apiClient.get<List<dynamic>>(
+        '/social-feed/post',
         queryParameters: {
           'section_id': sectionId,
         },
       );
 
       final data = response.data;
-      if (data == null || data['success'] != true) {
+      if (data == null || data.isEmpty) {
         return null;
       }
 
-      final result = data['data'];
-      
-      if (result is List && result.isNotEmpty) {
-        return ClassFeedModel.fromJson(
-          result.first as Map<String, dynamic>
-        );
-      } else if (result is Map) {
-        return ClassFeedModel.fromJson(result as Map<String, dynamic>);
-      }
-      
-      return null;
+      return ClassFeedModel.fromJson(data.first as Map<String, dynamic>);
     } catch (e) {
       print('Error fetching class detail: $e');
       return null;
     }
   }
 
+  /// GET POSTS IN CLASS with optional filter
   Future<Map<String, dynamic>> getClassDetailFeed({
     required int sectionId,
     String? postType,
     bool? teacherOnly,
   }) async {
-    final response = await _apiClient.get<Map<String, dynamic>>(
-      '/class',
+    final response = await _apiClient.get<List<dynamic>>(
+      '/social-feed/post',
       queryParameters: {
         'section_id': sectionId,
         if (postType != null) 'type': postType,
-        if (teacherOnly != null) 'teacher_only': teacherOnly,
       },
     );
 
-    return response.data!;
+    return {
+      'success': true,
+      'data': response.data ?? [],
+    };
   }
 }

@@ -39,6 +39,7 @@ class DialogHelper {
     String? message,
     NotificationType type = NotificationType.success,
     double titleSize = 24.0,
+    Duration duration = const Duration(seconds: 2),
   }) {
     Color bgColor;
     IconData iconData;
@@ -97,7 +98,7 @@ class DialogHelper {
       borderRadius: 16,
       margin: const EdgeInsets.all(AppSizes.sm),
       isDismissible: true,
-      duration: const Duration(seconds: 3),
+      duration: duration,
       maxWidth: Get.width * 0.8,
       animationDuration: const Duration(milliseconds: 400),
       forwardAnimationCurve: Curves.fastLinearToSlowEaseIn,

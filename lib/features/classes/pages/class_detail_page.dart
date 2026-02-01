@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/constants/linklian-icon.dart';
+import '../../../core/utils/dialog_helper.dart';
 import '../controllers/class_detail_controller.dart';
 import '../controllers/class_detail_filter.dart';
 import '../../../config/app_routes.dart';
@@ -19,6 +20,14 @@ class ClassDetailPage extends StatelessWidget {
     final auth = Get.find<AuthController>();
     final isTeacher =
         auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
+
+    // Setup infinite scroll
+    controller.scrollController.addListener(() {
+      if (controller.scrollController.position.pixels >=
+          controller.scrollController.position.maxScrollExtent - 200) {
+        controller.fetchPosts(loadMore: true);
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -93,28 +102,69 @@ class ClassDetailPage extends StatelessWidget {
               }
 
               if (controller.posts.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'ยังไม่มีโพสต์ในห้องนี้',
-                    style: TextStyle(color: Colors.grey),
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await controller.fetchPosts();
+                    DialogHelper.showNotification(
+                      title: 'โพสต์ถูกโหลดแล้ว',
+                      message: 'ข้อมูลโพสต์ได้รับการอัปเดตแล้ว',
+                      type: NotificationType.success,
+                      titleSize: 18.0,
+                    );
+                  },
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 200),
+                      Center(
+                        child: Text(
+                          'ยังไม่มีโพสต์ในห้องนี้',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                itemCount: controller.posts.length,
-                itemBuilder: (context, index) {
-                  final post = controller.posts[index];
-                  return CardPost(
-                    post: post,
-                    onSelectForAI: isTeacher
-                        ? null
-                        : (postId) {
-                            controller.togglePostSelection(postId);
-                          },
+              return RefreshIndicator(
+                onRefresh: () async {
+                  await controller.fetchPosts();
+                  DialogHelper.showNotification(
+                    title: 'โพสต์ถูกโหลดแล้ว',
+                    message: 'ข้อมูลโพสต์ได้รับการอัปเดตแล้ว',
+                    type: NotificationType.success,
+                    titleSize: 18.0,
                   );
                 },
+                child: ListView.builder(
+                  controller: controller.scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                  itemCount: controller.posts.length +
+                      (controller.isLoadingMore.value ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    // Loading indicator at bottom
+                    if (index >= controller.posts.length) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+
+                    final post = controller.posts[index];
+                    return CardPost(
+                      post: post,
+                      onSelectForAI: isTeacher
+                          ? null
+                          : (postId) {
+                              controller.togglePostSelection(postId);
+                            },
+                    );
+                  },
+                ),
               );
             }),
           ),

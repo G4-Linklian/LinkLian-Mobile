@@ -58,11 +58,29 @@
 <key>NSPhotoLibraryAddUsageDescription</key>
 <string>บันทึกรูปลงในคลัง</string>
 
+<!-- Add permissions for file downloads -->
+<key>NSPhotoLibraryUsageDescription</key>
+<string>ต้องการเข้าถึงคลังรูปภาพเพื่อบันทึกไฟล์</string>
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>ต้องการเข้าถึงคลังรูปภาพเพื่อบันทึกไฟล์ที่ดาวน์โหลด</string>
+<key>UIFileSharingEnabled</key>
+<true/>
+<key>LSSupportsOpeningDocumentsInPlace</key>
+<true/>
+
 <key>NSAppTransportSecurity</key>
 <dict>
     <key>NSAllowsArbitraryLoads</key>
     <true/>
 </dict>
 
+	<!-- URL Launcher Schemes -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>youtube</string>
+		<string>youtu</string>
+	</array>
 </dict>
 </plist>
