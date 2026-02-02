@@ -42,13 +42,23 @@ class LoginController extends GetxController {
         userGroup: selectedUserGroup.value,
       );
 
-      // ต้อง reset password (flag_valid = false)
+      // ✅ ต้อง reset password (flag_valid = false)
       if (result['require_reset_password'] == true) {
         Get.back(); // 👈 ปิด login sheet
 
+        // 🔥 แสดงข้อความแจ้งเตือนก่อนเปิด reset password
+        DialogHelper.showNotification(
+          title: 'ต้องตั้งรหัสผ่านใหม่',
+          message: 'กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัย',
+          type: NotificationType.info,
+        );
+
+        // เปิด reset password bottom sheet
         Get.bottomSheet(
           ResetPasswordBottomSheet(email: email.value.trim()),
           isScrollControlled: true,
+          isDismissible: false, // ✅ ไม่ให้ปิดได้จนกว่าจะ reset password
+          enableDrag: false,
         );
         return;
       }
@@ -93,9 +103,12 @@ class LoginController extends GetxController {
         return;
       }
     } catch (e) {
+      // 🔥 แปลง error message ให้เป็นภาษาไทยที่เข้าใจง่าย
+      String errorMessage = _parseErrorMessage(e.toString());
+      
       DialogHelper.showNotification(
         title: "เข้าสู่ระบบไม่สำเร็จ",
-        message: e.toString(),
+        message: errorMessage,
         type: NotificationType.error,
       );
     } finally {
@@ -132,5 +145,33 @@ class LoginController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// 🔥 แปล error message เป็นภาษาไทย
+  String _parseErrorMessage(String error) {
+    final lowerError = error.toLowerCase();
+    
+    if (lowerError.contains('invalid credentials')) {
+      return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+    }
+    
+    if (lowerError.contains('role mismatch')) {
+      return 'บัญชีนี้ไม่ใช่ ${selectedUserGroup.value == "student" ? "นักเรียน" : "ครู"}\nกรุณาเลือกประเภทผู้ใช้ที่ถูกต้อง';
+    }
+    
+    if (lowerError.contains('user not found')) {
+      return 'ไม่พบบัญชีผู้ใช้นี้ในระบบ';
+    }
+    
+    if (lowerError.contains('email not found')) {
+      return 'ไม่พบอีเมลนี้ในระบบ';
+    }
+    
+    if (lowerError.contains('network') || lowerError.contains('connection')) {
+      return 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
+    }
+    
+    // ถ้าไม่ match อะไรเลย ให้แสดง error ดิบ
+    return error.replaceAll('Exception: ', '');
   }
 }

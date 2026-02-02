@@ -2,6 +2,7 @@ import '../model/class_feed_model.dart';
 import '../../core/services/api_client.dart';
 import '../../features/auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
+import 'package:flutter/foundation.dart';
 
 class ClassFeedRepository {
   final ApiClient _apiClient = ApiClient();
@@ -91,5 +92,42 @@ class ClassFeedRepository {
       'success': true,
       'data': response.data ?? [],
     };
+  }
+
+  /// GET SECTION EDUCATORS
+  /// Returns list of educators for a section
+  Future<List<Map<String, dynamic>>?> getSectionEducators({
+    required int sectionId,
+  }) async {
+    try {
+      final response = await _apiClient.get<List<dynamic>>(
+        '/social-feed/section-educators/$sectionId',
+      );
+
+      if (response.data != null) {
+        return response.data!
+            .map((e) => e as Map<String, dynamic>)
+            .toList();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Error fetching section educators: $e');
+      return null;
+    }
+  }
+
+  /// GET CLASS INFO (schedules, members, educators)
+  Future<Map<String, dynamic>?> getClassInfo({
+    required int sectionId,
+  }) async {
+    try {
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/social-feed/class-info/$sectionId',
+      );
+      return response.data;
+    } catch (e) {
+      debugPrint('❌ Error fetching class info: $e');
+      return null;
+    }
   }
 }

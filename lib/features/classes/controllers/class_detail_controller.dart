@@ -11,6 +11,7 @@ class ClassDetailController extends GetxController {
   final Rx<int?> sectionId = Rx<int?>(null);
   final Rx<String> subjectNameTh = Rx<String>('');
   final Rx<String> effectiveClassName = Rx<String>('');
+  final Rx<String> teacherName = Rx<String>('');
 
   final Rx<ClassPostFilter> selectedFilter = ClassPostFilter.all.obs;
   final isLoading = false.obs;
@@ -33,26 +34,27 @@ class ClassDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _initializeFromArguments();
+    // Don't initialize from Get.arguments here - will be called from initializeWithArgs
   }
 
-  void _initializeFromArguments() {
-    final args = Get.arguments as Map<String, dynamic>?;
-
-    if (args != null && args['sectionId'] != null) {
-      sectionId.value = args['sectionId'] as int;
-
-      // หา class detail จาก ClassFeedController
+  /// Initialize controller with args (called from ClassDetailPage)
+  void initializeWithArgs(Map<String, dynamic> args) {
+    final newSectionId = args['sectionId'] as int?;
+    
+    // If same section, don't refetch
+    if (sectionId.value == newSectionId && posts.isNotEmpty) {
+      debugPrint('📝 [ClassDetail] Same section with data, skipping refetch');
+      return;
+    }
+    
+    if (newSectionId != null) {
+      sectionId.value = newSectionId;
+      subjectNameTh.value = args['subjectName'] as String? ?? '';
+      effectiveClassName.value = args['className'] as String? ?? '';
+      
+      // Fetch class detail and posts
       fetchClassDetailFromFeed();
-
-      // Fetch posts
-      fetchPosts().then((_) {
-        if (args['refresh'] == true) {
-          scrollToTop();
-        }
-      });
-    } else {
-      Get.snackbar('เกิดข้อผิดพลาด', 'ข้อมูลไม่ครบถ้วน');
+      fetchPosts();
     }
   }
 
@@ -75,11 +77,36 @@ class ClassDetailController extends GetxController {
       if (classDetail != null) {
         subjectNameTh.value = classDetail.subjectNameTh;
         effectiveClassName.value = classDetail.effectiveClassName;
+        
+        // Fetch teacher name separately
+        _fetchTeacherName();
       } else {
         _fetchClassDetailFallback();
       }
     } catch (e) {
       _fetchClassDetailFallback();
+    }
+  }
+
+  /// FETCH TEACHER NAME FROM SECTION EDUCATOR
+  Future<void> _fetchTeacherName() async {
+    try {
+      if (sectionId.value == null) return;
+
+      final result = await _classFeedRepository.getSectionEducators(
+        sectionId: sectionId.value!,
+      );
+
+      if (result != null && result.isNotEmpty) {
+        // Get first educator (main teacher)
+        final teacherDisplayName = result[0]['display_name'] ?? 'ไม่ระบุ';
+        teacherName.value = teacherDisplayName;
+      } else {
+        teacherName.value = 'ไม่พบผู้สอนหลัก';
+      }
+    } catch (e) {
+      debugPrint('❌ Error fetching teacher name: $e');
+      teacherName.value = 'ไม่พบผู้สอนหลัก';
     }
   }
 

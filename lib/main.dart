@@ -14,6 +14,7 @@ import 'features/login/pages/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'data/repository/bookmark_repository.dart';
 import 'features/profile/controllers/bookmark_controller.dart';
+import 'features/layout/controllers/navigation_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,7 @@ void main() async {
 
   Get.put(ApiClient(), permanent: true);
   Get.put(AuthController(), permanent: true);
+  Get.put(NavigationController(), permanent: true);
 
   Get.put<ClassFeedRepository>(ClassFeedRepository(), permanent: true);
 

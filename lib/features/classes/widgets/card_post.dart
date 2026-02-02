@@ -27,7 +27,14 @@ import '../../profile/controllers/bookmark_controller.dart';
 class CardPost extends StatefulWidget {
   final PostModel post;
   final Function(int postId)? onSelectForAI;
-  const CardPost({super.key, required this.post, this.onSelectForAI});
+  final String? highlightKeyword; // For search highlighting
+  
+  const CardPost({
+    super.key,
+    required this.post,
+    this.onSelectForAI,
+    this.highlightKeyword,
+  });
 
   @override
   State<CardPost> createState() => _CardPostState();
@@ -39,9 +46,9 @@ class _CardPostState extends State<CardPost> {
   bool _isPdfLoading = false;
   bool _pdfLoadFailed = false; // Track if PDF load failed
   bool _isExpanded = false;
-  late final BookmarkController bookmarkController;
-  late final PostPermission permission;
-  late final ClassDetailController classController;
+  BookmarkController? _bookmarkController;
+  PostPermission? _permission;
+  ClassDetailController? _classController;
 
   bool _isLink(String type) {
     final t = type.toLowerCase();
@@ -66,10 +73,19 @@ class _CardPostState extends State<CardPost> {
   void initState() {
     super.initState();
     final auth = Get.find<AuthController>();
-    permission = PostPermission(post: widget.post, auth: auth);
-    bookmarkController = Get.find<BookmarkController>();
-    classController = Get.find<ClassDetailController>();
+    _permission = PostPermission(post: widget.post, auth: auth);
+    
+    // Optional controllers - may not exist in search context
+    if (Get.isRegistered<BookmarkController>()) {
+      _bookmarkController = Get.find<BookmarkController>();
+    }
+    if (Get.isRegistered<ClassDetailController>()) {
+      _classController = Get.find<ClassDetailController>();
+    }
   }
+
+  bool get _hasClassController => _classController != null;
+  bool get _hasBookmarkController => _bookmarkController != null;
 
   bool get _isCurrentUserTeacher {
     final auth = Get.find<AuthController>();
@@ -124,8 +140,8 @@ class _CardPostState extends State<CardPost> {
                   children: [
                     _buildPostTypeTag(),
                     const Spacer(),
-                    if (permission.canShowMore) _buildMoreButton(context),
-                    if (permission.canSelectAI) ...[
+                    if (_permission?.canShowMore == true) _buildMoreButton(context),
+                    if (_permission?.canSelectAI == true && _hasClassController) ...[
                       const SizedBox(width: 8),
                       _buildRadio(),
                     ],
@@ -254,20 +270,20 @@ class _CardPostState extends State<CardPost> {
                 const Spacer(),
 
                 // BOOKMARK BUTTON - แสดงเฉพาะนักเรียน (ไม่แสดงสำหรับครู)
-                if (!_isCurrentUserTeacher)
+                if (!_isCurrentUserTeacher && _hasBookmarkController)
                   SizedBox(
                     width: 40,
                     height: 40,
                     child: Obx(() {
                       // ตรวจสอบ bookmark status
-                      final isBookmarked = bookmarkController.isBookmarked(
+                      final isBookmarked = _bookmarkController!.isBookmarked(
                         widget.post.postId,
                       );
 
                       return IconButton(
                         onPressed: () async {
                           // เรียก toggle bookmark
-                          await bookmarkController.toggleBookmark(
+                          await _bookmarkController!.toggleBookmark(
                             postId: widget.post.postId,
                             postContentId: widget.post.postContentId,
                           );
@@ -681,7 +697,7 @@ class _CardPostState extends State<CardPost> {
 
     final items = <PopupMenuEntry>[];
 
-    if (permission.canEdit) {
+    if (_permission?.canEdit == true) {
       items.add(
         PopupMenuItem(
           onTap: _onEditPost,
@@ -693,7 +709,7 @@ class _CardPostState extends State<CardPost> {
       );
     }
 
-    if (permission.canDelete) {
+    if (_permission?.canDelete == true) {
       items.add(
         PopupMenuItem(
           onTap: _onDeletePost,
@@ -708,7 +724,7 @@ class _CardPostState extends State<CardPost> {
       );
     }
 
-    if (permission.canReport) {
+    if (_permission?.canReport == true) {
       items.add(
         PopupMenuItem(
           onTap: _onReportPost,
@@ -873,18 +889,23 @@ class _CardPostState extends State<CardPost> {
   }
 
   void _onEditPost() async {
+    if (!_hasClassController) {
+      Get.snackbar('ไม่สามารถแก้ไขได้', 'กรุณากลับไปหน้าห้องเรียนเพื่อแก้ไขโพสต์');
+      return;
+    }
+    
     final result = await Get.toNamed(
       AppRoutes.createPost,
       arguments: {
         'mode': CreatePostMode.edit,
         'post': widget.post,
         'source': CreatePostSource.classDetail,
-        'sectionId': classController.sectionId.value,
+        'sectionId': _classController!.sectionId.value,
       },
     );
 
     if (result?['success'] == true && result?['edited'] == true) {
-      await classController.fetchPosts(keepScroll: true);
+      await _classController!.fetchPosts(keepScroll: true);
       DialogHelper.showNotification(
         title: 'แก้ไขโพสต์สำเร็จ',
         message: 'โพสต์ของคุณถูกอัปเดตแล้ว',
@@ -925,7 +946,9 @@ class _CardPostState extends State<CardPost> {
         postContentId: postContentId,
       );
 
-      await classController.fetchPosts();
+      if (_hasClassController) {
+        await _classController!.fetchPosts();
+      }
 
       DialogHelper.showNotification(
         title: 'ลบโพสต์สำเร็จ',

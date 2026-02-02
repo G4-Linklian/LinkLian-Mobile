@@ -75,11 +75,12 @@ class _ForgotPasswordBottomSheetState
         email: emailController.text.trim(),
       );
 
-      Get.back(); // ✅ ปิด bottom sheet ก่อน
+      Get.back(); // ✅ ปิด forgot password bottom sheet
 
+      // 🔥 แสดง notification สำเร็จ
       DialogHelper.showNotification(
         title: 'สำเร็จ',
-        message: 'ส่งรหัสผ่านชั่วคราวไปที่อีเมลแล้ว',
+        message: 'ส่งรหัสผ่านชั่วคราวไปที่อีเมลแล้ว กรุณาเข้าสู่ระบบด้วยรหัสผ่านชั่วคราว',
         type: NotificationType.success,
       );
     } catch (e) {

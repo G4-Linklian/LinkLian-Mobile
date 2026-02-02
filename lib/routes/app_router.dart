@@ -16,6 +16,7 @@ import '../data/repository/post_repository.dart';
 import '../features/classes/pages/comment_page.dart';
 import '../features/classes/bindings/comment_binding.dart';
 import '../features/profile/bindings/bookmark_binding.dart';
+import '../features/classes/pages/search_post_page.dart';
 
 
 class AppRouter {
@@ -36,14 +37,17 @@ class AppRouter {
       name: AppRoutes.home,
       page: () => const MainPage(),
       binding: ClassFeedBinding(),
+      transition: Transition.noTransition, // No animation for tab switching
     ),
      GetPage(
       name: AppRoutes.classDetail,
       page: () => const ClassDetailPage(),
       bindings: [
-    ClassDetailBinding(),
-    BookmarkBinding(),
-  ],
+        ClassDetailBinding(),
+        BookmarkBinding(),
+      ],
+      // Use right to left transition for normal navigation
+      transition: Transition.rightToLeft,
     ),
     GetPage(
       name: AppRoutes.createPost,
@@ -55,10 +59,14 @@ class AppRouter {
       }),
     ),
     GetPage(
-  name: AppRoutes.comment,
-  page: () => const CommentPage(),
-  binding: CommentBinding(),
-),
+      name: AppRoutes.comment,
+      page: () => const CommentPage(),
+      binding: CommentBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.searchPost,
+      page: () => const SearchPostPage(),
+    ),
     GetPage(name: AppRoutes.community, page: () => const CommuPage()),
     GetPage(
       name: AppRoutes.profile,
