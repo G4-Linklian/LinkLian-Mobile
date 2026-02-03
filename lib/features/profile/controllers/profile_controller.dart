@@ -159,9 +159,18 @@ class ProfileController extends GetxController {
       _log('📥 Loading teaching schedule for user: $userId');
 
       final schedules = await scheduleRepo.getByEducator(userId);
+      
+      _log('✅ Got ${schedules.length} schedules from repository');
+      
       teachingSchedules.assignAll(schedules);
 
       _log('✅ Teaching schedule loaded: ${teachingSchedules.length} items');
+      
+      // Debug: Print all schedules
+      for (var i = 0; i < teachingSchedules.length; i++) {
+        final s = teachingSchedules[i];
+        _log('  [$i] ${s.subjectName} - Day ${s.dayOfWeek} ${s.startTime}-${s.endTime}');
+      }
     } catch (e) {
       _log('❌ Failed to load teaching schedule: $e');
       teachingSchedules.clear();

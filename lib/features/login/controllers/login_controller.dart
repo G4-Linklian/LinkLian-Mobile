@@ -42,29 +42,29 @@ class LoginController extends GetxController {
         userGroup: selectedUserGroup.value,
       );
 
-      // ต้อง reset password
+      // ✅ ต้อง reset password (flag_valid = false)
       if (result['require_reset_password'] == true) {
         Get.back(); // 👈 ปิด login sheet
 
+        // 🔥 แสดงข้อความแจ้งเตือนก่อนเปิด reset password
+        DialogHelper.showNotification(
+          title: 'ต้องตั้งรหัสผ่านใหม่',
+          message: 'กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัย',
+          type: NotificationType.info,
+        );
+
+        // เปิด reset password bottom sheet
         Get.bottomSheet(
           ResetPasswordBottomSheet(email: email.value.trim()),
           isScrollControlled: true,
+          isDismissible: false, // ✅ ไม่ให้ปิดได้จนกว่าจะ reset password
+          enableDrag: false,
         );
-        return;
-      }
-      // 2️⃣ role ไม่ตรง
-      if (result['require_role_reselect'] == true) {
-        DialogHelper.showNotification(
-          title: 'เลือกประเภทผู้ใช้ไม่ตรง',
-          message: 'กรุณาเลือกประเภทผู้ใช้ใหม่',
-          type: NotificationType.warning,
-        );
-        selectedUserGroup.value = null;
         return;
       }
 
-      // ต้อง OTP
-      if (result['require_otp'] == true) {
+      // ต้อง OTP (ตรวจสอบว่ามี otp_session_id)
+      if (result['otp_session_id'] != null) {
         Get.back();
         final otpSessionId = result['otp_session_id'];
 
@@ -76,36 +76,39 @@ class LoginController extends GetxController {
         return;
       }
 
-      // ===== login สำเร็จแบบไม่ต้อง OTP =====
-if (result['skip_otp'] == true) {
-  Get.back();
-  
-  final token = result['access_token'] as String;
-  
-  // 🔥 รองรับทั้ง int และ String
-  final userId = result['user_id'] is int 
-      ? result['user_id'] as int
-      : int.parse(result['user_id'].toString());
-      
-  final roleName = result['role_name'] as String;
-  
-  final instId = result['inst_id'] is int
-      ? result['inst_id'] as int
-      : int.parse(result['inst_id'].toString());
+      // ===== login สำเร็จแบบไม่ต้อง OTP (มี valid token) =====
+      if (result['access_token'] != null) {
+        Get.back();
+        
+        final token = result['access_token'] as String;
+        
+        // 🔥 รองรับทั้ง int และ String
+        final userId = result['user_id'] is int 
+            ? result['user_id'] as int
+            : int.parse(result['user_id'].toString());
+            
+        final roleName = result['role_name'] as String;
+        
+        final instId = result['inst_id'] is int
+            ? result['inst_id'] as int
+            : int.parse(result['inst_id'].toString());
 
-  await auth.establishSession(
-    token: token,
-    roleName: roleName,
-    instId: instId,
-    userId: userId,
-  );
+        await auth.establishSession(
+          token: token,
+          roleName: roleName,
+          instId: instId,
+          userId: userId,
+        );
 
-  return;
-}
+        return;
+      }
     } catch (e) {
+      // 🔥 แปลง error message ให้เป็นภาษาไทยที่เข้าใจง่าย
+      String errorMessage = _parseErrorMessage(e.toString());
+      
       DialogHelper.showNotification(
         title: "เข้าสู่ระบบไม่สำเร็จ",
-        message: e.toString(),
+        message: errorMessage,
         type: NotificationType.error,
       );
     } finally {
@@ -142,5 +145,33 @@ if (result['skip_otp'] == true) {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// 🔥 แปล error message เป็นภาษาไทย
+  String _parseErrorMessage(String error) {
+    final lowerError = error.toLowerCase();
+    
+    if (lowerError.contains('invalid credentials')) {
+      return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+    }
+    
+    if (lowerError.contains('role mismatch')) {
+      return 'บัญชีนี้ไม่ใช่ ${selectedUserGroup.value == "student" ? "นักเรียน" : "ครู"}\nกรุณาเลือกประเภทผู้ใช้ที่ถูกต้อง';
+    }
+    
+    if (lowerError.contains('user not found')) {
+      return 'ไม่พบบัญชีผู้ใช้นี้ในระบบ';
+    }
+    
+    if (lowerError.contains('email not found')) {
+      return 'ไม่พบอีเมลนี้ในระบบ';
+    }
+    
+    if (lowerError.contains('network') || lowerError.contains('connection')) {
+      return 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
+    }
+    
+    // ถ้าไม่ match อะไรเลย ให้แสดง error ดิบ
+    return error.replaceAll('Exception: ', '');
   }
 }

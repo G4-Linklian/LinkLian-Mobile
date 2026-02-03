@@ -13,11 +13,19 @@ import '../../../data/model/comment_model.dart';
 
 class CommentPage extends StatelessWidget {
   const CommentPage({super.key});
-  
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<CommentController>();
+    final scrollController = ScrollController();
+
+    // Setup infinite scroll
+    scrollController.addListener(() {
+      if (scrollController.position.pixels >=
+          scrollController.position.maxScrollExtent - 200) {
+        controller.loadComments(loadMore: true);
+      }
+    });
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -45,23 +53,12 @@ class CommentPage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // ===== POST =====
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.md,
-              vertical: AppSizes.sm,
-            ),
-            child: CardPost(
-              post: controller.post,
-              onSelectForAI: null,
-            ),
-          ),
-
-          Container(height: 8, color: const Color(0xFFF5F5F5)),
-
-          // ===== COMMENTS =====
+          // ===== SCROLLABLE POST + COMMENTS =====
           Expanded(
-            child: Obx(() => _buildCommentList(controller)),
+            child: RefreshIndicator(
+              onRefresh: () => controller.refreshComments(),
+              child: Obx(() => _buildScrollableContent(controller, scrollController)),
+            ),
           ),
 
           // ===== INPUT =====
@@ -72,61 +69,96 @@ class CommentPage extends StatelessWidget {
   }
 
   // ============================================================
-  // MAIN LIST
+  // SCROLLABLE CONTENT (POST + COMMENTS)
   // ============================================================
 
-  Widget _buildCommentList(CommentController controller) {
-    if (controller.isLoading.value) {
+  Widget _buildScrollableContent(CommentController controller, ScrollController scrollController) {
+    if (controller.isLoading.value && controller.flatComments.isEmpty) {
       return const Center(child: CircularProgressIndicator());
-    }
-
-    if (controller.flatComments.isEmpty) {
-      return _buildEmptyState();
     }
 
     final flat = controller.flatComments;
 
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 16),
-      itemCount: flat.length,
+      controller: scrollController,
+      padding: const EdgeInsets.only(bottom: 16),
+      // +1 for post card, +1 for divider, +1 for empty state if no comments, +1 for loading indicator
+      itemCount: flat.isEmpty ? 3 : flat.length + 3,
       itemBuilder: (context, index) {
-        final comment = flat[index];
+        // First item: Post card
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.md,
+              vertical: AppSizes.sm,
+            ),
+            child: CardPost(
+              post: controller.post,
+              onSelectForAI: null,
+            ),
+          );
+        }
+
+        // Second item: Divider
+        if (index == 1) {
+          return Container(height: 8, color: const Color(0xFFF5F5F5));
+        }
+
+        // Empty state
+        if (flat.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        // Loading indicator at bottom
+        if (index == flat.length + 2) {
+          return Obx(() {
+            if (!controller.isLoadingMore.value) {
+              return const SizedBox.shrink();
+            }
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          });
+        }
+
+        // Comments (index - 2 because of post and divider)
+        final commentIndex = index - 2;
+        final comment = flat[commentIndex];
         final depth = _calculateDepth(comment, flat);
-        final hasNextSibling =
-            _hasNextSibling(flat, index, depth);
-                final visible =
-    controller.visibleChildrenCount[comment.commentId] ?? 0;
+        final hasNextSibling = _hasNextSibling(flat, commentIndex, depth);
+        final visible = controller.visibleChildrenCount[comment.commentId] ?? 0;
+        final remaining = comment.childrenCount - visible;
 
-final remaining =
-    comment.childrenCount - visible;
-
-        return Stack(
-          children: [
-            // ===== THREAD LINES =====
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _ThreadLinePainter(
-                  depth: depth,
-                  hasNextSibling: hasNextSibling,
+        return Padding(
+          padding: EdgeInsets.only(top: commentIndex == 0 ? 16 : 0),
+          child: Stack(
+            children: [
+              // ===== THREAD LINES =====
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _ThreadLinePainter(
+                    depth: depth,
+                    hasNextSibling: hasNextSibling,
+                  ),
                 ),
               ),
-            ),
 
-            
-            // ===== COMMENT CARD =====
-            CardComment(
-  comment: comment,
-  depth: depth,
-  onReply: () {
-    controller.replyingTo.value = comment;
-    controller.focusNode.requestFocus();
-  },
-  onShowMore: remaining > 0
-      ? () => controller.toggleReplies(comment)
-      : null,
-  remainingReplies: remaining, 
-)
-          ],
+              // ===== COMMENT CARD =====
+              CardComment(
+                comment: comment,
+                depth: depth,
+                onReply: () {
+                  controller.replyingTo.value = comment;
+                  controller.focusNode.requestFocus();
+                },
+                onShowMore: remaining > 0
+                    ? () => controller.toggleReplies(comment)
+                    : null,
+                remainingReplies: remaining,
+              )
+            ],
+          ),
         );
       },
     );

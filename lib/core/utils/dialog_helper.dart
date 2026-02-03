@@ -6,7 +6,7 @@ import '../../features/login/widgets/otp_popup.dart';
 import '../../features/classes/widgets/image_source_sheet.dart';
 import '../../features/classes/widgets/link_attach_dialog.dart';
 
-enum NotificationType { success, error, warning }
+enum NotificationType { success, error, warning, info }
 
 class DialogHelper {
   // ฟังก์ชันแสดง Error
@@ -39,6 +39,7 @@ class DialogHelper {
     String? message,
     NotificationType type = NotificationType.success,
     double titleSize = 24.0,
+    Duration duration = const Duration(seconds: 2),
   }) {
     Color bgColor;
     IconData iconData;
@@ -55,6 +56,10 @@ class DialogHelper {
       case NotificationType.warning:
         bgColor = AppColors.warningPalette[500]!;
         iconData = Icons.warning_amber_rounded;
+        break;
+      case NotificationType.info:
+        bgColor = AppColors.primaryPalette[500]!;
+        iconData = Icons.info_outline;
         break;
     }
 
@@ -97,7 +102,7 @@ class DialogHelper {
       borderRadius: 16,
       margin: const EdgeInsets.all(AppSizes.sm),
       isDismissible: true,
-      duration: const Duration(seconds: 3),
+      duration: duration,
       maxWidth: Get.width * 0.8,
       animationDuration: const Duration(milliseconds: 400),
       forwardAnimationCurve: Curves.fastLinearToSlowEaseIn,

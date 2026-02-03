@@ -26,7 +26,12 @@ class ClassFeedController extends GetxController {
   final RxnInt selectedSemesterId = RxnInt();
 
   final RxBool isLoading = false.obs;
+  final RxBool isLoadingMore = false.obs;
+  final RxBool hasMore = true.obs;
   final RxnString errorMessage = RxnString();
+  
+  int _offset = 0;
+  final int _limit = 10;
 
   @override
   void onInit() {
@@ -60,6 +65,8 @@ class ClassFeedController extends GetxController {
     semesters.clear();
     selectedSemesterId.value = null;
     errorMessage.value = null;
+    _offset = 0;
+    hasMore.value = true;
   }
 
   Future<void> loadInitialData() async {
@@ -76,10 +83,14 @@ class ClassFeedController extends GetxController {
   /// FETCH SEMESTER
   Future<void> fetchSemesters() async {
     try {
+      print('📅 [ClassFeed] Fetching semesters for instId: ${auth.instId.value}');
+      
       final result = await semesterRepository.getSemesters(
         instId: auth.instId.value!,
       );
 
+      print('📅 [ClassFeed] Got ${result.length} semesters');
+      
       semesters.assignAll(result);
 
       final openSemester = semesters.firstWhereOrNull(
@@ -87,30 +98,78 @@ class ClassFeedController extends GetxController {
       );
 
       selectedSemesterId.value =
-          openSemester?.semesterId ?? semesters.first.semesterId;
+          openSemester?.semesterId ?? (semesters.isNotEmpty ? semesters.first.semesterId : null);
 
-      await fetchClassFeed();
+      print('📅 [ClassFeed] Selected semester: ${selectedSemesterId.value}');
+
+      if (selectedSemesterId.value != null) {
+        await fetchClassFeed();
+      } else {
+        print('⚠️ [ClassFeed] No semester selected, skipping fetchClassFeed');
+      }
     } catch (e) {
+      print('❌ [ClassFeed] Error fetching semesters: $e');
       errorMessage.value = e.toString();
     }
   }
 
-  Future<void> fetchClassFeed() async {
-    if (selectedSemesterId.value == null) return;
+  Future<void> fetchClassFeed({bool loadMore = false}) async {
+    if (selectedSemesterId.value == null) {
+      print('⚠️ [ClassFeed] selectedSemesterId is null, skipping');
+      return;
+    }
+
+    if (loadMore && !hasMore.value) {
+      print('⚠️ [ClassFeed] No more classes to load');
+      return;
+    }
+
+    if (loadMore && isLoadingMore.value) {
+      print('⚠️ [ClassFeed] Already loading more');
+      return;
+    }
 
     try {
-      isLoading.value = true;
+      if (loadMore) {
+        isLoadingMore.value = true;
+      } else {
+        isLoading.value = true;
+        _offset = 0;
+        classList.clear();
+        hasMore.value = true;
+      }
+
       errorMessage.value = null;
+
+      print('🏫 [ClassFeed] Fetching class feed for semester: ${selectedSemesterId.value}, offset: $_offset, limit: $_limit');
 
       final result = await classFeedRepository.getClassFeed(
         semesterId: selectedSemesterId.value!,
+        offset: _offset,
+        limit: _limit,
       );
 
-      classList.assignAll(result);
+      print('🏫 [ClassFeed] Got ${result.length} classes');
+
+      if (result.length < _limit) {
+        hasMore.value = false;
+        print('✅ [ClassFeed] No more classes to load');
+      }
+
+      if (loadMore) {
+        classList.addAll(result);
+      } else {
+        classList.assignAll(result);
+      }
+
+      _offset += result.length;
+
     } catch (e) {
+      print('❌ [ClassFeed] Error fetching class feed: $e');
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
+      isLoadingMore.value = false;
     }
   }
 

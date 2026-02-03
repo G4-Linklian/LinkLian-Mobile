@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:dio/dio.dart';
 
 import '../../../core/constants/colors.dart';
@@ -55,6 +55,115 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
     super.dispose();
   }
 
+  /// Handle close button with confirmation if content exists
+  Future<void> _handleClose(CreatePostController controller) async {
+    // Check if user has entered any content
+    if (controller.hasContent) {
+      final shouldClose = await Get.dialog<bool>(
+        Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: AppColors.primaryPalette[300],
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title
+                Text(
+                  'ยกเลิกการสร้างโพสต์?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryPalette[700],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Content
+                Text(
+                  'คุณได้พิมพ์ข้อความหรือแนบไฟล์แล้ว\nหากยกเลิกข้อมูลทั้งหมดจะหายไป',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.primaryPalette[700],
+                    height: 1.5,
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Buttons
+                Row(
+                  children: [
+                    // โพสต์ต่อ button (left)
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Get.back(result: false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryPalette[500],
+                          foregroundColor: AppColors.primaryPalette[100],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'โพสต์ต่อ',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 12),
+                    
+                    // ยกเลิกการโพสต์ button (right)
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Get.back(result: true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.dangerPalette[500],
+                          foregroundColor: AppColors.dangerPalette[100],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'ยกเลิกการโพสต์',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      if (shouldClose == true) {
+        Get.back();
+      }
+    } else {
+      // No content, just close
+      Get.back();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final CreatePostController controller = Get.find<CreatePostController>();
@@ -63,223 +172,278 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
     final isTeacher =
         auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
 
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: () async {
+        // Handle Android back button
+        if (controller.hasContent) {
+          await _handleClose(controller);
+          return false; // Prevent default back behavior
+        }
+        return true; // Allow back if no content
+      },
+      child: Scaffold(
         backgroundColor: AppColors.white,
-        elevation: 0,
-        leading: const SizedBox(),
-        title: Obx(
-          () => Text(
-            controller.mode.value == CreatePostMode.edit
-                ? 'แก้ไขโพสต์'
-                : 'สร้างโพสต์',
-            style: const TextStyle(
-              color: AppColors.black,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+        appBar: AppBar(
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          leading: const SizedBox(),
+          title: Obx(
+            () => Text(
+              controller.mode.value == CreatePostMode.edit
+                  ? 'แก้ไขโพสต์'
+                  : 'สร้างโพสต์',
+              style: const TextStyle(
+                color: AppColors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
-        centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: IconButton(
-              icon: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.dangerPalette[500]!,
-                    width: 1.5,
+          centerTitle: true,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: IconButton(
+                icon: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.dangerPalette[500]!,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(
+                    LinkLianIcon.close,
+                    color: AppColors.dangerPalette[500],
+                    size: 16,
                   ),
                 ),
-                child: Icon(
-                  LinkLianIcon.close,
-                  color: AppColors.dangerPalette![500],
-                  size: 16,
-                ),
-              ),
-              onPressed: () => Get.back(),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.md,
-              vertical: AppSizes.sm,
-            ),
-            child: Row(
-              children: [
-                ClassSelector(
-                  controller: controller,
-                  classFeedController: classFeedController,
-                ),
-                const Spacer(),
-                Obx(() {
-                  // ===== นักเรียน =====
-                  if (!isTeacher) {
-                    return _buildTagChip(
-                      label: 'คำถาม',
-                      isSelected: controller.postType.value == 'question',
-                      onTap: () {
-                        controller.postType.value = 'question';
-                      },
-                    );
-                  }
-
-                  // ===== ครู =====
-                  return Row(
-                    children: [
-                      _buildTagChip(
-                        label: 'ประกาศ',
-                        isSelected: controller.postType.value == 'announcement',
-                        onTap: () {
-                          controller.postType.value = 'announcement';
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildTagChip(
-                        label: 'การบ้าน',
-                        isSelected: controller.postType.value == 'assignment',
-                        onTap: () {
-                          controller.postType.value = 'assignment';
-                        },
-                      ),
-                    ],
-                  );
-                }),
-              ],
-            ),
-          ),
-
-          // CONTENT AREA แตกต่างตามบทบาท
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(AppSizes.md),
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1),
-                ),
-              ),
-              child: isTeacher
-                  ? _buildTeacherContent(controller)
-                  : _buildStudentContent(controller),
-            ),
-          ),
-
-          // ATTACHMENTS
-          Obx(() {
-            if (controller.attachments.isEmpty) {
-              return const SizedBox();
-            }
-
-            return Column(
-              children: controller.attachments.asMap().entries.map((entry) {
-                final index = entry.key;
-                final file = entry.value;
-
-                return AttachmentTile(
-                  file: file,
-                  onRemove: () => controller.removeAttachment(index),
-                );
-              }).toList(),
-            );
-          }),
-
-          // BOTTOM BAR (Toggle + Tools + Post)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: const BoxDecoration(
-              color: AppColors.white,
-              border: Border(
-                top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+                onPressed: () => _handleClose(controller),
               ),
             ),
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+          ],
+        ),
+        body: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.md,
+                vertical: AppSizes.sm,
+              ),
+              child: Row(
                 children: [
-                  // Toggle Anonymous - เฉพาะนักเรียน
-                  if (!isTeacher)
+                  ClassSelector(
+                    controller: controller,
+                    classFeedController: classFeedController,
+                  ),
+                  const Spacer(),
+                  Obx(() {
+                    // ===== นักเรียน =====
+                    if (!isTeacher) {
+                      return _buildTagChip(
+                        label: 'คำถาม',
+                        isSelected: controller.postType.value == 'question',
+                        onTap: () {
+                          controller.postType.value = 'question';
+                        },
+                      );
+                    }
+
+                    // ===== ครู =====
+                    return Row(
+                      children: [
+                        _buildTagChip(
+                          label: 'ประกาศ',
+                          isSelected: controller.postType.value == 'announcement',
+                          onTap: () {
+                            controller.postType.value = 'announcement';
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildTagChip(
+                          label: 'การบ้าน',
+                          isSelected: controller.postType.value == 'assignment',
+                          onTap: () {
+                            controller.postType.value = 'assignment';
+                          },
+                        ),
+                      ],
+                    );
+                  }),
+                ],
+              ),
+            ),
+
+            // CONTENT AREA + ATTACHMENTS (Scrollable together)
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // CONTENT INPUT
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSizes.md),
+                        child: isTeacher
+                            ? _buildTeacherContent(controller)
+                            : _buildStudentContent(controller),
+                      ),
+                    ),
+
+                    // ATTACHMENTS (under content, scrollable)
                     Obx(() {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _buildIconToggleSwitch(
-                            value: controller.isAnonymous.value,
-                            onChanged: (v) => controller.isAnonymous.value = v,
+                      if (controller.attachments.isEmpty) {
+                        return const SizedBox();
+                      }
+
+                      return Container(
+                        constraints: const BoxConstraints(maxHeight: 180),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+                          ),
+                        ),
+                        child: Container(
+                          margin: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.primaryPalette[600]!),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Scrollbar(
+                            trackVisibility: true,
+                            thumbVisibility: true,
+                            child: ListView.builder(
+                              scrollDirection: Axis.vertical,
+                              shrinkWrap: true,
+                              itemCount: controller.attachments.length,
+                              itemBuilder: (context, index) {
+                                final file = controller.attachments[index];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  child: AttachmentTile(
+                                    file: file,
+                                    onRemove: () => controller.removeAttachment(index),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ),
                       );
                     }),
-
-                  // Tools + Post Button
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          LinkLianIcon.paperclip,
-                          color: AppColors.black,
-                          size: 24,
-                        ),
-                        onPressed: () async {
-                          final files = await FilePickerHelper.pickFiles();
-                          if (files.isEmpty) return;
-
-                          try {
-                            DialogHelper.showLoading('กำลังอัปโหลดไฟล์...');
-                            await controller.uploadFiles(files);
-                          } catch (e) {
-                            DialogHelper.showNotification(
-                              title: 'อัปโหลดไม่สำเร็จ',
-                              message: 'กรุณาลองใหม่อีกครั้ง',
-                              type: NotificationType.error,
-                            );
-                          } finally {
-                            DialogHelper.hideLoading();
-                          }
-                        },
-                      ),
-
-                      CreatePostImagePickerButton(
-                        controller: controller,
-                        icon: const Icon(
-                          LinkLianIcon.photo,
-                          color: AppColors.black,
-                          size: 24,
-                        ),
-                      ),
-
-                      IconButton(
-                        icon: const Icon(
-                          LinkLianIcon.link,
-                          color: AppColors.black,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          DialogHelper.showLinkDialog(
-                            onSubmit: (url) {
-                            },
-                          );
-                        },
-                      ),
-
-                      const Spacer(),
-                      _buildPostButton(controller: controller, isTeacher: isTeacher),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+
+            // BOTTOM BAR (Toggle + Tools + Post)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                border: Border(
+                  top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+                ),
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Toggle Anonymous - เฉพาะนักเรียน
+                    if (!isTeacher)
+                      Obx(() {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: _buildIconToggleSwitch(
+                              value: controller.isAnonymous.value,
+                              onChanged: (v) => controller.isAnonymous.value = v,
+                            ),
+                          ),
+                        );
+                      }),
+
+                    // Tools + Post Button
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            LinkLianIcon.paperclip,
+                            color: AppColors.black,
+                            size: 24,
+                          ),
+                          onPressed: () async {
+                            final files = await FilePickerHelper.pickFiles();
+                            if (files.isEmpty) return;
+
+                            try {
+                              DialogHelper.showLoading('กำลังอัปโหลดไฟล์...');
+                              final success = await controller.uploadFiles(files);
+                              DialogHelper.hideLoading();
+                              
+                              if (!success) {
+                                // DANGER: ไม่สามารถอัปโหลดได้เลย
+                                DialogHelper.showNotification(
+                                  title: 'อัปโหลดล้มเหลว',
+                                  message: 'ไม่สามารถอัปโหลดไฟล์ได้ กรุณาตรวจสอบไฟล์และลองใหม่อีกครั้ง',
+                                  type: NotificationType.error,
+                                );
+                              } else if (controller.uploadWarnings.isNotEmpty) {
+                                // WARNING: บางไฟล์มีปัญหา
+                                DialogHelper.showNotification(
+                                  title: 'อัปโหลดสำเร็จบางส่วน',
+                                  message: controller.uploadWarnings.join('\n'),
+                                  type: NotificationType.warning,
+                                );
+                              }
+                            } catch (e) {
+                              DialogHelper.hideLoading();
+                              DialogHelper.showNotification(
+                                title: 'เกิดข้อผิดพลาด',
+                                message: 'ไม่สามารถอัปโหลดไฟล์ได้: $e',
+                                type: NotificationType.error,
+                              );
+                            }
+                          },
+                        ),
+
+                        CreatePostImagePickerButton(
+                          controller: controller,
+                          icon: const Icon(
+                            LinkLianIcon.photo,
+                            color: AppColors.black,
+                            size: 24,
+                          ),
+                        ),
+
+                        IconButton(
+                          icon: const Icon(
+                            LinkLianIcon.link,
+                            color: AppColors.black,
+                            size: 24,
+                          ),
+                          onPressed: () {
+                            _showLinkDialog(context, controller);
+                          },
+                        ),
+
+                        const Spacer(),
+                        _buildPostButton(controller: controller, isTeacher: isTeacher),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -483,6 +647,94 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
     );
   }
 
+  /// Show dialog to add link attachment
+  void _showLinkDialog(BuildContext context, CreatePostController controller) {
+    final urlController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(LinkLianIcon.link, color: AppColors.primaryPalette[600]),
+            const SizedBox(width: 8),
+            const Text('แนบลิงก์'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: urlController,
+              decoration: InputDecoration(
+                hintText: 'https://linklian.com',
+                prefixIcon: const Icon(Icons.link),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              keyboardType: TextInputType.url,
+              autofocus: true,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'ลิงก์จะแสดงเป็น preview และเปิดใน browser เมื่อกด',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final url = urlController.text.trim();
+              if (url.isEmpty) {
+                return;
+              }
+              
+              // Validate URL format
+              if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                DialogHelper.showNotification(
+                  title: 'ลิงก์ไม่ถูกต้อง',
+                  message: 'กรุณาใส่ลิงก์ที่ขึ้นต้นด้วย http:// หรือ https://',
+                  type: NotificationType.warning,
+                );
+                return;
+              }
+              
+              // Add link to attachments (ไม่ต้อง upload ไปที่ Blob)
+              controller.attachments.add({
+                'file_type': 'link',
+                'file_url': url,
+                'file_name': url,
+                'original_name': url,
+                'file_size': 0,
+              });
+              
+              Navigator.pop(ctx);
+              
+              debugPrint('🔗 Link added: $url');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryPalette[500],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text('เพิ่มลิงก์', style: TextStyle(color: AppColors.primaryPalette[900])),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPostButton({
     required CreatePostController controller,
     required bool isTeacher,
@@ -514,14 +766,25 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
           return;
         }
 
+        // Note: ไม่ต้องเช็คไฟล์แนบ เพราะโพสต์โดยไม่มีไฟล์ก็ได้
+
         // ===== SUBMIT =====
         try {
           DialogHelper.showLoading('กำลังโพสต์...');
 
+          debugPrint('📝 Starting submit...');
           final res = await controller.submitPost();
+          debugPrint('📝 Submit response: $res');
+          
           DialogHelper.hideLoading();
 
-          if (res.isEmpty || res['success'] != true) {
+          // Check for success - handle both formats
+          final isSuccess = res['success'] == true || 
+                            res['data'] != null ||
+                            res['post_content_id'] != null;
+          
+          if (!isSuccess) {
+            debugPrint('❌ Post failed: $res');
             DialogHelper.showNotification(
               title: 'เกิดข้อผิดพลาด',
               message: res['error']?['message'] ?? 'ไม่สามารถสร้างโพสต์ได้',
@@ -530,7 +793,10 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
             return;
           }
 
-          if (res['warning'] != null && res['warning'].isNotEmpty) {
+          debugPrint('✅ Post success!');
+
+          // Show notification
+          if (res['warning'] != null && (res['warning'] as List).isNotEmpty) {
             DialogHelper.showNotification(
               title: 'โพสต์สำเร็จ',
               message: res['warning'][0]['message'],
@@ -544,37 +810,136 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
             );
           }
 
-          await Future.delayed(const Duration(seconds: 1));
-          Get.back(
-            result: {
+          // Wait for notification AND close all dialogs
+          await Future.delayed(const Duration(milliseconds: 1500));
+          
+          // Close any remaining dialogs/snackbars
+          if (Get.isSnackbarOpen == true) {
+            Get.closeAllSnackbars();
+          }
+          if (Get.isDialogOpen == true) {
+            Get.back();
+          }
+
+          debugPrint('📍 Starting redirect...');
+          debugPrint('📍 Mode: ${controller.mode.value}');
+          debugPrint('📍 Source: ${controller.source}');
+          debugPrint('📍 Selected sections: ${controller.selectedSectionIds}');
+
+          // ===== REDIRECT BASED ON SOURCE AND MODE =====
+          if (controller.mode.value == CreatePostMode.edit) {
+            // EDIT MODE: Go back and refresh class detail
+            debugPrint('📍 Edit mode: Going back');
+            
+            // Go back FIRST - this must happen immediately
+            Navigator.of(context).pop({
               'success': true,
-              'edited': controller.mode.value == CreatePostMode.edit,
+              'edited': true,
               'post': {
                 'post_content_id': controller.editingPostContentId,
-                'title': isTeacher 
-                    ? controller.title.value 
-                    : controller.content.value, 
+                'title': isTeacher
+                    ? controller.title.value
+                    : controller.content.value,
                 'content': controller.content.value,
                 'post_type': controller.postType.value,
                 'attachments': controller.attachments,
               },
-            },
-            closeOverlays: true,
-          );
-        } on DioError catch (e) {
+            });
+            
+            // Refresh class detail AFTER pop
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (Get.isRegistered<ClassDetailController>()) {
+                debugPrint('📍 Refreshing class detail after edit...');
+                Get.find<ClassDetailController>().fetchPosts(keepScroll: true);
+              }
+            });
+            
+            return; // Exit early after edit
+          } else if (controller.source == CreatePostSource.classDetail) {
+            // POSTED FROM CLASS DETAIL: Go back and refresh
+            debugPrint('📍 From class detail: Going back with refresh');
+            
+            // Use until to go back to ClassDetailPage
+            Get.until((route) {
+              debugPrint('📍 Checking route: ${route.settings.name}');
+              return route.settings.name == '/class-detail';
+            });
+            
+            // Trigger refresh after going back
+            await Future.delayed(const Duration(milliseconds: 100));
+            if (Get.isRegistered<ClassDetailController>()) {
+              final detailController = Get.find<ClassDetailController>();
+              debugPrint('📍 Refreshing class detail...');
+              await detailController.fetchPosts();
+              detailController.scrollToTop();
+            }
+          } else {
+            // POSTED FROM CLASS FEED
+            debugPrint('📍 From class feed');
+            
+            if (controller.selectedSectionIds.length == 1) {
+              // SINGLE CLASS: Navigate to that class detail
+              final sectionId = controller.selectedSectionIds.first;
+              debugPrint('📍 Single class ($sectionId): Navigate to class detail');
+              
+              // Close create post page
+              Get.back();
+
+              // Navigate to class detail
+              await Future.delayed(const Duration(milliseconds: 200));
+              Get.toNamed(
+                '/class-detail',
+                arguments: {
+                  'sectionId': sectionId,
+                  'refresh': true,
+                },
+              );
+            } else {
+              // MULTIPLE CLASSES or ALL: Go back to class feed
+              debugPrint('📍 Multiple classes: Going back to feed');
+              
+              // Close create post page first
+              Get.until((route) {
+                debugPrint('📍 Checking route: ${route.settings.name}');
+                // Go back until we reach a page that's NOT create-post
+                return route.settings.name != '/create-post' && 
+                       route.settings.name != '/CreatePostClassPage';
+              });
+
+              // Refresh class feed
+              await Future.delayed(const Duration(milliseconds: 200));
+              if (Get.isRegistered<ClassFeedController>()) {
+                debugPrint('📍 Refreshing class feed...');
+                Get.find<ClassFeedController>().refreshFeed();
+              }
+            }
+          }
+        } on DioException catch (e) {
+          debugPrint('❌ DioException: ${e.message}');
+          debugPrint('❌ Response: ${e.response?.data}');
           DialogHelper.hideLoading();
-          final err = e.response?.data?['error'];
+          
+          final responseData = e.response?.data;
+          String errorMessage = 'ระบบขัดข้อง กรุณาลองใหม่';
+          
+          if (responseData is Map) {
+            errorMessage = responseData['message']?.toString() ?? 
+                           responseData['error']?.toString() ?? 
+                           errorMessage;
+          }
 
           DialogHelper.showNotification(
             title: 'เกิดข้อผิดพลาด',
-            message: err?['message'] ?? 'ระบบขัดข้อง กรุณาลองใหม่',
+            message: errorMessage,
             type: NotificationType.error,
           );
-        } catch (e) {
+        } catch (e, stack) {
+          debugPrint('❌ Error: $e');
+          debugPrint('❌ Stack: $stack');
           DialogHelper.hideLoading();
           DialogHelper.showNotification(
             title: 'เกิดข้อผิดพลาด',
-            message: 'ไม่สามารถสร้างโพสต์ได้',
+            message: 'ไม่สามารถสร้างโพสต์ได้: $e',
             type: NotificationType.error,
           );
         }

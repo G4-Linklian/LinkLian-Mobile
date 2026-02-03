@@ -8,9 +8,9 @@ class ProfileRepository {
 
   ProfileRepository(this.api);
 
-  /// Post /profile/:userId
+  /// Get /profile/:userId
   Future<ProfileModel> getProfile(int userId) async {
-    final res = await api.post(
+    final res = await api.get(
       '/profile/$userId',
     );
 

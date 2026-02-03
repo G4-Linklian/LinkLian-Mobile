@@ -24,7 +24,7 @@ class ClassFeedModel {
   final String subjectNameEn;
 
   @JsonKey(name: 'learning_area_name')
-  final String learningAreaName;
+  final String? learningAreaName;
 
   final String semester;
 
@@ -60,7 +60,7 @@ class ClassFeedModel {
     required this.subjectCode,
     required this.subjectNameTh,
     required this.subjectNameEn,
-    required this.learningAreaName,
+    this.learningAreaName,
     required this.semester,
     required this.schedules,
     this.displayClassName,

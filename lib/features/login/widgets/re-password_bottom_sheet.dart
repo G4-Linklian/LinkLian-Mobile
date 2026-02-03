@@ -90,16 +90,12 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
         newPassword: newPassword.text.trim(),
         confirmPassword: confirmPassword.text.trim(),
       );
-      Get.back(); // ปิด bottomsheet
+      
+      Get.back(); // ปิด reset password bottomsheet
+      
       DialogHelper.showNotification(
         title: 'สำเร็จ',
-        message: 'ตั้งค่ารหัสผ่านใหม่เรียบร้อย',
-        type: NotificationType.success,
-      );
-
-      DialogHelper.showNotification(
-        title: 'สำเร็จ',
-        message: 'ตั้งค่ารหัสผ่านใหม่เรียบร้อย',
+        message: 'ตั้งค่ารหัสผ่านใหม่เรียบร้อย กรุณาเข้าสู่ระบบอีกครั้ง',
         type: NotificationType.success,
       );
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../auth/controller/auth_controller.dart';
 import '../../../data/model/comment_model.dart';
@@ -23,9 +24,10 @@ class CommentController extends GetxController {
 
   // ===== pagination =====
   final isLoading = false.obs;
-  int? nextCursor;
+  final isLoadingMore = false.obs;
+  int offset = 0;
   bool hasMore = true;
-  int? _lastRepliedParentId;
+  final int pageSize = 10;
 
   // ===== comment storage =====
   final rootComments = <CommentModel>[].obs;
@@ -60,38 +62,51 @@ class CommentController extends GetxController {
 
   // LOAD COMMENTS
 
-  Future<void> loadComments() async {
-    if (isLoading.value || !hasMore) return;
-
-    isLoading.value = true;
+  Future<void> loadComments({bool loadMore = false}) async {
+    if (loadMore) {
+      if (isLoadingMore.value || !hasMore) return;
+      isLoadingMore.value = true;
+    } else {
+      if (isLoading.value) return;
+      isLoading.value = true;
+    }
 
     try {
       final res = await _repo.getComments(
         postId: postId,
-        nextCursor: nextCursor,
-        limit: 10,
+        offset: offset,
+        limit: pageSize,
       );
 
       for (final comment in res.comments) {
-  rootComments.add(comment);
-
-  visibleChildrenCount[comment.commentId] = 0;
-}
+        rootComments.add(comment);
+        visibleChildrenCount[comment.commentId] = 0;
+      }
 
       _rebuildFlatList();
 
-if (_lastRepliedParentId != null) {
-  _expandThreadForParent(_lastRepliedParentId!);
-  _lastRepliedParentId = null;
-}
-
-      nextCursor = res.nextCursor;
+      offset += res.comments.length;
       hasMore = res.hasMore;
     } catch (e) {
       DialogHelper.showErrorDialog(description: 'ไม่สามารถโหลดความคิดเห็นได้');
     } finally {
-      isLoading.value = false;
+      if (loadMore) {
+        isLoadingMore.value = false;
+      } else {
+        isLoading.value = false;
+      }
     }
+  }
+
+  // REFRESH COMMENTS
+  Future<void> refreshComments() async {
+    offset = 0;
+    hasMore = true;
+    rootComments.clear();
+    flatComments.clear();
+    visibleChildrenCount.clear();
+    
+    await loadComments();
   }
 
   // FLATTEN COMMENTS 
@@ -174,10 +189,11 @@ bool _expandRecursive(CommentModel comment, int targetId) {
     if (text.trim().isEmpty) return;
 
     final parent = replyingTo.value;
-_lastRepliedParentId = parent?.commentId;
+    final parentId = parent?.commentId;
 
-textController.clear();
-replyingTo.value = null;
+    // Clear input immediately for better UX
+    textController.clear();
+    replyingTo.value = null;
 
     try {
       await _repo.createComment(
@@ -185,17 +201,16 @@ replyingTo.value = null;
         userId: userSysId,
         text: text,
         isAnonymous: isAnonymous.value,
-        parentId: parent?.commentId,
+        parentId: parentId,
       );
 
-      // ===== FULL REFRESH =====
-      rootComments.clear();
-      flatComments.clear();
-      visibleChildrenCount.clear();
-      nextCursor = null;
-      hasMore = true;
+      // Refresh comments from server to get the new comment with correct data
+      await _refreshComments();
 
-      await loadComments();
+      // Expand the parent thread if this was a reply
+      if (parentId != null) {
+        _expandThreadForParent(parentId);
+      }
 
       DialogHelper.showNotification(
         title: 'สำเร็จ',
@@ -204,6 +219,41 @@ replyingTo.value = null;
       );
     } catch (e) {
       DialogHelper.showErrorDialog(description: 'ไม่สามารถส่งความคิดเห็นได้');
+    }
+  }
+
+  /// Refresh all comments from server
+  Future<void> _refreshComments() async {
+    try {
+      final res = await _repo.getComments(
+        postId: postId,
+        limit: 100, // Get all comments
+      );
+
+      // Save current visibility state
+      final Map<int, int> oldVisibility = Map.from(visibleChildrenCount);
+
+      rootComments.clear();
+      visibleChildrenCount.clear();
+
+      for (final comment in res.comments) {
+        rootComments.add(comment);
+        // Restore previous visibility or default to 0 (collapsed)
+        visibleChildrenCount[comment.commentId] = oldVisibility[comment.commentId] ?? 0;
+        _restoreChildrenVisibility(comment, oldVisibility);
+      }
+
+      _rebuildFlatList();
+    } catch (e) {
+      debugPrint('Refresh comments error: $e');
+    }
+  }
+
+  /// Recursively restore children visibility from old state
+  void _restoreChildrenVisibility(CommentModel comment, Map<int, int> oldVisibility) {
+    for (final child in comment.children) {
+      visibleChildrenCount[child.commentId] = oldVisibility[child.commentId] ?? 0;
+      _restoreChildrenVisibility(child, oldVisibility);
     }
   }
 }

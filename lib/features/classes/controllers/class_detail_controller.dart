@@ -11,11 +11,17 @@ class ClassDetailController extends GetxController {
   final Rx<int?> sectionId = Rx<int?>(null);
   final Rx<String> subjectNameTh = Rx<String>('');
   final Rx<String> effectiveClassName = Rx<String>('');
+  final Rx<String> teacherName = Rx<String>('');
 
   final Rx<ClassPostFilter> selectedFilter = ClassPostFilter.all.obs;
   final isLoading = false.obs;
+  final isLoadingMore = false.obs;
+  final hasMore = true.obs;
   final RxList<PostModel> posts = <PostModel>[].obs;
   final RxSet<int> selectedPostIdsForAI = <int>{}.obs;
+
+  int _offset = 0;
+  final int _limit = 10;
 
   final PostRepository _postRepository = PostRepository();
   final ClassFeedRepository _classFeedRepository = ClassFeedRepository();
@@ -28,26 +34,27 @@ class ClassDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _initializeFromArguments();
+    // Don't initialize from Get.arguments here - will be called from initializeWithArgs
   }
 
-  void _initializeFromArguments() {
-    final args = Get.arguments as Map<String, dynamic>?;
-
-    if (args != null && args['sectionId'] != null) {
-      sectionId.value = args['sectionId'] as int;
-
-      // หา class detail จาก ClassFeedController
+  /// Initialize controller with args (called from ClassDetailPage)
+  void initializeWithArgs(Map<String, dynamic> args) {
+    final newSectionId = args['sectionId'] as int?;
+    
+    // If same section, don't refetch
+    if (sectionId.value == newSectionId && posts.isNotEmpty) {
+      debugPrint('📝 [ClassDetail] Same section with data, skipping refetch');
+      return;
+    }
+    
+    if (newSectionId != null) {
+      sectionId.value = newSectionId;
+      subjectNameTh.value = args['subjectName'] as String? ?? '';
+      effectiveClassName.value = args['className'] as String? ?? '';
+      
+      // Fetch class detail and posts
       fetchClassDetailFromFeed();
-
-      // Fetch posts
-      fetchPosts().then((_) {
-        if (args['refresh'] == true) {
-          scrollToTop();
-        }
-      });
-    } else {
-      Get.snackbar('เกิดข้อผิดพลาด', 'ข้อมูลไม่ครบถ้วน');
+      fetchPosts();
     }
   }
 
@@ -70,11 +77,36 @@ class ClassDetailController extends GetxController {
       if (classDetail != null) {
         subjectNameTh.value = classDetail.subjectNameTh;
         effectiveClassName.value = classDetail.effectiveClassName;
+        
+        // Fetch teacher name separately
+        _fetchTeacherName();
       } else {
         _fetchClassDetailFallback();
       }
     } catch (e) {
       _fetchClassDetailFallback();
+    }
+  }
+
+  /// FETCH TEACHER NAME FROM SECTION EDUCATOR
+  Future<void> _fetchTeacherName() async {
+    try {
+      if (sectionId.value == null) return;
+
+      final result = await _classFeedRepository.getSectionEducators(
+        sectionId: sectionId.value!,
+      );
+
+      if (result != null && result.isNotEmpty) {
+        // Get first educator (main teacher)
+        final teacherDisplayName = result[0]['display_name'] ?? 'ไม่ระบุ';
+        teacherName.value = teacherDisplayName;
+      } else {
+        teacherName.value = 'ไม่พบผู้สอนหลัก';
+      }
+    } catch (e) {
+      debugPrint('❌ Error fetching teacher name: $e');
+      teacherName.value = 'ไม่พบผู้สอนหลัก';
     }
   }
 
@@ -121,7 +153,17 @@ class ClassDetailController extends GetxController {
   }
 
   /// FETCH POSTS
-  Future<void> fetchPosts({bool keepScroll = false}) async {
+  Future<void> fetchPosts({bool loadMore = false, bool keepScroll = false}) async {
+    if (loadMore && !hasMore.value) {
+      debugPrint('⚠️ [ClassDetail] No more posts to load');
+      return;
+    }
+
+    if (loadMore && isLoadingMore.value) {
+      debugPrint('⚠️ [ClassDetail] Already loading more');
+      return;
+    }
+
     double? savedOffset;
 
     if (keepScroll && scrollController.hasClients) {
@@ -129,27 +171,55 @@ class ClassDetailController extends GetxController {
     }
 
     try {
-      // โหลดเฉพาะกรณีที่ไม่ keepScroll
-      if (!keepScroll) {
+      if (loadMore) {
+        isLoadingMore.value = true;
+        // เพิ่ม delay เล็กน้อยเพื่อให้เห็น loading indicator
+        await Future.delayed(const Duration(milliseconds: 300));
+      } else {
         isLoading.value = true;
+        _offset = 0;
+        posts.clear();
+        hasMore.value = true;
       }
 
       if (sectionId.value == null) {
         throw Exception('sectionId is null');
       }
 
+      debugPrint('📝 [ClassDetail] Fetching posts: offset=$_offset, limit=$_limit');
+
       final result = await _postRepository.getPostInClass(
         sectionId: sectionId.value!,
         filterType: selectedFilter.value.apiValue,
+        offset: _offset,
+        limit: _limit,
       );
 
-      posts.assignAll(result);
+      debugPrint('📝 [ClassDetail] Got ${result.length} posts (hasMore: $hasMore)');
+      debugPrint('📝 [ClassDetail] Current total: ${posts.length} posts');
+
+      if (result.length < _limit) {
+        hasMore.value = false;
+        debugPrint('✅ [ClassDetail] No more posts to load');
+      }
+
+      if (loadMore) {
+        posts.addAll(result);
+        debugPrint('📝 [ClassDetail] Added ${result.length} posts, new total: ${posts.length}');
+      } else {
+        posts.assignAll(result);
+        debugPrint('📝 [ClassDetail] Replaced with ${result.length} posts');
+      }
+
+      _offset += result.length;
+      debugPrint('📝 [ClassDetail] New offset: $_offset');
+
     } catch (e) {
       Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดโพสต์ได้');
+      debugPrint('❌ [ClassDetail] Error: $e');
     } finally {
-      if (!keepScroll) {
-        isLoading.value = false;
-      }
+      isLoading.value = false;
+      isLoadingMore.value = false;
 
       if (savedOffset != null && scrollController.hasClients) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
