@@ -80,7 +80,7 @@ class PostModel {
       postContentId: _parseInt(json['post_content_id']),
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      postType: json['post_type'] ?? '',
+      postType: _stringFromJson(json['post_type']),
       isAnonymous: json['is_anonymous'] ?? false,
       createdAt: DateTime.parse(json['created_at']),
       // Support both nested user object and flat fields

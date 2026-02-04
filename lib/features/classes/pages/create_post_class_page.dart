@@ -859,17 +859,17 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
             // POSTED FROM CLASS DETAIL: Go back and refresh
             debugPrint('📍 From class detail: Going back with refresh');
             
-            // Use until to go back to ClassDetailPage
-            Get.until((route) {
-              debugPrint('📍 Checking route: ${route.settings.name}');
-              return route.settings.name == '/class-detail';
+            // ✅ ใช้ Navigator.pop แทน Get.until เพราะ ClassDetailPage ไม่ได้เป็น named route
+            Navigator.of(context).pop({
+              'success': true,
+              'refresh': true,
             });
-            
+
             // Trigger refresh after going back
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 200));
             if (Get.isRegistered<ClassDetailController>()) {
-              final detailController = Get.find<ClassDetailController>();
               debugPrint('📍 Refreshing class detail...');
+              final detailController = Get.find<ClassDetailController>();
               await detailController.fetchPosts();
               detailController.scrollToTop();
             }
