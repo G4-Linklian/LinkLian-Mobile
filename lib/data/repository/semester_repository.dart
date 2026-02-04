@@ -13,21 +13,24 @@ class SemesterRepository {
     print('📅 [SemesterRepo] Fetching semesters for instId: $instId');
     
     // API returns List directly, not { success, data }
-    final response = await _apiClient.get<List<dynamic>>(
+    final response = await _apiClient.get<Map<String, dynamic>>(
       '/semester',
       queryParameters: {
         'inst_id': instId,
         'flag_valid': true,
       },
     );
-
-    final data = response.data;
-    print('📅 [SemesterRepo] Response length: ${data?.length}');
-    
-    if (data == null) {
-      print('❌ [SemesterRepo] Response data is null');
-      throw Exception('Failed to fetch semester');
-    }
+    print('📅 [SemesterRepo] API Response: $response');
+  final responseData = response.data;
+  if (responseData == null) {
+    print('❌ [SemesterRepo] Response data is null');
+    throw Exception('Failed to fetch semester');
+  }
+  final data = responseData['data'] as List<dynamic>?;
+  if (data == null) {
+    print('❌ [SemesterRepo] Response data is null');
+    throw Exception('Failed to fetch semester');
+  }
 
     print('📅 [SemesterRepo] Got ${data.length} semesters');
 
