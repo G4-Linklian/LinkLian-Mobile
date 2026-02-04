@@ -26,6 +26,7 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
   late ClassDetailController controller;
   late bool isTeacher;
   final ValueNotifier<double> _scrollOffset = ValueNotifier(0);
+  String? controllerTag; // ✅ เพิ่ม tag เพื่อแยก instance ต่าง class
   
   @override
   void initState() {
@@ -41,11 +42,16 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
     final navController = Get.find<NavigationController>();
     final args = navController.classDetailArgs.value;
     
-    // Initialize or get existing controller
-    if (!Get.isRegistered<ClassDetailController>()) {
-      Get.put(ClassDetailController());
+    // ✅ สร้าง unique tag สำหรับแต่ละ class
+    if (args != null && args['sectionId'] != null) {
+      controllerTag = 'class_detail_${args['sectionId']}';
     }
-    controller = Get.find<ClassDetailController>();
+    
+    // ✅ Initialize or get existing controller with tag
+    if (!Get.isRegistered<ClassDetailController>(tag: controllerTag)) {
+      Get.put(ClassDetailController(), tag: controllerTag);
+    }
+    controller = Get.find<ClassDetailController>(tag: controllerTag);
     
     // Initialize with args if available
     if (args != null) {
@@ -67,6 +73,12 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
   @override
   void dispose() {
     controller.scrollController.removeListener(_onScroll);
+    
+    // ✅ ลบ controller เมื่อออกจากหน้า (ประหยัด memory และ reset filter)
+    if (controllerTag != null) {
+      Get.delete<ClassDetailController>(tag: controllerTag);
+    }
+    
     super.dispose();
   }
 
@@ -177,6 +189,7 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                     final post = controller.posts[index];
                     return CardPost(
                       post: post,
+                      classDetailController: controller, // ✅ ส่ง controller เข้าไป
                       onSelectForAI: isTeacher
                           ? null
                           : (postId) {

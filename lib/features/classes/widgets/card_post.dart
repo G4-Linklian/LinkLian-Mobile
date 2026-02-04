@@ -28,12 +28,14 @@ class CardPost extends StatefulWidget {
   final PostModel post;
   final Function(int postId)? onSelectForAI;
   final String? highlightKeyword; // For search highlighting
+  final ClassDetailController? classDetailController; // ✅ เพิ่มพารามิเตอร์นี้
   
   const CardPost({
     super.key,
     required this.post,
     this.onSelectForAI,
     this.highlightKeyword,
+    this.classDetailController, // ✅ เพิ่มพารามิเตอร์นี้
   });
 
   @override
@@ -75,12 +77,16 @@ class _CardPostState extends State<CardPost> {
     final auth = Get.find<AuthController>();
     _permission = PostPermission(post: widget.post, auth: auth);
     
-    // Optional controllers - may not exist in search context
+    // ✅ ใช้ controller ที่ส่งเข้ามา หรือหาจาก GetX (สำหรับ backward compatibility)
+    _classController = widget.classDetailController;
+    
+    if (_classController == null && Get.isRegistered<ClassDetailController>()) {
+      _classController = Get.find<ClassDetailController>();
+    }
+    
+    // Optional: BookmarkController
     if (Get.isRegistered<BookmarkController>()) {
       _bookmarkController = Get.find<BookmarkController>();
-    }
-    if (Get.isRegistered<ClassDetailController>()) {
-      _classController = Get.find<ClassDetailController>();
     }
   }
 
@@ -96,6 +102,12 @@ class _CardPostState extends State<CardPost> {
   bool get _isTeacherPost {
     final roleName = widget.post.roleName?.toLowerCase() ?? '';
     return roleName == 'teacher' || roleName == 'instructor';
+  }
+
+  /// Check if post can be selected for AI (assignment or announcement only)
+  bool get _canSelectForAI {
+    final postType = widget.post.postType.toLowerCase();
+    return postType == 'assignment' || postType == 'announcement';
   }
 
   @override
@@ -141,7 +153,10 @@ class _CardPostState extends State<CardPost> {
                     _buildPostTypeTag(),
                     const Spacer(),
                     if (_permission?.canShowMore == true) _buildMoreButton(context),
-                    if (_permission?.canSelectAI == true && _hasClassController) ...[
+                    // ✅ Radio button: แสดงเฉพาะนักเรียน + post type การบ้าน/ประกาศ เท่านั้น
+                    if (!_isCurrentUserTeacher && 
+                        _hasClassController && 
+                        _canSelectForAI) ...[
                       const SizedBox(width: 8),
                       _buildRadio(),
                     ],
@@ -502,8 +517,12 @@ class _CardPostState extends State<CardPost> {
 
   Widget _buildRadio() {
     return Obx(() {
-      final controller = Get.find<ClassDetailController>();
-      final isSelected = controller.selectedPostIdsForAI.contains(
+      // ถ้าไม่มี classController ไม่แสดง radio (เช่นอยู่ในหน้า search)
+      if (!_hasClassController) {
+        return const SizedBox.shrink();
+      }
+      
+      final isSelected = _classController!.selectedPostIdsForAI.contains(
         widget.post.postId,
       );
 
