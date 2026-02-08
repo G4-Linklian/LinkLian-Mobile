@@ -150,8 +150,18 @@ class _CardPostState extends State<CardPost> {
                 // ===== TAG + ACTIONS =====
                 Row(
                   children: [
-                    _buildPostTypeTag(),
-                    const Spacer(),
+                    Expanded(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _buildPostTypeTag(),
+                          // ✅ Assignment tags (กำหนดส่ง + คะแนน) - แสดงเฉพาะการบ้าน
+                          if (widget.post.postType.toLowerCase() == 'assignment')
+                            ..._buildAssignmentTags(),
+                        ],
+                      ),
+                    ),
                     if (_permission?.canShowMore == true) _buildMoreButton(context),
                     // ✅ Radio button: แสดงเฉพาะนักเรียน + post type การบ้าน/ประกาศ เท่านั้น
                     if (!_isCurrentUserTeacher && 
@@ -486,7 +496,7 @@ class _CardPostState extends State<CardPost> {
         label = 'ประกาศ';
         break;
       case 'assignment':
-        color = AppColors.primaryPalette[500]!;
+        color = AppColors.primaryPalette[600]!;
         label = 'การบ้าน';
         break;
       case 'question':
@@ -513,6 +523,75 @@ class _CardPostState extends State<CardPost> {
         ),
       ),
     );
+  }
+
+  // ===== ASSIGNMENT TAGS (กำหนดส่ง + คะแนน) =====
+  List<Widget> _buildAssignmentTags() {
+    final color = AppColors.primaryPalette[600]!;
+    
+    // Format due date
+    String dueDateText = 'ไม่ระบุ';
+    if (widget.post.dueDate != null) {
+      try {
+        final formatter = DateFormat('dd/MM/yy HH:mm', 'th');
+        dueDateText = formatter.format(widget.post.dueDate!);
+      } catch (e) {
+        dueDateText = 'ไม่ระบุ';
+      }
+    }
+
+    // Get max score - default to 0 if null
+    final maxScore = widget.post.maxScore ?? 0;
+
+    return [
+      // ✅ Due Date Tag
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.access_time, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(
+              dueDateText,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // ✅ Score Tag
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.star, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(
+              '$maxScore คะแนน',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
   }
 
   Widget _buildRadio() {
@@ -743,18 +822,6 @@ class _CardPostState extends State<CardPost> {
       );
     }
 
-    if (_permission?.canReport == true) {
-      items.add(
-        PopupMenuItem(
-          onTap: _onReportPost,
-          child: const ListTile(
-            leading: Icon(Icons.flag),
-            title: Text('รายงานโพสต์'),
-          ),
-        ),
-      );
-    }
-
     if (items.isEmpty) return;
 
     showMenu(
@@ -765,11 +832,6 @@ class _CardPostState extends State<CardPost> {
       ),
       items: items,
     );
-  }
-
-  void _onReportPost() {
-    // TODO: Implement report post
-    debugPrint('📝 Report post: ${widget.post.postContentId}');
   }
 
   Widget _arrowButton(IconData icon, VoidCallback onTap) {
@@ -924,7 +986,8 @@ class _CardPostState extends State<CardPost> {
     );
 
     if (result?['success'] == true && result?['edited'] == true) {
-      await _classController!.fetchPosts(keepScroll: true);
+      debugPrint('📝 Refreshing posts after edit...');
+      await _classController!.fetchPosts();
       DialogHelper.showNotification(
         title: 'แก้ไขโพสต์สำเร็จ',
         message: 'โพสต์ของคุณถูกอัปเดตแล้ว',

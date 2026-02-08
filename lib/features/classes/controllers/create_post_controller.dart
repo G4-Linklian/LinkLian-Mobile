@@ -34,6 +34,12 @@ class CreatePostController extends GetxController {
   final RxList<Map<String, dynamic>> attachments = <Map<String, dynamic>>[].obs;
   final RxList<int> selectedSectionIds = <int>[].obs;
 
+  // Assignment-specific fields
+  final Rx<DateTime?> dueDate = Rx<DateTime?>(null);
+  final RxInt maxScore = 100.obs;
+  final RxBool isGroup = false.obs;
+  final RxList<Map<String, dynamic>> groups = <Map<String, dynamic>>[].obs;
+
   final RxBool isLoading = false.obs;
   final isSectionLocked = false.obs;
   final RxList<String> uploadWarnings = <String>[].obs; // เพิ่ม warnings list
@@ -50,6 +56,44 @@ class CreatePostController extends GetxController {
     return title.value.trim().isNotEmpty || 
            content.value.trim().isNotEmpty || 
            attachments.isNotEmpty;
+  }
+
+  /// Check if there are changes from original (for edit mode)
+  bool get hasChanges {
+    if (mode.value != CreatePostMode.edit) return false;
+    
+    // Compare with original values (stored when entering edit mode)
+    return _originalTitle != title.value ||
+           _originalContent != content.value ||
+           _hasAttachmentChanges ||
+           _hasAssignmentChanges;
+  }
+
+  // Store original values for comparison
+  String _originalTitle = '';
+  String _originalContent = '';
+  List<Map<String, dynamic>> _originalAttachments = [];
+  DateTime? _originalDueDate;
+  int _originalMaxScore = 100;
+  bool _originalIsGroup = false;
+
+  bool get _hasAttachmentChanges {
+    if (attachments.length != _originalAttachments.length) return true;
+    
+    for (int i = 0; i < attachments.length; i++) {
+      if (attachments[i]['file_url'] != _originalAttachments[i]['file_url']) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool get _hasAssignmentChanges {
+    if (postType.value != 'assignment') return false;
+    
+    return dueDate.value != _originalDueDate ||
+           maxScore.value != _originalMaxScore ||
+           isGroup.value != _originalIsGroup;
   }
 
   @override
@@ -116,6 +160,23 @@ class CreatePostController extends GetxController {
       title.value = post.title;
       content.value = post.content;
       postType.value = post.postType;
+      isAnonymous.value = post.isAnonymous;
+
+      // Store original values for change detection
+      _originalTitle = post.title;
+      _originalContent = post.content;
+
+      // Assignment-specific fields
+      if (post.postType == 'assignment') {
+        dueDate.value = post.dueDate;
+        maxScore.value = post.maxScore ?? 100;
+        isGroup.value = post.isGroup ?? false;
+        
+        // Store original assignment values
+        _originalDueDate = post.dueDate;
+        _originalMaxScore = post.maxScore ?? 100;
+        _originalIsGroup = post.isGroup ?? false;
+      }
 
       attachments.assignAll(
         post.attachments?.map((a) {
@@ -130,6 +191,9 @@ class CreatePostController extends GetxController {
             }).toList() ??
             [],
       );
+      
+      // Store original attachments
+      _originalAttachments = List.from(attachments);
 
       // Fetch file sizes from blob if not available
       _fetchFileSizesFromBlob();
@@ -359,17 +423,34 @@ class CreatePostController extends GetxController {
       postType: postType.value,
       isAnonymous: isAnonymous.value,
       attachments: attachments,
+      // Assignment-specific fields
+      dueDate: dueDate.value?.toIso8601String(),
+      maxScore: maxScore.value,
+      isGroup: isGroup.value,
+      groups: groups.toList(),
     );
   }
 
   Future<Map<String, dynamic>> _updatePost() async {
     try {
-      // ใช้ postContentId สำหรับ update
+      final isTeacher =
+          auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
+
       return await postRepository.updatePost(
         postContentId: editingPostContentId!,
         title: title.value,
         content: content.value,
         attachments: attachments.toList(),
+        // Assignment fields (only for teacher + assignment type)
+        dueDate: isTeacher && postType.value == 'assignment'
+            ? dueDate.value?.toIso8601String()
+            : null,
+        maxScore: isTeacher && postType.value == 'assignment'
+            ? maxScore.value
+            : null,
+        isGroup: isTeacher && postType.value == 'assignment'
+            ? isGroup.value
+            : null,
       );
     } catch (e) {
       rethrow;

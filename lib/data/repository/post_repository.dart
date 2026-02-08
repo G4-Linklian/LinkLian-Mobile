@@ -14,6 +14,11 @@ class PostRepository {
     String? postType,
     bool isAnonymous = false,
     List<Map<String, dynamic>>? attachments,
+    // Assignment-specific fields
+    String? dueDate,
+    int? maxScore,
+    bool? isGroup,
+    List<Map<String, dynamic>>? groups, // {group_name, member_ids}
   }) async {
     // Build payload - support both single and multiple sections
     final Map<String, dynamic> data = {
@@ -48,6 +53,14 @@ class PostRepository {
       data['section_ids'] = sectionIds;
     } else if (sectionId != null) {
       data['section_id'] = sectionId;
+    }
+
+    // Add assignment-specific fields if post_type is 'assignment'
+    if (postType == 'assignment') {
+      if (dueDate != null) data['due_date'] = dueDate;
+      if (maxScore != null) data['max_score'] = maxScore;
+      if (isGroup != null) data['is_group'] = isGroup;
+      if (groups != null && groups.isNotEmpty) data['groups'] = groups;
     }
 
     debugPrint('📤 Creating post with data: $data');
@@ -94,11 +107,25 @@ class PostRepository {
   /// UPDATE POST (by post_content_id)
   Future<Map<String, dynamic>> updatePost({
     int? postId,
-    int? postContentId,
+    required int postContentId,
     String? title,
     String? content,
     List<Map<String, dynamic>>? attachments,
+    String? dueDate,
+    int? maxScore,
+    bool? isGroup,
   }) async {
+    final body = <String, dynamic>{
+      'post_content_id': postContentId,
+    };
+
+    if (title != null) body['title'] = title;
+    if (content != null) body['content'] = content;
+    if (attachments != null) body['attachments'] = attachments;
+    if (dueDate != null) body['due_date'] = dueDate;
+    if (maxScore != null) body['max_score'] = maxScore;
+    if (isGroup != null) body['is_group'] = isGroup;
+
     // Build attachments array - always send (even if empty) to allow clearing
     final List<Map<String, String>>? attachmentsList = attachments != null
         ? attachments.map((a) {
@@ -113,15 +140,24 @@ class PostRepository {
           }).where((a) => a['file_url']!.isNotEmpty).toList()
         : null;
 
+    // Build the full request body
+    final requestBody = <String, dynamic>{
+      'post_content_id': postContentId,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (attachmentsList != null) 'attachments': attachmentsList,
+      if (dueDate != null) 'due_date': dueDate,
+      if (maxScore != null) 'max_score': maxScore,
+      if (isGroup != null) 'is_group': isGroup,
+    };
+
+    debugPrint('📤 Update post body: $requestBody');
+
     // If postId is provided, use PUT /social-feed/post/:postId
     if (postId != null && postId > 0) {
       final res = await _apiClient.put<Map<String, dynamic>>(
         '/social-feed/post/$postId',
-        data: {
-          if (title != null) 'title': title,
-          if (content != null) 'content': content,
-          if (attachments != null) 'attachments': attachmentsList,
-        },
+        data: requestBody,
       );
       return res.data!;
     }
@@ -129,12 +165,7 @@ class PostRepository {
     // Otherwise use PUT /social-feed/post with post_content_id in body
     final res = await _apiClient.put<Map<String, dynamic>>(
       '/social-feed/post',
-      data: {
-        'post_content_id': postContentId,
-        if (title != null) 'title': title,
-        if (content != null) 'content': content,
-        if (attachments != null) 'attachments': attachmentsList,
-      },
+      data: requestBody,
     );
     return res.data!;
   }

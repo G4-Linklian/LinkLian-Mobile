@@ -41,6 +41,9 @@ class PostModel {
   final String? roleName;
 
   final List<PostAttachmentModel>? attachments;
+  final DateTime? dueDate; // ✅ For assignment
+  final int? maxScore; // ✅ For assignment
+  final bool? isGroup;
 
   const PostModel({
     required this.postId,
@@ -53,9 +56,12 @@ class PostModel {
     this.userSysId,
     this.displayName,
     this.email,
-    this.profilePic,
     this.roleName,
+    this.profilePic,
     this.attachments,
+    this.dueDate,
+    this.maxScore,
+    this.isGroup,
   });
 
   // ===== Json helpers =====
@@ -92,6 +98,15 @@ class PostModel {
       profilePic: user?['profile_pic'] ?? json['profile_pic'],
       roleName: user?['role_name'] ?? json['role_name'],
       attachments: _parseAttachments(json['attachments']),
+      dueDate: json['due_date'] != null
+          ? DateTime.tryParse(json['due_date'].toString())
+          : null,
+      maxScore: json['max_score'] != null
+          ? (json['max_score'] is int
+              ? json['max_score']
+              : int.tryParse(json['max_score'].toString()))
+          : null,
+      isGroup: json['is_group'] as bool?,
     );
   }
 
@@ -127,6 +142,8 @@ class PostModel {
     String? content,
     String? postType,
     List<PostAttachmentModel>? attachments,
+    DateTime? dueDate,
+    int? maxScore,
   }) {
     return PostModel(
       postId: postId,
@@ -142,6 +159,8 @@ class PostModel {
       profilePic: profilePic,
       roleName: roleName,
       attachments: attachments ?? this.attachments,
+      dueDate: dueDate ?? this.dueDate,
+      maxScore: maxScore ?? this.maxScore,
     );
   }
 }
