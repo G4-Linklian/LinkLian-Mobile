@@ -1,130 +1,106 @@
 name: LINKLIAN-MOBILE CI
 
 on:
-  push:
-    branches: ["main", "staging"]
-    paths:
-      - "lib/**"
-      - "test/**"
-      - "android/**"
-      - "ios/**"
-      - "pubspec.yaml"
-      - "pubspec.lock"
-      - "analysis_options.yaml"
-      - "go-ci.sh"
-      - ".github/workflows/ci-mobile.yml"
   pull_request:
     branches: ["main", "staging"]
     paths:
-      - "lib/**"
-      - "test/**"
-      - "android/**"
-      - "ios/**"
+      - "**/*.dart"
       - "pubspec.yaml"
       - "pubspec.lock"
       - "analysis_options.yaml"
-      - "go-ci.sh"
+      - "devtools_options.yaml"
       - ".github/workflows/ci-mobile.yml"
+      - "package.json"
+      - "package-lock.json"
+  push:
+    branches: ["main", "staging"]
+    paths:
+      - "**/*.dart"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "analysis_options.yaml"
+      - "devtools_options.yaml"
+      - ".github/workflows/ci-mobile.yml"
+      - "package.json"
+      - "package-lock.json"
   workflow_dispatch:
 
 permissions:
   contents: read
-  security-events: write
+  pull-requests: read
 
 concurrency:
-  group: ci-mobile-${{ github.workflow }}-${{ github.ref }}
+  group: ci-mobile-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  FLUTTER_VERSION: "3.22.0"
-
 jobs:
-  secret-scan:
-    name: Secret Scan (gitleaks)
+  mobile-ci:
+    name: Mobile CI
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run gitleaks
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "stable"
+          cache: true
+
+      - name: Setup Node (npm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Cache pub
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install npm deps
+        run: npm ci
+
+      # ===== CI steps =====
+      - name: Deps
+        run: npm run ci:deps
+
+      - name: Format (lib/test only)
+        run: npm run ci:format
+
+      - name: Analyze (lint)
+        run: npm run ci:analyze
+
+      - name: Unit tests + Coverage
+        run: npm run ci:test
+
+      - name: SCA (dependency checks)
+        run: npm run ci:sca
+
+      - name: Secret scan (gitleaks)
         uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  format:
-    name: Format (dart format)
-    runs-on: ubuntu-latest
-    needs: [secret-scan]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
-      - name: Run format
-        shell: bash
-        run: bash ./go-ci.sh format
-
-  analyze:
-    name: Analyze (flutter analyze)
-    runs-on: ubuntu-latest
-    needs: [format]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
-      - name: Run analyze
-        shell: bash
-        run: bash ./go-ci.sh analyze
-
-  unit-test:
-    name: Unit Test + Coverage
-    runs-on: ubuntu-latest
-    needs: [analyze]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
-      - name: Run tests
-        shell: bash
-        run: bash ./go-ci.sh test
+          args: detect --redact --no-git
 
       - name: Upload coverage artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mobile-coverage
-          path: coverage
-          if-no-files-found: warn
-          retention-days: 7
-
-  sca:
-    name: SCA (pub deps/outdated/audit)
-    runs-on: ubuntu-latest
-    needs: [analyze]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
-      - name: Run SCA
-        shell: bash
-        run: bash ./go-ci.sh sca
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
