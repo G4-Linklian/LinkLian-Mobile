@@ -13,17 +13,20 @@ permissions:
 
 jobs:
   mobile-ci:
+    name: Mobile CI
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -31,8 +34,20 @@ jobs:
           flutter-version: "stable"
           cache: true
 
-      - name: Run CI
-        run: make ci
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Format check
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test --coverage
 
       - name: Secret scan (gitleaks)
         uses: gitleaks/gitleaks-action@v2
