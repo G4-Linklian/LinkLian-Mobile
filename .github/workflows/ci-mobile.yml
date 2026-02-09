@@ -3,47 +3,21 @@ name: LINKLIAN-MOBILE CI
 on:
   pull_request:
     branches: ["main", "staging"]
-    paths:
-      - "**/*.dart"
-      - "pubspec.yaml"
-      - "pubspec.lock"
-      - "analysis_options.yaml"
-      - "devtools_options.yaml"
-      - ".github/workflows/ci-mobile.yml"
-      - "package.json"
-      - "package-lock.json"
   push:
     branches: ["main", "staging"]
-    paths:
-      - "**/*.dart"
-      - "pubspec.yaml"
-      - "pubspec.lock"
-      - "analysis_options.yaml"
-      - "devtools_options.yaml"
-      - ".github/workflows/ci-mobile.yml"
-      - "package.json"
-      - "package-lock.json"
   workflow_dispatch:
 
 permissions:
   contents: read
   pull-requests: read
 
-concurrency:
-  group: ci-mobile-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   mobile-ci:
-    name: Mobile CI
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -57,50 +31,10 @@ jobs:
           flutter-version: "stable"
           cache: true
 
-      - name: Setup Node (npm)
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Cache pub
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Install npm deps
-        run: npm ci
-
-      # ===== CI steps =====
-      - name: Deps
-        run: npm run ci:deps
-
-      - name: Format (lib/test only)
-        run: npm run ci:format
-
-      - name: Analyze (lint)
-        run: npm run ci:analyze
-
-      - name: Unit tests + Coverage
-        run: npm run ci:test
-
-      - name: SCA (dependency checks)
-        run: npm run ci:sca
+      - name: Run CI
+        run: make ci
 
       - name: Secret scan (gitleaks)
         uses: gitleaks/gitleaks-action@v2
         with:
           args: detect --redact --no-git
-
-      - name: Upload coverage artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage/
-          if-no-files-found: ignore
