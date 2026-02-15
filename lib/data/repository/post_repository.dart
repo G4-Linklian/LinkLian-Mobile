@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../core/services/api_client.dart';
 import '../../data/model/post_model.dart';
+import 'dart:io';
 
 class PostRepository {
   final ApiClient _apiClient = ApiClient();
@@ -16,7 +17,7 @@ class PostRepository {
     List<Map<String, dynamic>>? attachments,
     // Assignment-specific fields
     String? dueDate,
-    int? maxScore,
+    double? maxScore,
     bool? isGroup,
     List<Map<String, dynamic>>? groups, // {group_name, member_ids}
   }) async {
@@ -112,7 +113,7 @@ class PostRepository {
     String? content,
     List<Map<String, dynamic>>? attachments,
     String? dueDate,
-    int? maxScore,
+    double? maxScore,
     bool? isGroup,
   }) async {
     final body = <String, dynamic>{
@@ -170,11 +171,65 @@ class PostRepository {
     return res.data!;
   }
 
-  /// DELETE POST
-  Future<void> deletePost({
-    int? postId,
-    int? postContentId,
-  }) async {
+  /// SEARCH POSTS
+Future<List<PostModel>> searchPosts({
+  int? sectionId,
+  required String keyword,
+  int limit = 50,
+}) async {
+  final response = await _apiClient.get<List<dynamic>>(
+    '/social-feed/post/search',
+    queryParameters: {
+      if (sectionId != null) 'section_id': sectionId,
+      'keyword': keyword,
+      'limit': limit,
+    },
+  );
+
+  final list = response.data ?? [];
+
+  return list
+      .map((e) => PostModel.fromJson(e as Map<String, dynamic>))
+      .toList();
+}
+
+
+Future<List<Map<String, dynamic>>> uploadAttachments({
+  required List<File> files,
+}) async {
+  final res = await _apiClient.uploadMultipart(
+    '/uploadFile/social-feed/fileattachment',
+    files: files,
+    fieldName: 'files',
+  );
+
+  final data = res.data;
+  if (data == null) return [];
+
+  if (data is Map && data['files'] is List) {
+    return List<Map<String, dynamic>>.from(data['files']);
+  }
+
+  if (data is List) {
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  return [];
+}
+Future<void> deleteAttachmentBlob(String blobName) async {
+  await _apiClient.delete(
+    '/deleteFile/social-feed',
+    data: {
+      'fileNames': [blobName],
+    },
+  );
+}
+
+/// DELETE POST
+Future<void> deletePost({
+  int? postId,
+  int? postContentId,
+}) async {
     // If postId is provided, use DELETE /social-feed/post/:postId
     if (postId != null && postId > 0) {
       await _apiClient.delete('/social-feed/post/$postId');

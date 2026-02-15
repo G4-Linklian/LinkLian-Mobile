@@ -25,6 +25,8 @@ import '../../../data/repository/semester_repository.dart';
 import '../../classes/bindings/create_post_binding.dart';
 import '../controllers/navigation_controller.dart';
 import '../../classes/pages/class_detail_page.dart';
+import '../../classes/controllers/create_post_controller.dart';
+import '../../../config/app_routes.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -54,10 +56,13 @@ class _MainPageState extends State<MainPage> {
     } else {
       _selectedIndex = 1; // ClassesPage ทั้ง student และ teacher
     }
-    
-    // Sync with NavigationController
-    _navController.selectedIndex.value = _selectedIndex;
 
+    // Sync with NavigationController
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _navController.selectedIndex.value = _selectedIndex;
+  });
+
+  
     if (!Get.isRegistered<ClassFeedController>()) {
       Get.put<ClassFeedController>(
         ClassFeedController(
@@ -126,7 +131,7 @@ class _MainPageState extends State<MainPage> {
     if (_navController.isShowingClassDetail.value && _selectedIndex == 1) {
       return true;
     }
-    
+
     if (isStudent) {
       // student: แสดงเฉพาะ class (1) และ community (2)
       return !(_selectedIndex == 1 || _selectedIndex == 2);
@@ -141,15 +146,17 @@ class _MainPageState extends State<MainPage> {
     if (_navController.isShowingClassDetail.value && _selectedIndex == 1) {
       return true;
     }
-    return (!isStudent && _selectedIndex == 2) || (isStudent && _selectedIndex == 3);
+    return (!isStudent && _selectedIndex == 2) ||
+        (isStudent && _selectedIndex == 3);
   }
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final showClassDetail = _navController.isShowingClassDetail.value && 
-                              _navController.selectedIndex.value == 1;
-      
+      final showClassDetail =
+          _navController.isShowingClassDetail.value &&
+          _navController.selectedIndex.value == 1;
+
       return Scaffold(
         appBar: _hideAppBar
             ? null
@@ -170,7 +177,19 @@ class _MainPageState extends State<MainPage> {
                     if (!_hideAddIcon)
                       GestureDetector(
                         onTap: () {
-                          if (_selectedIndex == 1) {
+                          if (_selectedIndex == 0) {
+                            Get.toNamed(
+                              AppRoutes.createPost,
+                              arguments: {
+                                'mode': CreatePostMode.create,
+                                'source': CreatePostSource.classFeed,
+
+                                // 🔒 บังคับเป็นการบ้าน
+                                'postType': 'assignment',
+                                'lockPostType': true,
+                              },
+                            );
+                          } else if (_selectedIndex == 1) {
                             Get.to(
                               () => const CreatePostClassPage(),
                               binding: CreatePostBinding(),
@@ -217,22 +236,28 @@ class _MainPageState extends State<MainPage> {
                 transitionBuilder: (child, animation) {
                   // Slide from right when showing ClassDetail, slide to right when hiding
                   final isShowingDetail = child is ClassDetailPage;
-                  final slideAnimation = Tween<Offset>(
-                    begin: isShowingDetail 
-                        ? const Offset(1.0, 0.0)  // Slide in from right
-                        : const Offset(-0.3, 0.0), // Slide in from left (smaller)
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ));
-                  
+                  final slideAnimation =
+                      Tween<Offset>(
+                        begin: isShowingDetail
+                            ? const Offset(1.0, 0.0) // Slide in from right
+                            : const Offset(
+                                -0.3,
+                                0.0,
+                              ), // Slide in from left (smaller)
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      );
+
                   return SlideTransition(
                     position: slideAnimation,
                     child: child,
                   );
                 },
-                child: showClassDetail 
+                child: showClassDetail
                     ? const ClassDetailPage(key: ValueKey('classDetail'))
                     : const ClassesPage(key: ValueKey('classesPage')),
               )
@@ -247,9 +272,9 @@ class _MainPageState extends State<MainPage> {
           },
 
           type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primaryPalette[900],
-        unselectedItemColor: AppColors.primaryPalette[800],
-        backgroundColor: AppColors.primaryPalette[200],
+          selectedItemColor: AppColors.primaryPalette[900],
+          unselectedItemColor: AppColors.primaryPalette[800],
+          backgroundColor: AppColors.primaryPalette[200],
           selectedFontSize: 12,
           unselectedFontSize: 12,
           items: isStudent

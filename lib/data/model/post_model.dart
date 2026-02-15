@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:json_annotation/json_annotation.dart';
 
 part 'post_model.g.dart';
@@ -40,9 +42,12 @@ class PostModel {
   @JsonKey(name: 'role_name')
   final String? roleName;
 
+  @JsonKey(name: 'section_id')
+  final int? sectionId;
+
   final List<PostAttachmentModel>? attachments;
-  final DateTime? dueDate; // ✅ For assignment
-  final int? maxScore; // ✅ For assignment
+  final DateTime? dueDate; 
+  final double? maxScore; 
   final bool? isGroup;
 
   const PostModel({
@@ -62,6 +67,7 @@ class PostModel {
     this.dueDate,
     this.maxScore,
     this.isGroup,
+    this.sectionId,
   });
 
   // ===== Json helpers =====
@@ -102,11 +108,12 @@ class PostModel {
           ? DateTime.tryParse(json['due_date'].toString())
           : null,
       maxScore: json['max_score'] != null
-          ? (json['max_score'] is int
+          ? (json['max_score'] is double
               ? json['max_score']
-              : int.tryParse(json['max_score'].toString()))
+              : double.tryParse(json['max_score'].toString()))
           : null,
       isGroup: json['is_group'] as bool?,
+      sectionId: _parseIntNullable(json['section_id']),
     );
   }
 
@@ -143,7 +150,7 @@ class PostModel {
     String? postType,
     List<PostAttachmentModel>? attachments,
     DateTime? dueDate,
-    int? maxScore,
+    double? maxScore,
   }) {
     return PostModel(
       postId: postId,

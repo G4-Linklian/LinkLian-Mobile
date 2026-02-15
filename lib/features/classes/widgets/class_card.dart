@@ -7,35 +7,8 @@ import '../../../core/constants/sizes.dart';
 import '../../../core/constants/style.dart';
 import '../../../core/constants/linklian-icon.dart';
 import '../../../core/constants/linklian-bg.dart';
+import '../../../core/utils/formatter.dart';
 
-// UTILITY FUNCTIONS
-
-String dayOfWeekToText(int d) {
-  switch (d) {
-    case 1:
-      return 'วันจันทร์';
-    case 2:
-      return 'วันอังคาร';
-    case 3:
-      return 'วันพุธ';
-    case 4:
-      return 'วันพฤหัส';
-    case 5:
-      return 'วันศุกร์';
-    case 6:
-      return 'วันเสาร์';
-    case 7:
-      return 'วันอาทิตย์';
-    default:
-      return '';
-  }
-}
-
-String formatTime(String time) {
-  return time.length >= 5 ? time.substring(0, 5).replaceAll(':', '.') : time;
-}
-
-// HELPER WIDGETS
 
 class _CollapsedSchedule extends StatelessWidget {
   final List<ClassScheduleModel> schedules;
@@ -48,7 +21,6 @@ class _CollapsedSchedule extends StatelessWidget {
       return Text('ไม่พบตารางเรียน', style: AppTextStyles.descriptionRegular);
     }
 
-    // ถ้ามี 1 วัน → แสดงวัน + เวลา
     if (schedules.length == 1) {
       final s = schedules.first;
       return Row(
@@ -56,21 +28,20 @@ class _CollapsedSchedule extends StatelessWidget {
           SizedBox(
             width: 90,
             child: Text(
-              dayOfWeekToText(s.dayOfWeek),
+              Formatter.dayOfWeekToText(s.dayOfWeek),
               style: AppTextStyles.descriptionRegular,
             ),
           ),
           Text(
-            '${formatTime(s.startTime)} - ${formatTime(s.endTime)}',
+            '${Formatter.formatTime(s.startTime)} - ${Formatter.formatTime(s.endTime)}',
             style: AppTextStyles.descriptionMedium,
           ),
         ],
       );
     }
 
-    // ถ้ามากกว่า 1 วัน แสดงแค่วัน
     final days = schedules
-        .map((e) => dayOfWeekToText(e.dayOfWeek))
+        .map((e) => Formatter.dayOfWeekToText(e.dayOfWeek))
         .toSet()
         .toList();
 
@@ -100,12 +71,12 @@ class _ExpandedSchedule extends StatelessWidget {
               SizedBox(
                 width: 90,
                 child: Text(
-                  dayOfWeekToText(s.dayOfWeek),
+                  Formatter.dayOfWeekToText(s.dayOfWeek),
                   style: AppTextStyles.descriptionRegular,
                 ),
               ),
               Text(
-                '${formatTime(s.startTime)} - ${formatTime(s.endTime)}',
+                '${Formatter.formatTime(s.startTime)} - ${Formatter.formatTime(s.endTime)}',
                 style: AppTextStyles.descriptionMedium,
               ),
             ],
@@ -125,8 +96,8 @@ class _LocationChip extends StatelessWidget {
   Widget build(BuildContext context) {
     if (schedules.isEmpty) return const SizedBox();
 
-    final buildingName = schedules.first.building?.buildingName;
-    if (buildingName == null || buildingName.isEmpty) return const SizedBox();
+    final roomNumber = schedules.first.room?.roomNumber;
+    if (roomNumber == null || roomNumber.isEmpty) return const SizedBox();
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -134,7 +105,7 @@ class _LocationChip extends StatelessWidget {
         vertical: AppSizes.xs,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
       ),
       child: Row(
@@ -142,26 +113,29 @@ class _LocationChip extends StatelessWidget {
         children: [
           Icon(LinkLianIcon.location, size: AppSizes.iconSm),
           const SizedBox(width: AppSizes.xs),
-          Text(buildingName, style: AppTextStyles.descriptionMedium),
+          Text(
+            '${roomNumber ?? 'ไม่ระบุ'}',
+            style: AppTextStyles.descriptionMedium,
+          ),
         ],
       ),
     );
   }
 }
 
-// ============================
-// MAIN WIDGET
-// ============================
-
 class ClassCard extends StatefulWidget {
   final ClassFeedModel data;
   final String roleName;
+  final bool showStudentCount;
+  final int? studentCount;
   final VoidCallback? onTap;
 
   const ClassCard({
     super.key,
     required this.data,
     required this.roleName,
+    this.showStudentCount = false,
+    this.studentCount,
     this.onTap,
   });
 
@@ -227,7 +201,7 @@ class _ClassCardState extends State<ClassCard> {
                     children: [
                       Text(
                         isTeacher
-                            ? widget.data.effectiveClassName 
+                            ? widget.data.effectiveClassName
                             : widget.data.subjectNameTh,
                         style: AppTextStyles.titleBold,
                       ),
@@ -237,7 +211,7 @@ class _ClassCardState extends State<ClassCard> {
                       Text(
                         isTeacher
                             ? widget.data.subjectNameTh
-                            : widget.data.effectiveClassName, 
+                            : widget.data.effectiveClassName,
                         style: AppTextStyles.descriptionRegular.copyWith(
                           color: AppColors.black.withOpacity(0.6),
                         ),
@@ -246,21 +220,25 @@ class _ClassCardState extends State<ClassCard> {
                       const SizedBox(height: AppSizes.sm),
 
                       // ==================== SEMESTER CHIP ====================
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.sm,
-                          vertical: AppSizes.xs,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(
-                            AppSizes.radiusLg,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.sm,
+                              vertical: AppSizes.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusLg,
+                              ),
+                            ),
+                            child: Text(
+                              'ภาคเรียน ${widget.data.semester}',
+                              style: AppTextStyles.descriptionMedium,
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          'ภาคเรียน ${widget.data.semester}',
-                          style: AppTextStyles.descriptionMedium,
-                        ),
+                        ],
                       ),
 
                       const SizedBox(height: AppSizes.md),

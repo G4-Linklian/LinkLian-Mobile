@@ -16,4 +16,7 @@ class AppRoutes {
   //static String? get authGate => null;
   static const String authGate = '/auth-gate';
   static const String searchPost = '/search-post';
+  static const String classAssignment = '/class-assignment';
+  static const String assignmentSubmission = '/assignment-submission';
+
 }

@@ -296,7 +296,6 @@ class ProfileController extends GetxController {
         userId,
         firstName: currentProfile.firstName,
         lastName: currentProfile.lastName,
-        middleName: currentProfile.middleName,
         phone: currentProfile.phone,
         clearProfilePic: true,
       );

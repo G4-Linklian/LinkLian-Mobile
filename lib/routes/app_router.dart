@@ -17,14 +17,14 @@ import '../features/classes/pages/comment_page.dart';
 import '../features/classes/bindings/comment_binding.dart';
 import '../features/profile/bindings/bookmark_binding.dart';
 import '../features/classes/pages/search_post_page.dart';
-
+import '../features/assignment/pages/class_assignment_page.dart';
+import '../features/assignment/bindings/class_assignment_binding.dart';
+import '../features/assignment/pages/assignment_submission_page.dart';
+import '../features/assignment/bindings/assignment_submission_binding.dart';
 
 class AppRouter {
   static final routes = [
-    GetPage(
-      name: AppRoutes.authGate,
-      page: () => const AuthGate(),
-    ),
+    GetPage(name: AppRoutes.authGate, page: () => const AuthGate()),
     GetPage(name: AppRoutes.login, page: () => const LoginPage()),
 
     GetPage(
@@ -39,13 +39,10 @@ class AppRouter {
       binding: ClassFeedBinding(),
       transition: Transition.noTransition, // No animation for tab switching
     ),
-     GetPage(
+    GetPage(
       name: AppRoutes.classDetail,
       page: () => const ClassDetailPage(),
-      bindings: [
-        ClassDetailBinding(),
-        BookmarkBinding(),
-      ],
+      bindings: [ClassDetailBinding(), BookmarkBinding()],
       // Use right to left transition for normal navigation
       transition: Transition.rightToLeft,
     ),
@@ -53,9 +50,7 @@ class AppRouter {
       name: AppRoutes.createPost,
       page: () => const CreatePostClassPage(),
       binding: BindingsBuilder(() {
-        Get.put(CreatePostController(
-          postRepository: PostRepository(),
-        ));
+        Get.put(CreatePostController(postRepository: PostRepository()));
       }),
     ),
     GetPage(
@@ -63,9 +58,18 @@ class AppRouter {
       page: () => const CommentPage(),
       binding: CommentBinding(),
     ),
+    GetPage(name: AppRoutes.searchPost, page: () => const SearchPostPage()),
     GetPage(
-      name: AppRoutes.searchPost,
-      page: () => const SearchPostPage(),
+      name: AppRoutes.classAssignment,
+      page: () => const ClassAssignmentPage(),
+      binding: ClassAssignmentBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.assignmentSubmission,
+      page: () => const AssignmentSubmissionPage(),
+      binding: AssignmentSubmissionBinding(),
+      transition: Transition.rightToLeft,
     ),
     GetPage(name: AppRoutes.community, page: () => const CommuPage()),
     GetPage(

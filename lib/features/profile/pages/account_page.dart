@@ -42,7 +42,6 @@ class _AccountPageState extends State<AccountPage> {
   final ProfileController controller = Get.find<ProfileController>();
 
   late TextEditingController firstNameCtrl;
-  late TextEditingController middleNameCtrl;
   late TextEditingController lastNameCtrl;
   late TextEditingController phoneCtrl;
 

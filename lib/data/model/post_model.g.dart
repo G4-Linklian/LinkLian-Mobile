@@ -25,8 +25,9 @@ PostModel _$PostModelFromJson(Map<String, dynamic> json) => PostModel(
       dueDate: json['dueDate'] == null
           ? null
           : DateTime.parse(json['dueDate'] as String),
-      maxScore: (json['maxScore'] as num?)?.toInt(),
+      maxScore: (json['maxScore'] as num?)?.toDouble(),
       isGroup: json['isGroup'] as bool?,
+      sectionId: (json['section_id'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$PostModelToJson(PostModel instance) => <String, dynamic>{
@@ -42,6 +43,7 @@ Map<String, dynamic> _$PostModelToJson(PostModel instance) => <String, dynamic>{
       'email': instance.email,
       'profile_pic': instance.profilePic,
       'role_name': instance.roleName,
+      'section_id': instance.sectionId,
       'attachments': instance.attachments,
       'dueDate': instance.dueDate?.toIso8601String(),
       'maxScore': instance.maxScore,

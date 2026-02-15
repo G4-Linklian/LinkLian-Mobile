@@ -26,7 +26,7 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
   late ClassDetailController controller;
   late bool isTeacher;
   final ValueNotifier<double> _scrollOffset = ValueNotifier(0);
-  String? controllerTag; // ✅ เพิ่ม tag เพื่อแยก instance ต่าง class
+  String? controllerTag; 
   
   @override
   void initState() {
@@ -42,12 +42,10 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
     final navController = Get.find<NavigationController>();
     final args = navController.classDetailArgs.value;
     
-    // ✅ สร้าง unique tag สำหรับแต่ละ class
     if (args != null && args['sectionId'] != null) {
       controllerTag = 'class_detail_${args['sectionId']}';
     }
     
-    // ✅ Initialize or get existing controller with tag
     if (!Get.isRegistered<ClassDetailController>(tag: controllerTag)) {
       Get.put(ClassDetailController(), tag: controllerTag);
     }
@@ -74,7 +72,6 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
   void dispose() {
     controller.scrollController.removeListener(_onScroll);
     
-    // ✅ ลบ controller เมื่อออกจากหน้า (ประหยัด memory และ reset filter)
     if (controllerTag != null) {
       Get.delete<ClassDetailController>(tag: controllerTag);
     }
@@ -126,9 +123,11 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
           SliverPersistentHeader(
             pinned: true,
             delegate: _FilterSectionDelegate(
+              scrollController: controller.scrollController,
               child: _FilterSection(
                 controller: controller,
                 isTeacher: isTeacher,
+                scrollController: controller.scrollController,
               ),
             ),
           ),
@@ -189,7 +188,7 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                     final post = controller.posts[index];
                     return CardPost(
                       post: post,
-                      classDetailController: controller, // ✅ ส่ง controller เข้าไป
+                      classDetailController: controller,
                       onSelectForAI: isTeacher
                           ? null
                           : (postId) {
@@ -235,10 +234,6 @@ class _ClassDetailHeader extends StatelessWidget {
     
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24 * expandRatio),
-          bottomRight: Radius.circular(24 * expandRatio),
-        ),
         image: DecorationImage(
           image: NetworkImage(LinkLianBg.classCardDefault),
           fit: BoxFit.cover,
@@ -412,49 +407,67 @@ class _ClassDetailHeader extends StatelessWidget {
 class _FilterSection extends StatelessWidget {
   final ClassDetailController controller;
   final bool isTeacher;
+  final ScrollController scrollController;
 
-  const _FilterSection({required this.controller, required this.isTeacher});
+  const _FilterSection({
+    required this.controller,
+    required this.isTeacher,
+    required this.scrollController,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.md),
-      child: Row(
-        children: [
-          Obx(
-            () => _FilterDropdown(
-              selected: controller.selectedFilter.value,
-              onChanged: (filter) => controller.changeFilter(filter),
-            ),
+    return AnimatedBuilder(
+      animation: scrollController,
+      builder: (context, child) {
+        // Calculate if header is collapsed
+        final offset = scrollController.hasClients ? scrollController.offset : 0;
+        final isCollapsed = offset > 90; // เมื่อ scroll เกิน 90px = header เริ่มยุบ
+        
+        // Dynamic padding: ตอนขยาง 12px ตอนยุบ 8px
+        final topPadding = isCollapsed ? 8.0 : 12.0;
+        
+        return Container(
+          height: 64,
+          padding: EdgeInsets.fromLTRB(AppSizes.md, topPadding, AppSizes.md, 8),
+          child: Row(
+            children: [
+              Obx(
+                () => _FilterDropdown(
+                  selected: controller.selectedFilter.value,
+                  onChanged: (filter) => controller.changeFilter(filter),
+                ),
+              ),
+              const Spacer(),
+              if (!isTeacher)
+                Obx(() {
+                  final count = controller.selectedPostIdsForAI.length;
+                  return TextButton.icon(
+                    onPressed: count > 0 ? controller.generateAISummary : null,
+                    icon: Icon(
+                      Icons.auto_awesome,
+                      color: count > 0
+                          ? AppColors.primaryPalette[500]
+                          : Colors.grey,
+                      size: 18,
+                    ),
+                    label: Text(
+                      count > 0
+                          ? 'AI สรุปเนื้อหา ($count)'
+                          : 'AI สรุปเนื้อหา',
+                      style: TextStyle(
+                        color: count > 0
+                            ? AppColors.primaryPalette[500]
+                            : Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }),
+            ],
           ),
-          const Spacer(),
-          if (!isTeacher)
-            Obx(() {
-              final count = controller.selectedPostIdsForAI.length;
-              return TextButton.icon(
-                onPressed: count > 0 ? controller.generateAISummary : null,
-                icon: Icon(
-                  Icons.auto_awesome,
-                  color: count > 0
-                      ? AppColors.primaryPalette[500]
-                      : Colors.grey,
-                  size: 18,
-                ),
-                label: Text(
-                  count > 0
-                      ? 'AI สรุปเนื้อหา ($count)'
-                      : 'AI สรุปเนื้อหา',
-                  style: TextStyle(
-                    color: count > 0
-                        ? AppColors.primaryPalette[500]
-                        : Colors.grey,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              );
-            }),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -522,8 +535,12 @@ class _FilterDropdown extends StatelessWidget {
 
 class _FilterSectionDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
+  final ScrollController scrollController;
 
-  _FilterSectionDelegate({required this.child});
+  _FilterSectionDelegate({
+    required this.child,
+    required this.scrollController,
+  });
 
   @override
   double get minExtent => 64;

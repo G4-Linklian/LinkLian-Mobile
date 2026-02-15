@@ -1,70 +1,21 @@
-// filepath: /Users/thunyatorn/LinkLian-Mobile/lib/features/classes/widgets/class_info_popup.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../core/constants/colors.dart';
-import '../../../core/services/api_client.dart';
+import '../controllers/class_info_controller.dart';
+import '../../../core/utils/formatter.dart';
 
-/// Class Info Popup showing location, schedule, members, and teacher
-class ClassInfoPopup extends StatefulWidget {
+class ClassInfoPopup extends StatelessWidget {
   final int sectionId;
 
   const ClassInfoPopup({super.key, required this.sectionId});
 
   @override
-  State<ClassInfoPopup> createState() => _ClassInfoPopupState();
-}
-
-class _ClassInfoPopupState extends State<ClassInfoPopup> {
-  final ApiClient _apiClient = ApiClient();
-  final ScrollController _membersScrollController = ScrollController();
-  
-  bool _isLoading = true;
-  String? _error;
-  
-  // Data
-  List<Map<String, dynamic>> _schedules = [];
-  List<Map<String, dynamic>> _members = [];
-  List<Map<String, dynamic>> _educators = [];
-  String _roomLocation = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchClassInfo();
-  }
-
-  Future<void> _fetchClassInfo() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      // Fetch class info from API
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        '/social-feed/class-info/${widget.sectionId}',
-      );
-
-      final data = response.data;
-      if (data != null) {
-        setState(() {
-          _schedules = List<Map<String, dynamic>>.from(data['schedules'] ?? []);
-          _members = List<Map<String, dynamic>>.from(data['members'] ?? []);
-          _educators = List<Map<String, dynamic>>.from(data['educators'] ?? []);
-          _roomLocation = data['room_location'] ?? '';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ Error fetching class info: $e');
-      setState(() {
-        _error = 'ไม่สามารถโหลดข้อมูลได้';
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+final controller = Get.put(
+  ClassInfoController(sectionId: sectionId),
+  tag: 'class_info_$sectionId',
+);
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
@@ -86,97 +37,48 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
 
           // Content
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? Center(child: Text(_error!, style: TextStyle(color: AppColors.dangerPalette[500])))
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Section: สถานที่
-                            _buildSectionTitle('สถานที่'),
-                            const SizedBox(height: 8),
-                            Text(
-                              _roomLocation.isNotEmpty ? _roomLocation : 'ไม่ระบุ',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.primaryPalette[800],
-                              ),
-                            ),
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                            const SizedBox(height: 20),
+              if (controller.error.value.isNotEmpty) {
+                return Center(
+                  child: Text(
+                    controller.error.value,
+                    style: TextStyle(color: AppColors.dangerPalette[500]),
+                  ),
+                );
+              }
 
-                            // Section: ตารางเรียน
-                            _buildSectionTitle('ตารางเรียน'),
-                            const SizedBox(height: 8),
-                            if (_schedules.isEmpty)
-                              Text(
-                                'ไม่มีตารางเรียน',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.primaryPalette[600],
-                                ),
-                              )
-                            else
-                              ..._schedules.map((schedule) => _buildScheduleItem(schedule)),
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('สถานที่'),
+                    const SizedBox(height: 8),
+                    _buildLocationSection(controller),
+                    const SizedBox(height: 20),
 
-                            const SizedBox(height: 20),
+                    _buildSectionTitle('ตารางเรียน'),
+                    const SizedBox(height: 8),
+                    _buildScheduleSection(controller),
+                    const SizedBox(height: 20),
 
-                            // Section: สมาชิก
-                            _buildSectionTitle('สมาชิก'),
-                            const SizedBox(height: 8),
-                            if (_members.isEmpty)
-                              Text(
-                                'ไม่มีสมาชิก',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.primaryPalette[600],
-                                ),
-                              )
-                            else
-                              Container(
-                                constraints: const BoxConstraints(maxHeight: 200),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: AppColors.primaryPalette[200]!),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Scrollbar(
-                                  controller: _membersScrollController,
-                                  thumbVisibility: true,
-                                  child: ListView.builder(
-                                    controller: _membersScrollController,
-                                    shrinkWrap: true,
-                                    itemCount: _members.length,
-                                    itemBuilder: (context, index) {
-                                      final member = _members[index];
-                                      return _buildMemberItem(index + 1, member);
-                                    },
-                                  ),
-                                ),
-                              ),
+                    _buildSectionTitle('สมาชิก'),
+                    const SizedBox(height: 8),
+                    _buildMemberSection(controller),
+                    const SizedBox(height: 20),
 
-                            const SizedBox(height: 20),
-
-                            // Section: ผู้สอน
-                            _buildSectionTitle('ผู้สอน'),
-                            const SizedBox(height: 8),
-                            if (_educators.isEmpty)
-                              Text(
-                                'ไม่มีข้อมูลผู้สอน',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.primaryPalette[600],
-                                ),
-                              )
-                            else
-                              ..._educators.map((educator) => _buildEducatorItem(educator)),
-
-                            const SizedBox(height: 20),
-                          ],
-                        ),
-                      ),
+                    _buildSectionTitle('ผู้สอน'),
+                    const SizedBox(height: 8),
+                    _buildEducatorSection(controller),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -194,12 +96,80 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
     );
   }
 
-  Widget _buildScheduleItem(Map<String, dynamic> schedule) {
-    final dayOfWeek = _getDayName(schedule['day_of_week']);
-    final startTime = schedule['start_time'] ?? '';
-    final endTime = schedule['end_time'] ?? '';
+  Widget _buildLocationSection(ClassInfoController controller) {
+    return Obx(() {
+      final locations = controller.uniqueLocations;
+
+      if (locations.isEmpty) {
+        return Text(
+          'ไม่ระบุ',
+          style: TextStyle(fontSize: 14, color: AppColors.primaryPalette[800]),
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: locations.map((location) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: AppColors.primaryPalette[600],
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    location,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.primaryPalette[800],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      );
+    });
+  }
+
+  Widget _buildScheduleSection(ClassInfoController controller) {
+    return Obx(() {
+      if (controller.schedules.isEmpty) {
+        return Text(
+          'ไม่มีตารางเรียน',
+          style: TextStyle(fontSize: 14, color: AppColors.primaryPalette[600]),
+        );
+      }
+
+      return Column(
+        children: controller.schedules.map((schedule) {
+          return _buildScheduleItem(controller, schedule);
+        }).toList(),
+      );
+    });
+  }
+
+  Widget _buildScheduleItem(
+    ClassInfoController controller,
+    Map<String, dynamic> schedule,
+  ) {
+    final dayOfWeek = Formatter.dayOfWeekToText(schedule['day_of_week']);
+    final startTime = controller.formatTime(schedule['start_time'] ?? '');
+    final endTime = controller.formatTime(schedule['end_time'] ?? '');
     final room = schedule['room'] as Map<String, dynamic>?;
+    final building = schedule['building'] as Map<String, dynamic>?;
     final roomNumber = room?['room_number'] ?? '';
+    final buildingName = building?['building_name'] ?? '';
+
+    final locationText = [
+      if (buildingName.isNotEmpty) buildingName,
+      if (roomNumber.isNotEmpty) 'ห้อง $roomNumber',
+    ].join(' ');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -209,7 +179,7 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '$dayOfWeek $startTime - $endTime ${roomNumber.isNotEmpty ? '(ห้อง $roomNumber)' : ''}',
+              '$dayOfWeek $startTime - $endTime${locationText.isNotEmpty ? ' ($locationText)' : ''}',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.primaryPalette[800],
@@ -219,6 +189,45 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
         ],
       ),
     );
+  }
+
+  Widget _buildMemberSection(ClassInfoController controller) {
+    final scrollController = ScrollController();
+
+    return Obx(() {
+      if (controller.members.isEmpty) {
+        return Text(
+          'ไม่มีสมาชิก',
+          style: TextStyle(fontSize: 14, color: AppColors.primaryPalette[600]),
+        );
+      }
+
+      return ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxHeight: 200, 
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.primaryPalette[200]!),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Scrollbar(
+            controller: scrollController,
+            thumbVisibility: true,
+            child: ListView.builder(
+              controller: scrollController,
+              shrinkWrap: true, 
+              physics: const ClampingScrollPhysics(),
+              itemCount: controller.members.length,
+              itemBuilder: (context, index) {
+                final member = controller.members[index];
+                return _buildMemberItem(index + 1, member);
+              },
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildMemberItem(int index, Map<String, dynamic> member) {
@@ -265,6 +274,23 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
     );
   }
 
+  Widget _buildEducatorSection(ClassInfoController controller) {
+    return Obx(() {
+      if (controller.educators.isEmpty) {
+        return Text(
+          'ไม่มีข้อมูลผู้สอน',
+          style: TextStyle(fontSize: 14, color: AppColors.primaryPalette[600]),
+        );
+      }
+
+      return Column(
+        children: controller.educators.map((educator) {
+          return _buildEducatorItem(educator);
+        }).toList(),
+      );
+    });
+  }
+
   Widget _buildEducatorItem(Map<String, dynamic> educator) {
     final displayName = educator['display_name'] ?? 'ไม่ระบุชื่อ';
     final profilePic = educator['profile_pic'] as String?;
@@ -274,7 +300,6 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          // Avatar
           CircleAvatar(
             radius: 16,
             backgroundColor: AppColors.primaryPalette[200],
@@ -322,19 +347,5 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
         ],
       ),
     );
-  }
-
-  String _getDayName(dynamic dayOfWeek) {
-    final day = int.tryParse(dayOfWeek?.toString() ?? '') ?? 0;
-    switch (day) {
-      case 1: return 'วันจันทร์';
-      case 2: return 'วันอังคาร';
-      case 3: return 'วันพุธ';
-      case 4: return 'วันพฤหัสบดี';
-      case 5: return 'วันศุกร์';
-      case 6: return 'วันเสาร์';
-      case 7: return 'วันอาทิตย์';
-      default: return 'ไม่ระบุ';
-    }
   }
 }

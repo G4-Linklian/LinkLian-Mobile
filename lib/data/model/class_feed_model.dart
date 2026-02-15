@@ -28,6 +28,9 @@ class ClassFeedModel {
 
   final String semester;
 
+  @JsonKey(name: 'student_count', fromJson: _intFromJson, defaultValue: 0)
+  final int studentCount;
+
   @JsonKey(name: 'schedules')
   final List<ClassScheduleModel> schedules;
 
@@ -62,6 +65,7 @@ class ClassFeedModel {
     required this.subjectNameEn,
     this.learningAreaName,
     required this.semester,
+    this.studentCount = 0,
     required this.schedules,
     this.displayClassName,
     this.position,

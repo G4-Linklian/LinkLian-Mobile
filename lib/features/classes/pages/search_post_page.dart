@@ -6,6 +6,7 @@ import '../../../core/constants/linklian-icon.dart';
 import '../../../core/services/api_client.dart';
 import '../../../data/model/post_model.dart';
 import '../widgets/card_post.dart';
+import '../../classes/controllers/search_post_controller.dart';
 
 class SearchPostPage extends StatefulWidget {
   const SearchPostPage({super.key});
@@ -17,68 +18,30 @@ class SearchPostPage extends StatefulWidget {
 class _SearchPostPageState extends State<SearchPostPage> {
   final TextEditingController _searchController = TextEditingController();
   final ApiClient _apiClient = ApiClient();
-  
+
   int? _sectionId;
   String _subjectName = '';
   bool _isLoading = false;
   List<PostModel> _results = [];
   String? _error;
   String _keyword = '';
+  late SearchPostController controller;
 
   @override
   void initState() {
     super.initState();
     final args = Get.arguments as Map<String, dynamic>?;
+
     _sectionId = args?['sectionId'] as int?;
     _subjectName = args?['subjectName'] as String? ?? '';
+    controller = Get.put(SearchPostController());
+    controller.init(sectionId: _sectionId);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _search(String keyword) async {
-    if (keyword.trim().isEmpty) {
-      setState(() {
-        _results = [];
-        _error = null;
-        _keyword = '';
-      });
-      return;
-    }
-
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-        _keyword = keyword.trim();
-      });
-
-      final response = await _apiClient.get<List<dynamic>>(
-        '/social-feed/post/search',
-        queryParameters: {
-          if (_sectionId != null) 'section_id': _sectionId,
-          'keyword': keyword.trim(),
-          'limit': 50,
-        },
-      );
-
-      final list = response.data ?? [];
-      setState(() {
-        _results = list
-            .map((e) => PostModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      debugPrint('❌ Search error: $e');
-      setState(() {
-        _error = 'ไม่สามารถค้นหาได้';
-        _isLoading = false;
-      });
-    }
   }
 
   @override
@@ -110,30 +73,24 @@ class _SearchPostPageState extends State<SearchPostPage> {
             child: TextField(
               controller: _searchController,
               autofocus: true,
-              onChanged: (value) {
-                setState(() {}); // rebuild to update suffix
-                // Debounce search
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (_searchController.text == value) {
-                    _search(value);
-                  }
-                });
-              },
-              onSubmitted: _search,
+              onChanged: controller.onKeywordChanged,
               decoration: InputDecoration(
-                hintText: _subjectName.isNotEmpty 
-                    ? 'ค้นหาใน $_subjectName...' 
+                hintText: _subjectName.isNotEmpty
+                    ? 'ค้นหาใน $_subjectName...'
                     : 'ค้นหาโพสต์...',
-                prefixIcon: Icon(Icons.search, color: AppColors.primaryPalette[600]),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: AppColors.primaryPalette[600],
+                ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear, color: AppColors.primaryPalette[400]),
+                        icon: Icon(
+                          Icons.clear,
+                          color: AppColors.primaryPalette[400],
+                        ),
                         onPressed: () {
                           _searchController.clear();
-                          setState(() {
-                            _results = [];
-                            _keyword = '';
-                          });
+                          controller.clear();
                         },
                       )
                     : null,
@@ -149,84 +106,96 @@ class _SearchPostPageState extends State<SearchPostPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: AppColors.primaryPalette[500]!, width: 2),
+                  borderSide: BorderSide(
+                    color: AppColors.primaryPalette[500]!,
+                    width: 2,
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
               ),
             ),
           ),
 
           // Results
-          Expanded(
-            child: _buildResults(),
-          ),
+          Expanded(child: _buildResults()),
         ],
       ),
     );
   }
 
   Widget _buildResults() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
 
-    if (_error != null) {
-      return Center(
-        child: Text(
-          _error!,
-          style: TextStyle(color: AppColors.dangerPalette[500]),
-        ),
-      );
-    }
-
-    if (_searchController.text.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 64, color: AppColors.primaryPalette[300]),
-            const SizedBox(height: 16),
-            Text(
-              'พิมพ์คำค้นหาเพื่อเริ่มต้น',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.primaryPalette[400],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_results.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 64, color: AppColors.primaryPalette[200]),
-            const SizedBox(height: 16),
-            Text(
-              'ไม่พบโพสต์ที่ตรงกัน',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.primaryPalette[400],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-      itemCount: _results.length,
-      itemBuilder: (context, index) {
-        final post = _results[index];
-        return CardPost(
-          post: post,
-          highlightKeyword: _keyword,
+      if (controller.error.isNotEmpty) {
+        return Center(
+          child: Text(
+            controller.error.value,
+            style: TextStyle(color: AppColors.dangerPalette[500]),
+          ),
         );
-      },
+      }
+
+      if (controller.keyword.isEmpty) {
+        return _emptyHint();
+      }
+
+      if (controller.results.isEmpty) {
+        return _notFound();
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+        itemCount: controller.results.length,
+        itemBuilder: (_, i) => CardPost(post: controller.results[i]),
+      );
+    });
+  }
+
+  Widget _emptyHint() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search, size: 64, color: AppColors.primaryPalette[300]),
+          const SizedBox(height: 16),
+          Text(
+            'พิมพ์คำค้นหาเพื่อเริ่มต้น',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.primaryPalette[400],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _notFound() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: AppColors.primaryPalette[200],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'ไม่พบโพสต์ที่ตรงกัน',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.primaryPalette[400],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

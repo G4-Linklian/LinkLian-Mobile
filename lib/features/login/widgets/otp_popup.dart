@@ -78,16 +78,16 @@ final controller = Get.find<OtpController>();
                       ? null
                       : controller.submitOtp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryPalette[300],
+                    backgroundColor: AppColors.primaryPalette[700],
                     minimumSize: const Size(double.infinity, 44),
                   ),
                   child: controller.isLoading.value
-    ? const SizedBox(
-        height: 20,
-        width: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: Colors.white,
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.primaryPalette[700],
         ),
       )
     : const Text('ยืนยัน'),
