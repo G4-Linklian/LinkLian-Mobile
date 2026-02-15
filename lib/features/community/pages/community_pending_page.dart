@@ -16,7 +16,7 @@ class CommunityPendingPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true, 
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(LinkLianIcon.chevronleft, color: Colors.black),
           onPressed: () => Navigator.pop(context),
@@ -45,126 +45,108 @@ class CommunityPendingPage extends StatelessWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           itemCount: controller.pendingMembers.length,
           itemBuilder: (context, index) {
             final member = controller.pendingMembers[index];
 
-            return Card(
-              color: const Color.fromARGB(255, 236, 236, 236),
-              elevation: 4,
-              shadowColor: Colors.black.withOpacity(0.08),
-              margin: const EdgeInsets.only(bottom: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    AppAvatar(
-                      firstName: member.firstName,
-                      lastName: member.lastName,
-                      profilePic: member.profilePic,
-                      radius: 30, 
-                    ),
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  AppAvatar(
+                    firstName: member.firstName,
+                    lastName: member.lastName,
+                    profilePic: member.profilePic,
+                    radius: 28,
+                  ),
 
-                    const SizedBox(width: 16),
+                  const SizedBox(width: 16),
 
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "${member.firstName} ${member.lastName}",
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "${member.firstName} ${member.lastName}",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
-                          if (member.isApproved)
-                            Padding(
-                              padding: EdgeInsets.only(top: 4),
-                              child: Text(
-                                "เข้าร่วมแล้ว",
-                                style: TextStyle(
-                                  color: AppColors.successPalette[700],
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-
-                    if (!member.isApproved) ...[
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            height: 30,
-                            child: OutlinedButton(
-                              onPressed: () async {
-                                await controller
-                                    .approve(member.userSysId);
-                              },
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(0, 30),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10),
-                                side: BorderSide(
-                                    color: AppColors.successPalette[700]!),
-                                foregroundColor: AppColors.successPalette[700],
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(18),
-                                ),
-                              ),
-                              child: const Text(
-                                "Approve",
-                                style: TextStyle(
-                                  fontSize: 11, 
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints:
-                                const BoxConstraints(),
-                            icon: Icon(
-                              Icons.close,
-                              color: AppColors.dangerPalette[500],
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              _showRejectDialog(
-                                  context, member.userSysId);
-                            },
-                          ),
-                        ],
-                      ),
-                    ] else ...[
-                      IconButton(
-                        icon: Icon(
-                          Icons.edit,
-                          color: AppColors.primaryPalette[600],
                         ),
-                        onPressed: () {
-                          _showRejectDialog(
-                              context, member.userSysId);
-                        },
+
+                        if (member.isApproved) const SizedBox(height: 4),
+
+                        if (member.isApproved)
+                          Text(
+                            "เข้าร่วมแล้ว",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.successPalette[800],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  if (!member.isApproved) ...[
+                    Container(
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color:
+                            AppColors.successPalette[100] ??
+                            AppColors.successPalette[700],
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: AppColors.successPalette[600] ?? Colors.green,
+                          width: 1.2,
+                        ),
                       ),
-                    ],
+                      child: TextButton(
+                        onPressed: () async {
+                          await controller.approve(member.userSysId);
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          minimumSize: const Size(0, 34),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          "ยืนยัน",
+                          style: TextStyle(
+                            color: AppColors.successPalette[600],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 2),
+
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete,
+                        size: 20,
+                        color: AppColors.dangerPalette[500],
+                      ),
+                      onPressed: () {
+                        _showRejectDialog(context, member.userSysId);
+                      },
+                    ),
+                  ] else ...[
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete,
+                        size: 20,
+                        color: AppColors.dangerPalette[500],
+                      ),
+                      onPressed: () {
+                        _showRejectDialog(context, member.userSysId);
+                      },
+                    ),
                   ],
-                ),
+                ],
               ),
             );
           },
@@ -180,9 +162,7 @@ void _showRejectDialog(BuildContext context, int userId) {
   showDialog(
     context: context,
     builder: (_) => AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text("ยืนยันการลบ"),
       content: const Text("ต้องการลบสมาชิกคนนี้หรือไม่?"),
       actions: [
@@ -195,13 +175,9 @@ void _showRejectDialog(BuildContext context, int userId) {
             await controller.reject(userId);
             Navigator.pop(context);
           },
-          child: const Text(
-            "ลบ",
-            style: TextStyle(color: Colors.red),
-          ),
+          child: const Text("ลบ", style: TextStyle(color: Colors.red)),
         ),
       ],
     ),
   );
 }
-

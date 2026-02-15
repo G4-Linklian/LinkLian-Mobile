@@ -19,21 +19,26 @@ class CommunityFilterDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<CommunityPostFilter>(
       onSelected: onChanged,
+
       itemBuilder: (context) => CommunityPostFilter.values.map((filter) {
         return PopupMenuItem<CommunityPostFilter>(
           value: filter,
-          child: Center(
-            child: Text(
-              filter.label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primaryPalette[900],
+          child: SizedBox(
+            width: 85,
+            child: Center(
+              child: Text(
+                filter.label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primaryPalette[900],
+                ),
               ),
             ),
           ),
         );
       }).toList(),
+
       offset: const Offset(0, 45),
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

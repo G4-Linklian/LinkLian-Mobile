@@ -102,7 +102,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       behavior: HitTestBehavior.opaque,
       onTap: _openComment,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16, top: 16),
+        margin: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(16),

@@ -91,4 +91,26 @@ class CommunityModel {
 
     return [];
   }
+
+  bool get isInactive => status == 'inactive';
+
+  bool get canInteract {
+    if (isInactive) return false;
+
+    if (isPrivate && !isMember) return false;
+
+    return true;
+  }
+
+  bool get canViewContent {
+    if (isInactive && isPrivate && !isMember) {
+      return false;
+    }
+
+    if (isPrivate && !isMember) {
+      return false;
+    }
+
+    return true;
+  }
 }

@@ -132,7 +132,6 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
     }
   }
 
-  // แสดง Bottom Sheet ให้เลือก Gallery หรือ Camera
   void _showImagePickerOptions(CreatePostCommunityController controller) {
     showModalBottomSheet(
       context: context,
@@ -244,111 +243,113 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
           children: [
             // CONTENT AREA + ATTACHMENTS
             Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // CONTENT INPUT
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Obx(
-                              () => CircleAvatar(
-                                radius: 22,
-                                backgroundImage:
-                                    controller.userProfileImage.value.isNotEmpty
-                                    ? NetworkImage(
-                                        controller.userProfileImage.value,
-                                      )
-                                    : null,
-                                backgroundColor: const Color(0xFFEEDBC9),
-                                child: controller.userProfileImage.value.isEmpty
-                                    ? const Icon(
-                                        Icons.person,
-                                        color: Colors.white,
-                                      )
-                                    : null,
-                              ),
+              child: Column(
+                children: [
+                  // CONTENT INPUT 
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Obx(
+                            () => CircleAvatar(
+                              radius: 22,
+                              backgroundImage:
+                                  controller.userProfileImage.value.isNotEmpty
+                                  ? NetworkImage(
+                                      controller.userProfileImage.value,
+                                    )
+                                  : null,
+                              backgroundColor: const Color(0xFFEEDBC9),
+                              child: controller.userProfileImage.value.isEmpty
+                                  ? const Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                    )
+                                  : null,
                             ),
+                          ),
 
-                            const SizedBox(width: 12),
+                          const SizedBox(width: 12),
 
-                            Expanded(
-                              child: TextField(
-                                controller: _contentController,
-                                maxLines: null,
-                                expands: true,
-                                textAlignVertical: TextAlignVertical.top,
-                                style: const TextStyle(fontSize: 16),
-                                decoration: const InputDecoration(
-                                  hintText: "พูดคุยกับชุมชนของคุณได้เลย!",
-                                  hintStyle: TextStyle(color: Colors.grey),
-                                  border: InputBorder.none,
+                          Expanded(
+                            child: TextField(
+                              controller: _contentController,
+                              maxLines: null,
+                              expands: true,
+                              textAlignVertical: TextAlignVertical.top,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: AppColors.black,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: "พูดคุยกับชุมชนของคุณได้เลย!",
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.withOpacity(0.5),
+                                  fontSize: 16,
                                 ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
 
-                    // ATTACHMENTS
-                    Obx(() {
-                      if (controller.filesPreviews.isEmpty) {
-                        return const SizedBox();
-                      }
+                  // ATTACHMENTS
+                  Obx(() {
+                    if (controller.filesPreviews.isEmpty) {
+                      return const SizedBox();
+                    }
 
-                      return Container(
-                        constraints: const BoxConstraints(maxHeight: 180),
-                        decoration: const BoxDecoration(
-                          border: Border(
-                            top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+                    return Container(
+                      constraints: const BoxConstraints(maxHeight: 180),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+                        ),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.primaryPalette[600]!,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Scrollbar(
+                          trackVisibility: true,
+                          thumbVisibility: true,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            itemCount: controller.filesPreviews.length,
+                            itemBuilder: (context, index) {
+                              final file = controller.filesPreviews[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 3,
+                                ),
+                                child: AttachmentTile(
+                                  file: file,
+                                  onRemove: () =>
+                                      controller.removeAttachment(index),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                        child: Container(
-                          margin: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.primaryPalette[600]!,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Scrollbar(
-                            trackVisibility: true,
-                            thumbVisibility: true,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              itemCount: controller.filesPreviews.length,
-                              itemBuilder: (context, index) {
-                                final file = controller.filesPreviews[index];
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 3,
-                                  ),
-                                  child: AttachmentTile(
-                                    file: file,
-                                    onRemove: () =>
-                                        controller.removeAttachment(index),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+                      ),
+                    );
+                  }),
+                ],
               ),
             ),
 
@@ -364,7 +365,6 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
               child: SafeArea(
                 child: Row(
                   children: [
-                    // ปุ่มอัปโหลดไฟล์
                     IconButton(
                       icon: const Icon(
                         LinkLianIcon.paperclip,
@@ -390,7 +390,7 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
                       },
                     ),
 
-                    // ปุ่มเลือกรูป (Gallery/Camera)
+
                     IconButton(
                       icon: const Icon(
                         LinkLianIcon.photo,
@@ -400,7 +400,7 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
                       onPressed: () => _showImagePickerOptions(controller),
                     ),
 
-                    // ปุ่มแนบลิงก์
+
                     IconButton(
                       icon: const Icon(
                         LinkLianIcon.link,
@@ -522,7 +522,10 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
             children: [
               Text(
                 controller.isEditMode.value ? "บันทึก" : "โพสต์",
-                style: const TextStyle(color: AppColors.white),
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(width: 6),
               const Icon(LinkLianIcon.post, size: 18, color: AppColors.white),

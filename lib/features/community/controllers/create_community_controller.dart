@@ -22,6 +22,7 @@ class CreateCommunityController extends GetxController {
   final tagInputController = TextEditingController();
 
   final isPrivate = false.obs;
+  final isLoading = false.obs;
 
   final selectedTags = <String>[].obs;
   final tagSearchResult = <CommunityTagModel>[].obs;
@@ -98,6 +99,10 @@ class CreateCommunityController extends GetxController {
       return;
     }
 
+
+   try {
+    isLoading.value = true; 
+
     await _repo.createCommunity(
       name: nameController.text.trim(),
       description: descriptionController.text.trim(),
@@ -109,11 +114,15 @@ class CreateCommunityController extends GetxController {
 
     final communityController = Get.find<CommunityController>();
     await communityController.loadCommunities();
+
     resetForm();
 
     Get.back();
     Get.snackbar("สำเร็จ", "สร้างชุมชนเรียบร้อยแล้ว");
+  } finally {
+    isLoading.value = false; 
   }
+}
 
   void resetForm() {
     nameController.clear();

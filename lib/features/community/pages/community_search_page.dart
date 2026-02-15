@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:LinkLian/data/model/community_post_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -24,6 +26,7 @@ class _CommunitySearchPageState extends State<CommunitySearchPage> {
   List<CommunityPostModel> _results = [];
   String? _error;
   String _keyword = '';
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -34,10 +37,11 @@ class _CommunitySearchPageState extends State<CommunitySearchPage> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+void dispose() {
+  _debounce?.cancel();
+  _searchController.dispose();
+  super.dispose();
+}
 
   Future<void> _search(String keyword) async {
     if (keyword.trim().isEmpty) {
@@ -121,13 +125,17 @@ class _CommunitySearchPageState extends State<CommunitySearchPage> {
         controller: _searchController,
         autofocus: true,
         onChanged: (value) {
-          setState(() {});
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (_searchController.text == value) {
-              _search(value);
-            }
-          });
-        },
+  setState(() {});
+
+  if (_debounce?.isActive ?? false) {
+    _debounce!.cancel();
+  }
+
+  _debounce = Timer(const Duration(milliseconds: 500), () {
+    _search(value);
+  });
+},
+
         onSubmitted: _search,
         decoration: InputDecoration(
           hintText: _communityName.isNotEmpty

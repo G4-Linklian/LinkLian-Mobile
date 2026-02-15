@@ -32,7 +32,7 @@ class AppAvatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: radius,
-      backgroundColor: AppColors.primaryPalette[400],
+      backgroundColor: AppColors.primaryPalette[300],
       child: Text(
         initials,
         style: TextStyle(

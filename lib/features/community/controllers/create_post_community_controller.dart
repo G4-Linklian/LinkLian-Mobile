@@ -68,7 +68,6 @@ class CreatePostCommunityController extends GetxController {
       final imageFile = File(file.path);
       selectedFiles.add(imageFile);
 
- 
       final previewIndex = filesPreviews.length;
       filesPreviews.add({
         'file_name': file.name,
@@ -154,7 +153,7 @@ class CreatePostCommunityController extends GetxController {
 
       if (index < filesPreviews.length) {
         filesPreviews[index]['upload_progress'] = progress;
-        filesPreviews.refresh(); 
+        filesPreviews.refresh();
       }
     }
 
@@ -220,116 +219,35 @@ class CreatePostCommunityController extends GetxController {
   Future<void> submitPost() async {
     final content = contentController.text.trim();
 
-    if (content.isEmpty) {
+    final links = filesPreviews
+        .where((e) => e['file_type'] == 'link')
+        .map((e) => e['file_url'] as String)
+        .toList();
+
+    if (content.isEmpty && links.isEmpty) {
       DialogHelper.showNotification(
         title: 'กรุณากรอกข้อความ',
-        message: 'โปรดพิมพ์ข้อความก่อนโพสต์',
+        message: 'โปรดพิมพ์ข้อความหรือแนบลิงก์ก่อนโพสต์',
         type: NotificationType.warning,
       );
       return;
     }
 
-    final hasUploadingFiles = filesPreviews.any(
-      (file) => file['is_uploading'] == true,
+    final fullContent = links.isNotEmpty
+        ? "$content\n${links.join("\n")}"
+        : content;
+
+    print("🧠 FULL CONTENT:");
+    print(fullContent);
+
+    await _repo.createPost(
+      communityId: communityId,
+      content: fullContent,
+      files: selectedFiles.isNotEmpty ? selectedFiles : null,
     );
 
-    if (hasUploadingFiles) {
-      DialogHelper.showNotification(
-        title: 'กรุณารอสักครู่',
-        message: 'กำลังอัปโหลดไฟล์อยู่ กรุณารอให้เสร็จก่อนดำเนินการ',
-        type: NotificationType.warning,
-      );
-      return;
-    }
-
-    try {
-      isSubmitting.value = true;
-
-      DialogHelper.showLoading(
-        isEditMode.value ? 'กำลังบันทึก...' : 'กำลังโพสต์...',
-      );
-
-      if (isEditMode.value) {
-        // await _repo.updatePost(...);
-      } else {
-        await _repo.createPost(
-          communityId: communityId,
-          content: content,
-          files: selectedFiles.isNotEmpty ? selectedFiles : null,
-        );
-      }
-
-      DialogHelper.hideLoading();
-
-      Get.back(result: true);
-    } catch (e) {
-      DialogHelper.hideLoading();
-
-      DialogHelper.showNotification(
-        title: 'เกิดข้อผิดพลาด',
-        message: isEditMode.value
-            ? 'ไม่สามารถแก้ไขโพสต์ได้: $e'
-            : 'ไม่สามารถสร้างโพสต์ได้: $e',
-        type: NotificationType.error,
-      );
-    } finally {
-      isSubmitting.value = false;
-    }
+    Get.back(result: true);
   }
-
-  // Future<void> submitPost() async {
-  //   if (contentController.text.trim().isEmpty) {
-  //     DialogHelper.showNotification(
-  //       title: 'กรุณากรอกข้อความ',
-  //       message: 'โปรดพิมพ์ข้อความก่อนโพสต์',
-  //       type: NotificationType.warning,
-  //     );
-  //     return;
-  //   }
-
-  //   // ตรวจสอบว่ามีไฟล์กำลังอัปโหลดอยู่หรือไม่
-  //   final hasUploadingFiles = filesPreviews.any((file) => file['is_uploading'] == true);
-  //   if (hasUploadingFiles) {
-  //     DialogHelper.showNotification(
-  //       title: 'กรุณารอสักครู่',
-  //       message: 'กำลังอัปโหลดไฟล์อยู่ กรุณารอให้เสร็จก่อนโพสต์',
-  //       type: NotificationType.warning,
-  //     );
-  //     return;
-  //   }
-
-  //   try {
-  //     isSubmitting.value = true;
-  //     DialogHelper.showLoading('กำลังโพสต์...');
-
-  //     final response = await _repo.createPost(
-  //       communityId: communityId,
-  //       content: contentController.text.trim(),
-  //       files: selectedFiles.isNotEmpty ? selectedFiles : null,
-  //     );
-
-  //     DialogHelper.hideLoading();
-
-  //     DialogHelper.showNotification(
-  //       title: 'โพสต์สำเร็จ',
-  //       message: 'ระบบได้บันทึกโพสต์ของคุณเรียบร้อยแล้ว',
-  //       type: NotificationType.success,
-  //     );
-
-  //     await Future.delayed(const Duration(milliseconds: 500));
-  //     Get.back(result: true);
-  //   } catch (e) {
-  //     DialogHelper.hideLoading();
-  //     DialogHelper.showNotification(
-  //       title: 'เกิดข้อผิดพลาด',
-  //       message: 'ไม่สามารถสร้างโพสต์ได้: $e',
-  //       type: NotificationType.error,
-  //     );
-  //   } finally {
-  //     isSubmitting.value = false;
-  //   }
-  // }
-
   Future<void> pickImageFromGallery() async {
     try {
       final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
@@ -365,32 +283,6 @@ class CreatePostCommunityController extends GetxController {
       debugPrint("โหลดโปรไฟล์ไม่สำเร็จ: $e");
     }
   }
-
-  // Future<void> pickImageFromCamera() async {
-  //   try {
-  //     final XFile? file =
-  //         await _picker.pickImage(source: ImageSource.camera);
-
-  //     if (file == null) return;
-
-  //     final imageFile = File(file.path);
-
-  //     selectedFiles.add(imageFile);
-
-  //     filesPreviews.add({
-  //       'file_name': file.name,
-  //       'file_type': 'image',
-  //       'file_path': file.path,
-  //       'file_size': await imageFile.length(),
-  //     });
-  //   } catch (e) {
-  //     DialogHelper.showNotification(
-  //       title: 'เกิดข้อผิดพลาด',
-  //       message: 'ไม่สามารถเปิดกล้องได้',
-  //       type: NotificationType.error,
-  //     );
-  //   }
-  // }
 
   String _getFileType(String filePath) {
     final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];

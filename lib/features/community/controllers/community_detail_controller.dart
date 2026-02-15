@@ -70,22 +70,26 @@ class CommunityDetailController extends GetxController {
   Future<void> loadDetail() async {
     isLoading.value = true;
 
-    final detail = await _communityRepo.getCommunityDetail(communityId);
+    try {
+      final detail = await _communityRepo.getCommunityDetail(communityId);
 
-    // community.value = detail;
-    // currentUserId.value = detail.currentUserId ?? 0;
-    if (detail != null) {
-      community.value = detail;
-      currentUserId.value = detail.currentUserId ?? 0;
-    }
+      if (detail != null) {
+        community.value = detail;
+        currentUserId.value = detail.currentUserId ?? 0;
+      }
 
-    if (canViewContent()) {
-      final feed = await _postRepo.getCommunityFeed(
-        communityId: communityId,
-        sort: selectedFilter.value.apiValue,
-      );
+      if (canViewContent()) {
+        final feed = await _postRepo.getCommunityFeed(
+          communityId: communityId,
+          sort: selectedFilter.value.apiValue,
+        );
 
-      posts.assignAll(feed);
+        posts.assignAll(feed);
+      } else {
+        posts.clear();
+      }
+    } catch (e) {
+      posts.clear();
     }
 
     isLoading.value = false;
@@ -125,6 +129,11 @@ class CommunityDetailController extends GetxController {
     final c = community.value;
     if (c == null) return false;
 
+    if (c.status == 'inactive') {
+      if (!c.isPrivate) return true;
+      return c.membershipStatus == 'active';
+    }
+
     if (!c.isPrivate) return true;
 
     return c.membershipStatus == 'active';
@@ -134,9 +143,21 @@ class CommunityDetailController extends GetxController {
     final c = community.value;
     if (c == null) return false;
 
+    if (c.status == 'inactive') return false;
+
     if (!c.isPrivate) return true;
 
     return c.membershipStatus == 'active';
+  }
+
+  bool get isCommunityClosed {
+    final c = community.value;
+    if (c == null) return false;
+    return c.status == 'inactive';
+  }
+
+  bool get shouldShowFilter {
+    return canViewContent() && posts.isNotEmpty && !isCommunityClosed;
   }
 
   @override
@@ -149,7 +170,7 @@ class CommunityDetailController extends GetxController {
     try {
       await _memberRepo.join(communityId);
 
-      await loadDetail(); // refresh membership_status
+      await loadDetail();
     } catch (e) {
       Get.snackbar(
         "ผิดพลาด",
@@ -163,7 +184,7 @@ class CommunityDetailController extends GetxController {
     try {
       await _memberRepo.leave(communityId);
 
-      await loadDetail(); // refresh
+      await loadDetail();
     } catch (e) {
       Get.snackbar(
         "ผิดพลาด",

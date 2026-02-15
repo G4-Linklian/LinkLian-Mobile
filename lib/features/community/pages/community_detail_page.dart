@@ -73,7 +73,10 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                   : const NeverScrollableScrollPhysics(),
               slivers: [
                 SliverToBoxAdapter(
-                  child: SizedBox(height: bannerHeight + statusBarHeight),
+                  child: SizedBox(
+                    height: bannerHeight + statusBarHeight,
+                    child: Opacity(opacity: 0.6),
+                  ),
                 ),
 
                 /// ================= HEADER INFO =================
@@ -81,32 +84,63 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                   child: _CommunityHeaderContent(controller: controller),
                 ),
 
-                if (controller.canViewContent())
+                if (controller.shouldShowFilter && !_showCollapsedBar)
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          CommunityFilterDropdown(
-                            selected: controller.selectedFilter.value,
-                            onChanged: controller.changeFilter,
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 150),
+                      opacity: _showCollapsedBar ? 0.0 : 1.0,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        height: _showCollapsedBar ? 0 : null,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                        ],
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              CommunityFilterDropdown(
+                                selected: controller.selectedFilter.value,
+                                onChanged: controller.changeFilter,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-
-                /// ================= POST LIST =================
                 if (!controller.canViewContent())
                   SliverToBoxAdapter(
                     child: _PrivateLockedView(
                       isPending:
                           controller.community.value?.membershipStatus ==
                           'pending',
+                      isClosed: controller.isCommunityClosed,
+                    ),
+                  )
+                else if (controller.posts.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.article_outlined,
+                            size: 80,
+                            color: AppColors.primaryPalette[700],
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            "ยังไม่มีโพสต์ในชุมชนนี้",
+                            style: TextStyle(
+                              color: AppColors.primaryPalette[700],
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 else
@@ -124,7 +158,6 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
               ],
             ),
 
-            ///  FIXED HEADER
             Positioned(
               top: 0,
               left: 0,
@@ -133,7 +166,6 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                 children: [
                   Container(
                     height: bannerHeight + statusBarHeight,
-                    clipBehavior: Clip.hardEdge,
                     decoration: const BoxDecoration(color: Colors.white),
                     child: Stack(
                       children: [
@@ -142,11 +174,41 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                           child: Image.network(
                             community.imageBanner,
                             fit: BoxFit.cover,
-                            alignment: Alignment.topCenter,
+                            alignment: Alignment.center,
                           ),
                         ),
 
-                        /// ปุ่มด้านบน
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: -1,
+                          height: 30,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  const Color.fromARGB(0, 255, 255, 255),
+                                  AppColors.primaryPalette[100]!.withOpacity(
+                                    0.2,
+                                  ),
+                                  AppColors.primaryPalette[100]!.withOpacity(
+                                    0.3,
+                                  ),
+                                  AppColors.primaryPalette[100]!.withOpacity(
+                                    0.4,
+                                  ),
+                                  AppColors.primaryPalette[100]!.withOpacity(
+                                    0.5,
+                                  ),
+                                  AppColors.primaryPalette[100]!,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
                         Positioned(
                           top: statusBarHeight,
                           left: 0,
@@ -155,67 +217,89 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             child: Row(
                               children: [
-                                IconButton(
-                                  icon: Icon(
-                                    LinkLianIcon.back,
-                                    color: AppColors.primaryPalette[700]!,
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    shape: BoxShape.circle,
                                   ),
-                                  onPressed: () {
-                                    Get.find<NavigationController>()
-                                        .hideCommunityDetail();
-                                  },
+                                  child: IconButton(
+                                    icon: Icon(
+                                      LinkLianIcon.back,
+                                      color: AppColors.primaryPalette[700]!,
+                                    ),
+                                    onPressed: () {
+                                      Get.find<NavigationController>()
+                                          .hideCommunityDetail();
+                                    },
+                                  ),
                                 ),
                                 const Spacer(),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.search,
-                                    color: AppColors.primaryPalette[700]!,
-                                    size: 30,
-                                  ),
-                                  onPressed: controller.canInteract()
-                                      ? () {
-                                          Get.toNamed(
-                                            AppRoutes.communitySearch,
-                                            arguments: {
-                                              'communityId':
-                                                  controller.communityId,
-                                              'communityName':
-                                                  community.communityName,
-                                            },
-                                          );
-                                        }
-                                      : null,
-                                ),
 
-                                IconButton(
-                                  icon: Icon(
-                                    LinkLianIcon.add,
-                                    color: AppColors.primaryPalette[500],
-                                    size: 30,
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    shape: BoxShape.circle,
                                   ),
-                                  onPressed: controller.canInteract()
-                                      ? () async {
-                                          final result = await Get.toNamed(
-                                            AppRoutes.createPostCommunity,
-                                            arguments: {
-                                              'community_id':
-                                                  controller.communityId,
-                                              'userId': controller
-                                                  .currentUserId
-                                                  .value,
-                                            },
-                                          );
-                                          if (result == true) {
-                                            controller.loadDetail();
-                                            DialogHelper.showNotification(
-                                              title: 'โพสต์สำเร็จ',
-                                              message:
-                                                  'ระบบได้บันทึกโพสต์ของคุณเรียบร้อยแล้ว',
-                                              type: NotificationType.success,
+                                  child: IconButton(
+                                    icon: Icon(
+                                      Icons.search,
+                                      color: AppColors.primaryPalette[700]!,
+                                      size: 30,
+                                    ),
+                                    onPressed: controller.canInteract()
+                                        ? () {
+                                            Get.toNamed(
+                                              AppRoutes.communitySearch,
+                                              arguments: {
+                                                'communityId':
+                                                    controller.communityId,
+                                                'communityName':
+                                                    community.communityName,
+                                              },
                                             );
                                           }
-                                        }
-                                      : null,
+                                        : null,
+                                  ),
+                                ),
+
+                                const SizedBox(width: 8),
+
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: IconButton(
+                                    icon: Icon(
+                                      LinkLianIcon.add,
+                                      color: AppColors.primaryPalette[500],
+                                      size: 30,
+                                    ),
+
+                                    onPressed: controller.canInteract()
+                                        ? () async {
+                                            final result = await Get.toNamed(
+                                              AppRoutes.createPostCommunity,
+                                              arguments: {
+                                                'community_id':
+                                                    controller.communityId,
+                                                'userId': controller
+                                                    .currentUserId
+                                                    .value,
+                                              },
+                                            );
+                                            if (result == true) {
+                                              controller.loadDetail();
+                                              DialogHelper.showNotification(
+                                                title: 'โพสต์สำเร็จ',
+                                                message:
+                                                    'ระบบได้บันทึกโพสต์ของคุณเรียบร้อยแล้ว',
+                                                type: NotificationType.success,
+                                              );
+                                            }
+                                          }
+                                        : null,
+                                  ),
                                 ),
                               ],
                             ),
@@ -232,12 +316,10 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                       duration: const Duration(milliseconds: 200),
                       opacity: _showCollapsedBar ? 1.0 : 0.0,
                       child: SingleChildScrollView(
-                        // เพิ่ม SingleChildScrollView เพื่อป้องกัน overflow
                         physics: const NeverScrollableScrollPhysics(),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            /// แถบสีส้ม
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
@@ -245,14 +327,7 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primaryPalette[200],
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                                color: AppColors.primaryPalette[100],
                               ),
                               child: Row(
                                 children: [
@@ -269,64 +344,52 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-                                  ElevatedButton(
-                                    onPressed: community.isPending
-                                        ? null
-                                        : () {
-                                            if (community.isMember) {
-                                              controller.confirmLeaveCommunity(
-                                                community.communityName,
-                                              );
-                                            } else {
+
+                                  if (!community.isMember)
+                                    ElevatedButton(
+                                      onPressed: community.isPending
+                                          ? null
+                                          : () {
                                               controller.joinCommunity();
-                                            }
-                                          },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: community.isMember
-                                          ? AppColors.dangerPalette[300]
-                                          : community.isPending
-                                          ? Colors.grey.shade300
-                                          : AppColors.buttonPalette[100],
-
-                                      foregroundColor: community.isMember
-                                          ? AppColors.dangerPalette[500]
-                                          : community.isPending
-                                          ? Colors.grey.shade600
-                                          : AppColors.buttonPalette[600],
-
-                                      side: BorderSide(
-                                        color: community.isMember
-                                            ? AppColors.dangerPalette[500]!
-                                            : community.isPending
-                                            ? Colors.grey.shade400
-                                            : AppColors.buttonPalette[600]!,
+                                            },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: community.isPending
+                                            ? Colors.grey.shade300
+                                            : AppColors.buttonPalette[100],
+                                        foregroundColor: community.isPending
+                                            ? Colors.grey.shade600
+                                            : AppColors.buttonPalette[600],
+                                        side: BorderSide(
+                                          color: community.isPending
+                                              ? Colors.grey.shade400
+                                              : AppColors.buttonPalette[600]!,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 6,
+                                        ),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
                                       ),
-
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 6,
-                                      ),
-                                      minimumSize: Size.zero,
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    child: Text(
-                                      community.isMember
-                                          ? "ออกจากกลุ่ม"
-                                          : community.isPending
-                                          ? "รอยืนยัน"
-                                          : community.isPrivate
-                                          ? "ขอเข้าร่วม"
-                                          : "เข้าร่วมกลุ่ม",
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
+                                      child: Text(
+                                        community.isPending
+                                            ? "รอยืนยัน"
+                                            : community.isPrivate
+                                            ? "ขอเข้าร่วม"
+                                            : "เข้าร่วมกลุ่ม",
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
-                                  ),
+
                                   const SizedBox(width: 3),
                                   IconButton(
                                     padding: EdgeInsets.zero,
@@ -340,6 +403,7 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                       showModalBottomSheet(
                                         context: context,
                                         isScrollControlled: true,
+                                        backgroundColor: Colors.transparent,
                                         builder: (_) => CommunityInfoPopup(
                                           communityId: controller.communityId,
                                         ),
@@ -350,33 +414,50 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                               ),
                             ),
 
-                            /// Filter ด้านล่างแถบสีส้ม
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
+                            if (controller.shouldShowFilter)
+                              TweenAnimationBuilder<double>(
+                                duration: const Duration(milliseconds: 250),
+                                tween: Tween<double>(
+                                  begin: 0.0,
+                                  end: _showCollapsedBar ? 1.0 : 0.0,
+                                ),
+                                curve: const Interval(
+                                  0.3,
+                                  1.0,
+                                  curve: Curves.easeInOut,
+                                ),
+                                builder: (context, value, child) {
+                                  return SizedBox(
+                                    height: 60 * value,
+                                    child: Opacity(
+                                      opacity: value,
+                                      child: value > 0.1
+                                          ? child
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
                                   ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  CommunityFilterDropdown(
-                                    selected: controller.selectedFilter.value,
-                                    onChanged: controller.changeFilter,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
                                   ),
-                                ],
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      CommunityFilterDropdown(
+                                        selected:
+                                            controller.selectedFilter.value,
+                                        onChanged: controller.changeFilter,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),
@@ -403,11 +484,8 @@ class _CommunityHeaderContent extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primaryPalette[200],
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: AppColors.primaryPalette[100]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -427,67 +505,76 @@ class _CommunityHeaderContent extends StatelessWidget {
               ),
               const SizedBox(width: 8),
 
-              ElevatedButton(
-                onPressed: community.isPending
-                    ? null
-                    : () {
-                        if (community.isMember) {
-                          controller.confirmLeaveCommunity(
-                            community.communityName,
-                          );
-                        } else {
+              if (!community.isMember && !controller.isCommunityClosed)
+                ElevatedButton(
+                  onPressed: community.isPending
+                      ? null
+                      : () {
                           controller.joinCommunity();
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: community.isMember
-                      ? AppColors.dangerPalette[300]
-                      : community.isPending
-                      ? Colors.grey.shade300
-                      : AppColors.buttonPalette[100],
+                        },
 
-                  foregroundColor: community.isMember
-                      ? AppColors.dangerPalette[500]
-                      : community.isPending
-                      ? Colors.grey.shade600
-                      : AppColors.buttonPalette[600],
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: community.isPending
+                        ? Colors.grey.shade300
+                        : AppColors.buttonPalette[100],
 
-                  side: BorderSide(
-                    color: community.isMember
-                        ? AppColors.dangerPalette[500]!
-                        : community.isPending
-                        ? Colors.grey.shade400
-                        : AppColors.buttonPalette[600]!,
+                    foregroundColor: community.isPending
+                        ? Colors.grey.shade600
+                        : AppColors.buttonPalette[600],
+
+                    side: BorderSide(
+                      color: community.isPending
+                          ? Colors.grey.shade400
+                          : AppColors.buttonPalette[600]!,
+                    ),
+
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
 
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                  child: Text(
+                    community.isPending
+                        ? "รอยืนยัน"
+                        : community.isPrivate
+                        ? "ขอเข้าร่วม"
+                        : "เข้าร่วมกลุ่ม",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+                ),
+
+              if (controller.isCommunityClosed)
+                Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 6,
                   ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  community.isMember
-                      ? "ออกจากกลุ่ม"
-                      : community.isPending
-                      ? "รอยืนยัน"
-                      : community.isPrivate
-                      ? "ขอเข้าร่วม"
-                      : "เข้าร่วมกลุ่ม",
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    border: Border.all(color: Colors.grey.shade400),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "ชุมชนถูกปิด",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ),
-              ),
 
               const SizedBox(width: 4),
 
-              /// ปุ่ม info
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -564,8 +651,9 @@ class _CommunityHeaderContent extends StatelessWidget {
 
 class _PrivateLockedView extends StatelessWidget {
   final bool isPending;
+  final bool isClosed;
 
-  const _PrivateLockedView({required this.isPending});
+  const _PrivateLockedView({required this.isPending, required this.isClosed});
 
   @override
   Widget build(BuildContext context) {
@@ -578,12 +666,18 @@ class _PrivateLockedView extends StatelessWidget {
             Icon(Icons.lock, size: 80, color: Colors.blue.shade400),
             const SizedBox(height: 20),
             Text(
-              isPending ? "คำขอเข้าร่วมกำลังรอยืนยัน" : "นี่คือกลุ่มส่วนบุคคล",
+              isClosed
+                  ? "ชุมชนถูกปิด"
+                  : isPending
+                  ? "คำขอเข้าร่วมกำลังรอยืนยัน"
+                  : "นี่คือกลุ่มส่วนบุคคล",
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text(
-              isPending
+              isClosed
+                  ? "กลุ่มนี้ถูกปิดโดยเจ้าของ คุณสามารถดูข้อมูลรายละเอียดได้เท่านั้น"
+                  : isPending
                   ? "กรุณารอเจ้าของกลุ่มอนุมัติ"
                   : "เข้าร่วมกลุ่มเพื่อดูหรือมีส่วนร่วมในการสนทนา",
               textAlign: TextAlign.center,

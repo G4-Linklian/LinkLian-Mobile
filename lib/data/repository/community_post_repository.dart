@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import '../../core/services/api_client.dart';
@@ -11,11 +12,16 @@ class CommunityPostRepository {
     required String content,
     List<File>? files,
   }) async {
+    final fields = {'community_id': communityId, 'content': content};
+
+    print("📤 CONTENT SENT TO BACKEND:");
+    print(content);
+
     final response = await _apiClient.uploadMultipart(
       '/community/post',
       files: files ?? [],
       fieldName: 'files',
-      fields: {'community_id': communityId, 'content': content},
+      fields: fields,
     );
 
     return response.data as Map<String, dynamic>;
@@ -29,7 +35,7 @@ class CommunityPostRepository {
   }) async {
     final response = await _apiClient.get<dynamic>(
       '/community/post/$communityId',
-      queryParameters: {'limit': limit, 'offset': offset,'sort': sort, },
+      queryParameters: {'limit': limit, 'offset': offset, 'sort': sort},
     );
 
     final raw = response.data;
