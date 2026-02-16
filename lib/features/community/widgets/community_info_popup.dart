@@ -36,9 +36,14 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
       final response = await _apiClient.get<Map<String, dynamic>>(
         '/community/detail/${widget.communityId}',
       );
+      final root = response.data ?? {};
+
+      if (root['success'] != true) {
+        throw Exception(root['message']);
+      }
 
       setState(() {
-        _community = response.data;
+        _community = root['data'];
         _isLoading = false;
       });
     } catch (e) {

@@ -24,7 +24,13 @@ class CommunityPostRepository {
       fields: fields,
     );
 
-    return response.data as Map<String, dynamic>;
+    final root = response.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Create post failed');
+    }
+
+    return root['data'] ?? {};
   }
 
   Future<List<CommunityPostModel>> getCommunityFeed({
@@ -38,28 +44,30 @@ class CommunityPostRepository {
       queryParameters: {'limit': limit, 'offset': offset, 'sort': sort},
     );
 
-    final raw = response.data;
+    final root = response.data ?? {};
 
-    print("RAW RESPONSE: $raw");
-
-    if (raw is List) {
-      return raw
-          .whereType<Map<String, dynamic>>()
-          .map((e) => CommunityPostModel.fromJson(e))
-          .toList();
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Fetch posts failed');
     }
+    final List rawPosts = root['data']?['posts'] ?? [];
 
-    if (raw is Map<String, dynamic> && raw['data'] is List) {
-      return (raw['data'] as List)
-          .whereType<Map<String, dynamic>>()
-          .map((e) => CommunityPostModel.fromJson(e))
-          .toList();
-    }
-
-    return [];
+    return rawPosts
+        .whereType<Map<String, dynamic>>()
+        .map((e) => CommunityPostModel.fromJson(e))
+        .toList();
   }
 
-  Future<void> deletePost({required int postId}) async {
-    await _apiClient.delete('/community/post/$postId');
+  Future<bool> deletePost({required int postId}) async {
+    final res = await _apiClient.delete<Map<String, dynamic>>(
+      '/community/post/$postId',
+    );
+
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Delete failed');
+    }
+
+    return true;
   }
 }

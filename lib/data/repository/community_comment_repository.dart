@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/services/api_client.dart';
 import '../model/community_comment_model.dart';
 
@@ -14,24 +15,26 @@ class CommunityCommentRepository {
     final res = await _apiClient.get<Map<String, dynamic>>(
       '/community-comment',
       queryParameters: {
-        'post_commu_id': postCommuId.toString(),
-        'offset': offset.toString(),
-        'limit': limit.toString(),
+        'post_commu_id': postCommuId,
+        'offset': offset,
+        'limit': limit,
       },
     );
-
-    final data = res.data!;
-
-    final List<CommunityCommentModel> comments = [];
-    final rawData = data['data'] as List? ?? [];
-
-    for (final item in rawData) {
-      comments.add(
-        CommunityCommentModel.fromJson(item as Map<String, dynamic>),
-      );
+    final root = res.data ?? {};
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Failed to fetch comments');
     }
+    final Map<String, dynamic> data =
+        (root['data'] as Map<String, dynamic>?) ?? {};
 
-    final hasMore = data['hasMore'] as bool? ?? false;
+    final List<dynamic> rawComments =
+        (data['comments'] as List<dynamic>?) ?? [];
+
+    final comments = rawComments
+        .map((e) => CommunityCommentModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    final bool hasMore = data['hasMore'] == true;
 
     return CommunityCommentPageResult(
       comments: comments,
@@ -41,7 +44,7 @@ class CommunityCommentRepository {
   }
 
   /// CREATE COMMUNITY COMMENT
-  Future<Map<String, dynamic>> createComment({
+  Future<int> createComment({
     required int postCommuId,
     required int userId,
     required String text,
@@ -54,14 +57,24 @@ class CommunityCommentRepository {
         'comment_text': text,
         if (parentId != null) 'parent_id': parentId,
       },
-      options: Options(headers: {'x-user-id': userId.toString()}),
     );
 
-    return res.data ?? {};
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Failed to create comment');
+    }
+    final data = root['data'] as Map<String, dynamic>?;
+
+    if (data == null || data['comment_id'] == null) {
+      throw Exception('Invalid response structure');
+    }
+
+    return int.parse(data['comment_id'].toString());
   }
 
   /// UPDATE COMMUNITY COMMENT
-  Future<Map<String, dynamic>> updateComment({
+  Future<bool> updateComment({
     required int commentId,
     required int userId,
     String? commentText,
@@ -75,11 +88,17 @@ class CommunityCommentRepository {
       options: Options(headers: {'x-user-id': userId.toString()}),
     );
 
-    return res.data ?? {};
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Failed to update comment');
+    }
+
+    return true;
   }
 
   /// DELETE COMMUNITY COMMENT
-  Future<Map<String, dynamic>> deleteComment({
+  Future<bool> deleteComment({
     required int commentId,
     required int userId,
   }) async {
@@ -89,7 +108,13 @@ class CommunityCommentRepository {
       options: Options(headers: {'x-user-id': userId.toString()}),
     );
 
-    return res.data ?? {};
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Failed to delete comment');
+    }
+
+    return true;
   }
 }
 

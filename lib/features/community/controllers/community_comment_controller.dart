@@ -63,6 +63,10 @@ class CommunityCommentController extends GetxController {
     } else {
       if (isLoading.value) return;
       isLoading.value = true;
+      rootComments.clear();
+      flatComments.clear();
+      visibleChildrenCount.clear();
+      offset = 0;
     }
 
     try {
@@ -96,13 +100,8 @@ class CommunityCommentController extends GetxController {
   }
 
   Future<void> refreshComments() async {
-    offset = 0;
     hasMore = true;
-    rootComments.clear();
-    flatComments.clear();
-    visibleChildrenCount.clear();
-
-    await loadComments();
+    await loadComments(loadMore: false);
   }
 
   void _rebuildFlatList() {
@@ -152,7 +151,7 @@ class CommunityCommentController extends GetxController {
     replyingTo.value = null;
 
     try {
-      await _repo.createComment(
+      final int newCommentId = await _repo.createComment(
         postCommuId: postCommuId,
         userId: userSysId,
         text: text,

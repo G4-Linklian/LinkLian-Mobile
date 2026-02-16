@@ -3,31 +3,85 @@ import '../../core/services/api_client.dart';
 class CommunityMemberRepository {
   final ApiClient _api = ApiClient();
 
-  Future<void> join(int communityId) async {
-    await _api.post('/community/member/$communityId');
+  Future<Map<String, dynamic>> join(int communityId) async {
+    final res = await _api.post<Map<String, dynamic>>(
+      '/community/member/$communityId',
+    );
+
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Join failed');
+    }
+
+    return root['data'];
   }
 
-  Future<void> leave(int communityId) async {
-    await _api.delete('/community/member/$communityId');
+  Future<Map<String, dynamic>> leave(int communityId) async {
+    final res = await _api.delete<Map<String, dynamic>>(
+      '/community/member/$communityId',
+    );
+
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Leave failed');
+    }
+
+    return root['data'];
   }
 
   Future<void> approve(int communityId, int userId) async {
-    await _api.post('/community/member/$communityId/approve/$userId');
+    final res = await _api.post<Map<String, dynamic>>(
+      '/community/member/$communityId/approve/$userId',
+    );
+
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Approve failed');
+    }
   }
 
   Future<List<dynamic>> getMembers(int communityId) async {
-    final res = await _api.get('/community/member/$communityId');
-    return res.data ?? [];
+    final res = await _api.get<Map<String, dynamic>>(
+      '/community/member/$communityId',
+    );
+
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Fetch members failed');
+    }
+
+    return root['data']?['members'] ?? [];
   }
+
   Future<List<dynamic>> getPendingMembers(int communityId) async {
-  final res =
-      await _api.get('/community/member/$communityId/pending');
-  return res.data ?? [];
-}
+    final res = await _api.get<Map<String, dynamic>>(
+      '/community/member/$communityId/pending',
+    );
 
-Future<void> reject(int communityId, int userId) async {
-  await _api.delete(
-      '/community/member/$communityId/reject/$userId');
-}
+    final root = res.data ?? {};
 
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Fetch pending failed');
+    }
+
+    return root['data']?['members'] ?? [];
+  }
+
+  Future<bool> reject(int communityId, int userId) async {
+    final res = await _api.delete<Map<String, dynamic>>(
+      '/community/member/$communityId/reject/$userId',
+    );
+
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Reject failed');
+    }
+
+    return true;
+  }
 }

@@ -6,28 +6,27 @@ import '../model/community_post_model.dart';
 class CommunityRepository {
   final ApiClient _apiClient = ApiClient();
 
-  /// 🔹 GET ALL COMMUNITY
+  /// GET ALL COMMUNITY
   Future<List<CommunityModel>> getCommunities({String? keyword}) async {
-    try {
-      final response = await _apiClient.get<List<dynamic>>(
-        '/community',
-        queryParameters: keyword != null && keyword.isNotEmpty
-            ? {'keyword': keyword}
-            : null,
-      );
+    final response = await _apiClient.get<Map<String, dynamic>>(
+      '/community',
+      queryParameters: keyword != null && keyword.isNotEmpty
+          ? {'keyword': keyword}
+          : null,
+    );
 
-      if (response.data == null) {
-        return [];
-      }
+    final root = response.data ?? {};
 
-      final communities = (response.data as List<dynamic>)
-          .map((e) => CommunityModel.fromJson(e))
-          .toList();
-
-      return communities;
-    } catch (e, stackTrace) {
-      rethrow;
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Fetch communities failed');
     }
+
+    final List raw = root['data']?['communities'] ?? [];
+
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map((e) => CommunityModel.fromJson(e))
+        .toList();
   }
 
   /// GET COMMUNITY DETAIL
@@ -35,8 +34,15 @@ class CommunityRepository {
     final response = await _apiClient.get<Map<String, dynamic>>(
       '/community/detail/$communityId',
     );
-    if (response.data == null) return null;
-    return CommunityModel.fromJson(response.data!);
+    final root = response.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Fetch detail failed');
+    }
+
+    final data = root['data'];
+    if (data == null) return null;
+    return CommunityModel.fromJson(data);
   }
 
   /// CREATE COMMUNITY
@@ -48,7 +54,7 @@ class CommunityRepository {
     required List<String> tags,
     String? imagePath,
   }) async {
-    await _apiClient.uploadMultipart(
+    final response = await _apiClient.uploadMultipart(
       '/community',
       files: imagePath != null ? [File(imagePath)] : [],
       fieldName: 'image',
@@ -60,18 +66,36 @@ class CommunityRepository {
         for (int i = 0; i < tags.length; i++) 'tags[$i]': tags[i],
       },
     );
+    final root = response.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Create failed');
+    }
   }
 
   /// TOGGLE BOOKMARK
   Future<void> toggleBookmark(int postId) async {
-    await _apiClient.post(
+    final res = await _apiClient.post<Map<String, dynamic>>(
       '/community/bookmark/toggle',
       data: {'post_commu_id': postId},
     );
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Toggle failed');
+    }
   }
 
   ///  DELETE POST
   Future<void> deletePost(int postId) async {
-    await _apiClient.delete('/community/post/$postId');
+    final res = await _apiClient.delete<Map<String, dynamic>>(
+      '/community/post/$postId',
+    );
+
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Delete failed');
+    }
   }
 }

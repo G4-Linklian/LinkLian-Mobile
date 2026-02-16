@@ -37,11 +37,11 @@ class _CommunitySearchPageState extends State<CommunitySearchPage> {
   }
 
   @override
-void dispose() {
-  _debounce?.cancel();
-  _searchController.dispose();
-  super.dispose();
-}
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _search(String keyword) async {
     if (keyword.trim().isEmpty) {
@@ -60,7 +60,7 @@ void dispose() {
         _keyword = keyword.trim();
       });
 
-      final response = await _apiClient.get<List<dynamic>>(
+      final response = await _apiClient.get<Map<String, dynamic>>(
         '/community/post/search',
         queryParameters: {
           if (_communityId != null) 'community_id': _communityId,
@@ -69,12 +69,17 @@ void dispose() {
         },
       );
 
-      final list = response.data ?? [];
+      final root = response.data ?? {};
+
+      if (root['success'] != true) {
+        throw Exception(root['message'] ?? 'Search failed');
+      }
+
+      final List raw = root['data']?['posts'] ?? [];
 
       setState(() {
-        _results = list
-            .map((e) =>
-                CommunityPostModel.fromJson(e as Map<String, dynamic>))
+        _results = raw
+            .map((e) => CommunityPostModel.fromJson(e as Map<String, dynamic>))
             .toList();
         _isLoading = false;
       });
@@ -95,8 +100,7 @@ void dispose() {
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(LinkLianIcon.back,
-              color: AppColors.primaryPalette[800]),
+          icon: Icon(LinkLianIcon.back, color: AppColors.primaryPalette[800]),
           onPressed: () => Get.back(),
         ),
         title: Text(
@@ -125,28 +129,26 @@ void dispose() {
         controller: _searchController,
         autofocus: true,
         onChanged: (value) {
-  setState(() {});
+          setState(() {});
 
-  if (_debounce?.isActive ?? false) {
-    _debounce!.cancel();
-  }
+          if (_debounce?.isActive ?? false) {
+            _debounce!.cancel();
+          }
 
-  _debounce = Timer(const Duration(milliseconds: 500), () {
-    _search(value);
-  });
-},
+          _debounce = Timer(const Duration(milliseconds: 500), () {
+            _search(value);
+          });
+        },
 
         onSubmitted: _search,
         decoration: InputDecoration(
           hintText: _communityName.isNotEmpty
               ? 'ค้นหาใน $_communityName...'
               : 'ค้นหาโพสต์...',
-          prefixIcon:
-              Icon(Icons.search, color: AppColors.primaryPalette[600]),
+          prefixIcon: Icon(Icons.search, color: AppColors.primaryPalette[600]),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear,
-                      color: AppColors.primaryPalette[400]),
+                  icon: Icon(Icons.clear, color: AppColors.primaryPalette[400]),
                   onPressed: () {
                     _searchController.clear();
                     setState(() {
@@ -160,18 +162,18 @@ void dispose() {
           fillColor: AppColors.primaryPalette[50],
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide:
-                BorderSide(color: AppColors.primaryPalette[300]!),
+            borderSide: BorderSide(color: AppColors.primaryPalette[300]!),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide:
-                BorderSide(color: AppColors.primaryPalette[300]!),
+            borderSide: BorderSide(color: AppColors.primaryPalette[300]!),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
             borderSide: BorderSide(
-                color: AppColors.primaryPalette[500]!, width: 2),
+              color: AppColors.primaryPalette[500]!,
+              width: 2,
+            ),
           ),
         ),
       ),
@@ -184,10 +186,7 @@ void dispose() {
     }
 
     if (_error != null) {
-      return _buildEmptyState(
-        icon: Icons.error_outline,
-        text: _error!,
-      );
+      return _buildEmptyState(icon: Icons.error_outline, text: _error!);
     }
 
     if (_searchController.text.isEmpty) {
@@ -210,27 +209,17 @@ void dispose() {
       itemBuilder: (context, index) {
         final post = _results[index];
 
-        return CardPostCommunity(
-          post: post,
-          highlightKeyword: _keyword,
-        );
+        return CardPostCommunity(post: post, highlightKeyword: _keyword);
       },
     );
   }
 
-  Widget _buildEmptyState({
-    required IconData icon,
-    required String text,
-  }) {
+  Widget _buildEmptyState({required IconData icon, required String text}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 64,
-            color: AppColors.primaryPalette[300],
-          ),
+          Icon(icon, size: 64, color: AppColors.primaryPalette[300]),
           const SizedBox(height: 16),
           Text(
             text,

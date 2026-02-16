@@ -218,10 +218,10 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                             child: Row(
                               children: [
                                 Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    shape: BoxShape.circle,
-                                  ),
+                                  // decoration: BoxDecoration(
+                                  //   color: Colors.white.withOpacity(0.2),
+                                  //   shape: BoxShape.circle,
+                                  // ),
                                   child: IconButton(
                                     icon: Icon(
                                       LinkLianIcon.back,
@@ -236,10 +236,10 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                 const Spacer(),
 
                                 Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    shape: BoxShape.circle,
-                                  ),
+                                  // decoration: BoxDecoration(
+                                  //   color: Colors.white.withOpacity(0.2),
+                                  //   shape: BoxShape.circle,
+                                  // ),
                                   child: IconButton(
                                     icon: Icon(
                                       Icons.search,
@@ -265,10 +265,10 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                 const SizedBox(width: 8),
 
                                 Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    shape: BoxShape.circle,
-                                  ),
+                                  // decoration: BoxDecoration(
+                                  //   color: Colors.white.withOpacity(0.2),
+                                  //   shape: BoxShape.circle,
+                                  // ),
                                   child: IconButton(
                                     icon: Icon(
                                       LinkLianIcon.add,
