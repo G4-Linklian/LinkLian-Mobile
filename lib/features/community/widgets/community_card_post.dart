@@ -1,56 +1,49 @@
-import 'package:LinkLian/core/constants/linklian-icon.dart';
+import 'dart:io';
+import 'package:LinkLian/data/repository/community_bookmark_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'dart:ui';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
-import 'dart:io';
+import 'package:metadata_fetch/metadata_fetch.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:metadata_fetch/metadata_fetch.dart';
-import '../../../data/model/post_model.dart';
 import '../../../core/constants/colors.dart';
-import '../../../core/constants/sizes.dart';
-import 'package:intl/intl.dart';
-import '../../classes/controllers/class_detail_controller.dart';
+import '../../../core/constants/linklian-icon.dart';
 import '../../../config/app_routes.dart';
-import '../../classes/controllers/create_post_controller.dart';
-import '../../auth/controller/auth_controller.dart';
-import '../../../core/utils/post_permission.dart';
-import '../../../data/repository/post_repository.dart';
 import '../../../core/utils/dialog_helper.dart';
-import '../../profile/controllers/bookmark_controller.dart';
+import '../../../data/model/community_post_model.dart';
+import '../../../data/model/community_attachment_model.dart';
+import '../../../data/repository/community_post_repository.dart';
+import '../../auth/controller/auth_controller.dart';
 
-class CardPost extends StatefulWidget {
-  final PostModel post;
-  final Function(int postId)? onSelectForAI;
-  final String? highlightKeyword; // For search highlighting
-  final ClassDetailController? classDetailController; // ✅ เพิ่มพารามิเตอร์นี้
-  
-  const CardPost({
+class CardPostCommunity extends StatefulWidget {
+  final CommunityPostModel post;
+  final String? highlightKeyword;
+
+  const CardPostCommunity({
     super.key,
     required this.post,
-    this.onSelectForAI,
     this.highlightKeyword,
-    this.classDetailController, // ✅ เพิ่มพารามิเตอร์นี้
   });
 
   @override
-  State<CardPost> createState() => _CardPostState();
+  State<CardPostCommunity> createState() => _CardPostCommunityState();
 }
 
-class _CardPostState extends State<CardPost> {
+class _CardPostCommunityState extends State<CardPostCommunity> {
   int _currentAttachmentIndex = 0;
   String? _localPdfPath;
   bool _isPdfLoading = false;
-  bool _pdfLoadFailed = false; // Track if PDF load failed
+  bool _pdfLoadFailed = false;
   bool _isExpanded = false;
-  BookmarkController? _bookmarkController;
-  PostPermission? _permission;
-  ClassDetailController? _classController;
+  bool _isBookmarked = false;
+  bool _isBookmarkLoading = false;
+
+  final _bookmarkRepo = CommunityBookmarkRepository();
 
   bool _isLink(String type) {
     final t = type.toLowerCase();
@@ -74,58 +67,42 @@ class _CardPostState extends State<CardPost> {
   @override
   void initState() {
     super.initState();
-    final auth = Get.find<AuthController>();
-    _permission = PostPermission(post: widget.post, auth: auth);
-    
-    // ✅ ใช้ controller ที่ส่งเข้ามา หรือหาจาก GetX (สำหรับ backward compatibility)
-    _classController = widget.classDetailController;
-    
-    if (_classController == null && Get.isRegistered<ClassDetailController>()) {
-      _classController = Get.find<ClassDetailController>();
-    }
-    
-    // Optional: BookmarkController
-    if (Get.isRegistered<BookmarkController>()) {
-      _bookmarkController = Get.find<BookmarkController>();
-    }
+    _loadBookmarkStatus();
   }
 
-  bool get _hasClassController => _classController != null;
-  bool get _hasBookmarkController => _bookmarkController != null;
+  Future<void> _loadBookmarkStatus() async {
+  try {
+    final status =
+        await _bookmarkRepo.checkBookmark(widget.post.postId);
 
-  bool get _isCurrentUserTeacher {
-    final auth = Get.find<AuthController>();
-    final role = auth.roleName.value?.toLowerCase() ?? '';
-    return role == 'teacher' || role == 'instructor';
+    if (!mounted) return;
+
+    setState(() {
+      _isBookmarked = status;
+    });
+  } catch (e) {
+    debugPrint("Bookmark load error: $e");
   }
+}
 
-  bool get _isTeacherPost {
-    final roleName = widget.post.roleName?.toLowerCase() ?? '';
-    return roleName == 'teacher' || roleName == 'instructor';
-  }
-
-  /// Check if post can be selected for AI (assignment or announcement only)
-  bool get _canSelectForAI {
-    final postType = widget.post.postType.toLowerCase();
-    return postType == 'assignment' || postType == 'announcement';
+  void _openComment() {
+    Get.toNamed(
+      AppRoutes.communityComment,
+      arguments: {
+        'postCommuId': widget.post.postId,
+        'postCardWidget': widget,
+        'userSysId': Get.find<AuthController>().userId.value,
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        Get.toNamed(
-          AppRoutes.comment,
-          arguments: {
-            'postId': widget.post.postId,
-            'postContentId': widget.post.postContentId,
-            'post': widget.post,
-          },
-        );
-      },
+      onTap: _openComment,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16, top: 16),
+        margin: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(16),
@@ -139,193 +116,116 @@ class _CardPostState extends State<CardPost> {
           ],
         ),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ===== MAIN CONTENT WITH PADDING =====
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ===== TAG + ACTIONS =====
-                Row(
-                  children: [
-                    _buildPostTypeTag(),
-                    const Spacer(),
-                    if (_permission?.canShowMore == true) _buildMoreButton(context),
-                    // ✅ Radio button: แสดงเฉพาะนักเรียน + post type การบ้าน/ประกาศ เท่านั้น
-                    if (!_isCurrentUserTeacher && 
-                        _hasClassController && 
-                        _canSelectForAI) ...[
-                      const SizedBox(width: 8),
-                      _buildRadio(),
-                    ],
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // ===== PROFILE ROW =====
-                Row(
-                  children: [
-                    _buildProfileAvatar(),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.post.displayName ?? 'ไม่ทราบชื่อ',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          if (!widget.post.isAnonymous &&
-                              widget.post.roleName != null)
-                            Text(
-                              _getRoleLabel(widget.post.roleName!),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.black.withOpacity(0.5),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // TITLE - แสดงเฉพาะครู
-                if (_isTeacherPost) ...[
-                  Text(
-                    widget.post.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-
-                // ===== CONTENT WITH EXPAND BUTTON =====
-                _buildContentWithExpand(),
-
-                const SizedBox(height: 12),
-
-                // ===== TIME + DATE =====
-                SizedBox(
-                  width: double.infinity,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 16,
-                        color: AppColors.black.withOpacity(0.5),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          _formatDateTime(widget.post.createdAt),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.black.withOpacity(0.5),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ===== ATTACHMENTS =====
-          if (widget.post.attachments != null &&
-              widget.post.attachments!.isNotEmpty) ...[
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: _buildAttachmentsPreview(),
-            ),
-          ],
-
-          // ===== BOTTOM ROW: COMMENT ICON + BOOKMARK =====
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: IconButton(
-                    onPressed: () {
-                      Get.toNamed(
-                        AppRoutes.comment,
-                        arguments: {
-                          'postId': widget.post.postId,
-                          'postContentId': widget.post.postContentId,
-                          'post': widget.post,
-                        },
-                      );
-                    },
-                    icon: LinkLianHugeIcon.comment(
-                      size: 24,
-                      color: AppColors.primaryPalette[700]!,
-                      stroke: 2,
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(),
-                    splashRadius: 20,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _buildProfileAvatar(),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "${widget.post.firstName} ${widget.post.lastName}",
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time,
+                                  size: 16,
+                                  color: AppColors.black.withOpacity(0.5),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _formatDateTime(widget.post.createdAt),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.black.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildMoreButton(context),
+                    ],
                   ),
-                ),
-                const Spacer(),
 
-                // BOOKMARK BUTTON - แสดงเฉพาะนักเรียน (ไม่แสดงสำหรับครู)
-                if (!_isCurrentUserTeacher && _hasBookmarkController)
+                  const SizedBox(height: 16),
+
+                  _buildContentWithExpand(),
+
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+
+            if (widget.post.attachments.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: _buildAttachmentsPreview(),
+              ),
+            ],
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Row(
+                children: [
                   SizedBox(
                     width: 40,
                     height: 40,
-                    child: Obx(() {
-                      // ตรวจสอบ bookmark status
-                      final isBookmarked = _bookmarkController!.isBookmarked(
-                        widget.post.postId,
-                      );
-
-                      return IconButton(
-                        onPressed: () async {
-                          // เรียก toggle bookmark
-                          await _bookmarkController!.toggleBookmark(
-                            postId: widget.post.postId,
-                            postContentId: widget.post.postContentId,
-                          );
-                        },
-                        icon: Icon(
-                          isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                          color: isBookmarked
-                              ? AppColors.primaryPalette[600]
-                              : AppColors.primaryPalette[600],
-                          size: 24,
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        constraints: const BoxConstraints(),
-                        splashRadius: 20,
-                      );
-                    }),
+                    child: IconButton(
+                      onPressed: _openComment,
+                      icon: LinkLianHugeIcon.comment(
+                        size: 24,
+                        color: AppColors.primaryPalette[700]!,
+                        stroke: 2,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                      splashRadius: 20,
+                    ),
                   ),
-              ],
+                  const Spacer(),
+
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: IconButton(
+                      onPressed: _isBookmarkLoading ? null : _toggleBookmark,
+                      icon: Icon(
+                        _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                        color: _isBookmarked
+                            ? AppColors.primaryPalette[600]
+                            : AppColors.primaryPalette[600],
+                        size: 24,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                      splashRadius: 20,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
 
-  //  Content with Expand Button
   Widget _buildContentWithExpand() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,7 +253,6 @@ class _CardPostState extends State<CardPost> {
             ),
           ),
 
-        // ===== COLLAPSE BUTTON =====
         if (widget.post.content.length > 150 && _isExpanded)
           GestureDetector(
             onTap: () {
@@ -377,20 +276,19 @@ class _CardPostState extends State<CardPost> {
     );
   }
 
-  /// Build rich text content with clickable links
   Widget _buildRichTextContent() {
     final content = widget.post.content;
     final maxLines = _isExpanded ? null : 4;
-    
+
     // URL regex pattern
     final urlPattern = RegExp(
       r'(https?://[^\s<>\[\]{}|\\^]+)',
       caseSensitive: false,
     );
-    
+
     // Split content by URLs
     final matches = urlPattern.allMatches(content).toList();
-    
+
     if (matches.isEmpty) {
       // No URLs, show plain text
       return Text(
@@ -403,11 +301,11 @@ class _CardPostState extends State<CardPost> {
         overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
       );
     }
-    
+
     // Build rich text with clickable links
     final spans = <TextSpan>[];
     int lastEnd = 0;
-    
+
     for (final match in matches) {
       // Add text before the URL
       if (match.start > lastEnd) {
@@ -419,7 +317,7 @@ class _CardPostState extends State<CardPost> {
           ),
         ));
       }
-      
+
       // Add clickable URL
       final url = match.group(0)!;
       spans.add(TextSpan(
@@ -453,10 +351,10 @@ class _CardPostState extends State<CardPost> {
             }
           },
       ));
-      
+
       lastEnd = match.end;
     }
-    
+
     // Add remaining text after last URL
     if (lastEnd < content.length) {
       spans.add(TextSpan(
@@ -467,7 +365,7 @@ class _CardPostState extends State<CardPost> {
         ),
       ));
     }
-    
+
     return RichText(
       text: TextSpan(children: spans),
       maxLines: maxLines,
@@ -475,87 +373,9 @@ class _CardPostState extends State<CardPost> {
     );
   }
 
-  // ===== POST TYPE TAG =====
-  Widget _buildPostTypeTag() {
-    Color color;
-    String label;
-
-    switch (widget.post.postType.toLowerCase()) {
-      case 'announcement':
-        color = AppColors.buttonPalette[700]!;
-        label = 'ประกาศ';
-        break;
-      case 'assignment':
-        color = AppColors.primaryPalette[500]!;
-        label = 'การบ้าน';
-        break;
-      case 'question':
-        color = AppColors.successPalette[700]!;
-        label = 'คำถาม';
-        break;
-      default:
-        color = AppColors.gray;
-        label = widget.post.postType;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRadio() {
-    return Obx(() {
-      // ถ้าไม่มี classController ไม่แสดง radio (เช่นอยู่ในหน้า search)
-      if (!_hasClassController) {
-        return const SizedBox.shrink();
-      }
-      
-      final isSelected = _classController!.selectedPostIdsForAI.contains(
-        widget.post.postId,
-      );
-
-      return InkWell(
-        onTap: widget.onSelectForAI == null
-            ? null
-            : () => widget.onSelectForAI!(widget.post.postId),
-        child: Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: isSelected
-                  ? AppColors.primaryPalette[600]!
-                  : Colors.grey.shade400,
-              width: 2,
-            ),
-            color: isSelected
-                ? AppColors.primaryPalette[600]
-                : Colors.transparent,
-          ),
-          child: isSelected
-              ? const Icon(Icons.check, size: 16, color: Colors.white)
-              : null,
-        ),
-      );
-    });
-  }
-
-  // ===== ATTACHMENTS PREVIEW =====
+  // ================= ATTACHMENTS PREVIEW =================
   Widget _buildAttachmentsPreview() {
-    final attachments = widget.post.attachments!;
+    final attachments = widget.post.attachments;
     final hasMultiple = attachments.length > 1;
     final currentFile = attachments[_currentAttachmentIndex];
 
@@ -606,8 +426,7 @@ class _CardPostState extends State<CardPost> {
                     ),
                   ),
 
-                if (hasMultiple &&
-                    _currentAttachmentIndex < attachments.length - 1)
+                if (hasMultiple && _currentAttachmentIndex < attachments.length - 1)
                   Positioned(
                     right: 8,
                     top: 0,
@@ -621,7 +440,7 @@ class _CardPostState extends State<CardPost> {
                           () => setState(() {
                             _currentAttachmentIndex++;
                             _localPdfPath = null;
-                            _pdfLoadFailed = false; // Reset on attachment change
+                            _pdfLoadFailed = false;
                           }),
                         ),
                       ),
@@ -680,7 +499,11 @@ class _CardPostState extends State<CardPost> {
   }
 
   /// Build link preview with metadata fetch
-  Widget _buildLinkPreview(PostAttachmentModel file, bool hasMultiple, int totalCount) {
+  Widget _buildLinkPreview(
+    CommunityAttachmentModel file,
+    bool hasMultiple,
+    int totalCount,
+  ) {
     return _LinkPreviewCard(
       url: file.fileUrl,
       hasMultiple: hasMultiple,
@@ -691,85 +514,12 @@ class _CardPostState extends State<CardPost> {
           : null,
       onNext: _currentAttachmentIndex < totalCount - 1
           ? () => setState(() {
-              _currentAttachmentIndex++;
-              _localPdfPath = null;
-              _pdfLoadFailed = false;
-            })
+                _currentAttachmentIndex++;
+                _localPdfPath = null;
+                _pdfLoadFailed = false;
+              })
           : null,
     );
-  }
-
-  Widget _buildMoreButton(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (details) {
-        _showPostMenu(context, details.globalPosition);
-      },
-      child: const Padding(
-        padding: EdgeInsets.all(4),
-        child: Icon(Icons.more_horiz, size: 22),
-      ),
-    );
-  }
-
-  void _showPostMenu(BuildContext context, Offset position) {
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-
-    final items = <PopupMenuEntry>[];
-
-    if (_permission?.canEdit == true) {
-      items.add(
-        PopupMenuItem(
-          onTap: _onEditPost,
-          child: const ListTile(
-            leading: Icon(Icons.edit),
-            title: Text('แก้ไขโพสต์'),
-          ),
-        ),
-      );
-    }
-
-    if (_permission?.canDelete == true) {
-      items.add(
-        PopupMenuItem(
-          onTap: _onDeletePost,
-          child: ListTile(
-            leading: Icon(Icons.delete, color: AppColors.dangerPalette[500]),
-            title: Text(
-              'ลบโพสต์',
-              style: TextStyle(color: AppColors.dangerPalette[700]),
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (_permission?.canReport == true) {
-      items.add(
-        PopupMenuItem(
-          onTap: _onReportPost,
-          child: const ListTile(
-            leading: Icon(Icons.flag),
-            title: Text('รายงานโพสต์'),
-          ),
-        ),
-      );
-    }
-
-    if (items.isEmpty) return;
-
-    showMenu(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromPoints(position, position),
-        Offset.zero & overlay.size,
-      ),
-      items: items,
-    );
-  }
-
-  void _onReportPost() {
-    // TODO: Implement report post
-    debugPrint('📝 Report post: ${widget.post.postContentId}');
   }
 
   Widget _arrowButton(IconData icon, VoidCallback onTap) {
@@ -783,7 +533,7 @@ class _CardPostState extends State<CardPost> {
     );
   }
 
-  Widget _buildFilePreview(PostAttachmentModel file) {
+  Widget _buildFilePreview(CommunityAttachmentModel file) {
     if (_isImage(file.fileType)) {
       return Image.network(
         file.fileUrl,
@@ -807,7 +557,7 @@ class _CardPostState extends State<CardPost> {
     if (_pdfLoadFailed) {
       return _buildPdfErrorState();
     }
-    
+
     if (_localPdfPath == null && !_isPdfLoading) {
       _loadPdf(url);
     }
@@ -871,7 +621,7 @@ class _CardPostState extends State<CardPost> {
 
   Future<void> _loadPdf(String url) async {
     if (!mounted) return;
-    
+
     setState(() {
       _isPdfLoading = true;
       _pdfLoadFailed = false;
@@ -907,82 +657,6 @@ class _CardPostState extends State<CardPost> {
     }
   }
 
-  void _onEditPost() async {
-    if (!_hasClassController) {
-      Get.snackbar('ไม่สามารถแก้ไขได้', 'กรุณากลับไปหน้าห้องเรียนเพื่อแก้ไขโพสต์');
-      return;
-    }
-    
-    final result = await Get.toNamed(
-      AppRoutes.createPost,
-      arguments: {
-        'mode': CreatePostMode.edit,
-        'post': widget.post,
-        'source': CreatePostSource.classDetail,
-        'sectionId': _classController!.sectionId.value,
-      },
-    );
-
-    if (result?['success'] == true && result?['edited'] == true) {
-      await _classController!.fetchPosts(keepScroll: true);
-      DialogHelper.showNotification(
-        title: 'แก้ไขโพสต์สำเร็จ',
-        message: 'โพสต์ของคุณถูกอัปเดตแล้ว',
-        type: NotificationType.success,
-      );
-    }
-  }
-
-  void _onDeletePost() async {
-    final confirm = await Get.dialog<bool>(
-      AlertDialog(
-        title: const Text('ยืนยันการลบ'),
-        content: const Text('คุณต้องการลบโพสต์นี้หรือไม่'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: const Text('ยกเลิก'),
-          ),
-          TextButton(
-            onPressed: () => Get.back(result: true),
-            child: Text(
-              'ลบ',
-              style: TextStyle(color: AppColors.dangerPalette[500]),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    final postId = widget.post.postId;
-    final postContentId = widget.post.postContentId;
-    try {
-      // ส่งทั้ง postId และ postContentId
-      await PostRepository().deletePost(
-        postId: postId,
-        postContentId: postContentId,
-      );
-
-      if (_hasClassController) {
-        await _classController!.fetchPosts();
-      }
-
-      DialogHelper.showNotification(
-        title: 'ลบโพสต์สำเร็จ',
-        message: 'โพสต์ถูกลบเรียบร้อยแล้ว',
-        type: NotificationType.success,
-      );
-    } catch (e) {
-      DialogHelper.showNotification(
-        title: 'เกิดข้อผิดพลาด',
-        message: 'ไม่สามารถลบโพสต์ได้: $e',
-        type: NotificationType.error,
-      );
-    }
-  }
-
   Widget _buildFileIcon(String fileType) {
     return Container(
       width: double.infinity,
@@ -997,21 +671,14 @@ class _CardPostState extends State<CardPost> {
     );
   }
 
-  String _formatDateTime(DateTime dt) {
-    final formatter = DateFormat('HH:mm • dd/MM/yyyy', 'th');
-    return formatter.format(dt);
-  }
-
   IconData _getFileIconData(String fileType) {
     final type = fileType.toLowerCase();
     if (type.contains('pdf')) return Icons.picture_as_pdf;
     if (type.contains('image')) return Icons.image;
     if (type.contains('video')) return Icons.video_file;
     if (type.contains('word') || type.contains('doc')) return Icons.description;
-    if (type.contains('excel') || type.contains('xls'))
-      return Icons.table_chart;
-    if (type.contains('powerpoint') || type.contains('ppt'))
-      return Icons.slideshow;
+    if (type.contains('excel') || type.contains('xls')) return Icons.table_chart;
+    if (type.contains('powerpoint') || type.contains('ppt')) return Icons.slideshow;
     return Icons.insert_drive_file;
   }
 
@@ -1019,23 +686,138 @@ class _CardPostState extends State<CardPost> {
     return url.split('/').last.split('?').first;
   }
 
-  Widget _buildProfileAvatar() {
-    if (widget.post.isAnonymous) {
-      return Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: AppColors.primaryPalette[100],
-          shape: BoxShape.circle,
+  // ================= MORE BUTTON =================
+  Widget _buildMoreButton(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (details) {
+        _showPostMenu(context, details.globalPosition);
+      },
+      child: const Padding(
+        padding: EdgeInsets.all(4),
+        child: Icon(Icons.more_horiz, size: 22),
+      ),
+    );
+  }
+
+  void _showPostMenu(BuildContext context, Offset position) {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final auth = Get.find<AuthController>();
+    final isOwner = widget.post.userId == auth.userId.value;
+
+    final items = <PopupMenuEntry>[];
+
+    if (isOwner) {
+      items.add(
+        PopupMenuItem(
+          // onTap: _onEditPost,
+          child: const ListTile(
+            leading: Icon(Icons.edit),
+            title: Text('แก้ไขโพสต์'),
+          ),
         ),
-        child: Icon(
-          Icons.person,
-          size: 28,
-          color: AppColors.primaryPalette[600],
+      );
+
+      items.add(
+        PopupMenuItem(
+          // onTap: _onDeletePost,
+          child: ListTile(
+            leading: Icon(Icons.delete, color: AppColors.dangerPalette[500]),
+            title: Text(
+              'ลบโพสต์',
+              style: TextStyle(color: AppColors.dangerPalette[700]),
+            ),
+          ),
+        ),
+      );
+    } else {
+      items.add(
+        PopupMenuItem(
+          onTap: _onReportPost,
+          child: const ListTile(
+            leading: Icon(Icons.flag),
+            title: Text('รายงานโพสต์'),
+          ),
         ),
       );
     }
 
+    if (items.isEmpty) return;
+
+    showMenu(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(position, position),
+        Offset.zero & overlay.size,
+      ),
+      items: items,
+    );
+  }
+
+//   void _onEditPost() {
+//   Get.toNamed(
+//     AppRoutes.createCommunityPost,
+//     arguments: {
+//       'isEdit': true,
+//       'post': widget.post,
+//     },
+//   );
+// }
+
+  
+  // void _onDeletePost() async {
+  //   final confirm = await Get.dialog<bool>(
+  //     AlertDialog(
+  //       title: const Text('ยืนยันการลบ'),
+  //       content: const Text('คุณต้องการลบโพสต์นี้หรือไม่'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Get.back(result: false),
+  //           child: const Text('ยกเลิก'),
+  //         ),
+  //         TextButton(
+  //           onPressed: () => Get.back(result: true),
+  //           child: Text(
+  //             'ลบ',
+  //             style: TextStyle(color: AppColors.dangerPalette[500]),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+
+  //   if (confirm != true) return;
+
+  //   try {
+  //     await CommunityPostRepository().deletePost(postId: widget.post.postId);
+      
+  //     DialogHelper.showNotification(
+  //       title: 'ลบโพสต์สำเร็จ',
+  //       message: 'โพสต์ถูกลบเรียบร้อยแล้ว',
+  //       type: NotificationType.success,
+  //     );
+      
+  //     Get.back(); // Go back after successful deletion
+  //   } catch (e) {
+  //     DialogHelper.showNotification(
+  //       title: 'เกิดข้อผิดพลาด',
+  //       message: 'ไม่สามารถลบโพสต์ได้: $e',
+  //       type: NotificationType.error,
+  //     );
+  //   }
+  // }
+
+  void _onReportPost() {
+    // TODO: Implement report post
+    debugPrint('📝 Report post: ${widget.post.postId}');
+    Get.snackbar(
+      'รายงานโพสต์',
+      'ฟีเจอร์นี้กำลังพัฒนา',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  // ================= PROFILE AVATAR =================
+  Widget _buildProfileAvatar() {
     if (widget.post.profilePic != null && widget.post.profilePic!.isNotEmpty) {
       return CircleAvatar(
         radius: 24,
@@ -1048,7 +830,7 @@ class _CardPostState extends State<CardPost> {
       radius: 24,
       backgroundColor: AppColors.primaryPalette[200],
       child: Text(
-        _getInitial(widget.post.displayName),
+        _getInitial("${widget.post.firstName} ${widget.post.lastName}"),
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -1063,23 +845,37 @@ class _CardPostState extends State<CardPost> {
     return name[0].toUpperCase();
   }
 
-  String _getRoleLabel(String roleName) {
-    switch (roleName.toLowerCase()) {
-      case 'teacher':
-        return 'ครู';
-      case 'instructor':
-        return 'อาจารย์';
-      case 'high school student':
-        return 'นักเรียน';
-      case 'uni student':
-        return 'นักศึกษา';
-      default:
-        return roleName;
-    }
+  String _formatDateTime(DateTime dt) {
+    final formatter = DateFormat('HH:mm • dd/MM/yyyy', 'th');
+    return formatter.format(dt);
   }
 
-  /// Open file in fullscreen mode
-  void _openFileFullscreen(PostAttachmentModel file) {
+  void _toggleBookmark() async {
+  if (_isBookmarkLoading) return;
+
+  setState(() => _isBookmarkLoading = true);
+
+  try {
+    final result = await _bookmarkRepo
+        .toggleBookmark(postId: widget.post.postId);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isBookmarked = result['action'] == 'created';
+    });
+  } catch (e) {
+    DialogHelper.showErrorDialog(
+      description: "ไม่สามารถบันทึกได้",
+    );
+  } finally {
+    if (mounted) {
+      setState(() => _isBookmarkLoading = false);
+    }
+  }
+}
+
+  void _openFileFullscreen(CommunityAttachmentModel file) {
     Get.to(
       () => _FileViewerPage(file: file),
       transition: Transition.fadeIn,
@@ -1087,8 +883,7 @@ class _CardPostState extends State<CardPost> {
     );
   }
 
-  /// Download file to device storage
-  Future<void> _downloadFile(PostAttachmentModel file) async {
+  Future<void> _downloadFile(CommunityAttachmentModel file) async {
     try {
       // Show loading dialog
       Get.dialog(
@@ -1100,10 +895,10 @@ class _CardPostState extends State<CardPost> {
 
       // Get file name
       final fileName = file.originalName ?? _getFileName(file.fileUrl);
-      
+
       // Download file
       final response = await http.get(Uri.parse(file.fileUrl));
-      
+
       if (response.statusCode != 200) {
         throw Exception('ดาวน์โหลดล้มเหลว: HTTP ${response.statusCode}');
       }
@@ -1171,7 +966,7 @@ class _CardPostState extends State<CardPost> {
         while (await File(finalPath).exists()) {
           final nameParts = fileName.split('.');
           final extension = nameParts.length > 1 ? nameParts.last : '';
-          final nameWithoutExt = nameParts.length > 1 
+          final nameWithoutExt = nameParts.length > 1
               ? nameParts.sublist(0, nameParts.length - 1).join('.')
               : fileName;
           finalPath = '${downloadsDir.path}/$nameWithoutExt ($counter)${extension.isNotEmpty ? '.$extension' : ''}';
@@ -1197,7 +992,7 @@ class _CardPostState extends State<CardPost> {
       }
 
       debugPrint('❌ Download error: $e');
-      
+
       Get.snackbar(
         'เกิดข้อผิดพลาด',
         'ไม่สามารถดาวน์โหลดไฟล์ได้: $e',
@@ -1208,9 +1003,9 @@ class _CardPostState extends State<CardPost> {
   }
 }
 
-/// Fullscreen File Viewer Page
+// ================= FULLSCREEN FILE VIEWER =================
 class _FileViewerPage extends StatefulWidget {
-  final PostAttachmentModel file;
+  final CommunityAttachmentModel file;
 
   const _FileViewerPage({required this.file});
 
@@ -1308,7 +1103,10 @@ class _FileViewerPageState extends State<_FileViewerPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
                   '${_currentPage + 1}/$_totalPages',
-                  style: TextStyle(color: AppColors.primaryPalette[900], fontSize: 15),
+                  style: TextStyle(
+                    color: AppColors.primaryPalette[900],
+                    fontSize: 15,
+                  ),
                 ),
               ),
             ),
@@ -1429,7 +1227,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
   }
 }
 
-/// Link Preview Card Widget with metadata fetch (Compact version)
+// ================= LINK PREVIEW CARD =================
 class _LinkPreviewCard extends StatefulWidget {
   final String url;
   final bool hasMultiple;
@@ -1471,7 +1269,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
 
   Future<void> _fetchMetadata() async {
     setState(() => _loading = true);
-    
+
     try {
       final data = await MetadataFetch.extract(widget.url);
       if (mounted) {
@@ -1491,13 +1289,13 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
   Future<void> _openLink() async {
     final url = widget.url;
     debugPrint('🔗 Opening link: $url');
-    
+
     try {
       final uri = Uri.parse(url);
-      
+
       // Try multiple launch modes
       bool launched = false;
-      
+
       // Try 1: Platform default
       try {
         launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
@@ -1508,7 +1306,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
       } catch (e) {
         debugPrint('⚠️ platformDefault failed: $e');
       }
-      
+
       // Try 2: External application
       if (!launched) {
         try {
@@ -1521,7 +1319,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
           debugPrint('⚠️ externalApplication failed: $e');
         }
       }
-      
+
       // Try 3: In-app browser (last resort)
       if (!launched) {
         try {
@@ -1534,7 +1332,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
           debugPrint('⚠️ inAppBrowserView failed: $e');
         }
       }
-      
+
       if (!launched) {
         Get.snackbar(
           'ไม่สามารถเปิดลิงก์ได้',
@@ -1582,13 +1380,19 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                   height: 90,
                   decoration: BoxDecoration(
                     color: AppColors.primaryPalette[50],
-                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(8),
+                    ),
                   ),
                   child: _loading
-                      ? const Center(child: CircularProgressIndicator(strokeWidth: 1.5))
+                      ? const Center(
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        )
                       : _metadata?.image != null && _metadata!.image!.isNotEmpty
                           ? ClipRRect(
-                              borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
+                              borderRadius: const BorderRadius.horizontal(
+                                left: Radius.circular(8),
+                              ),
                               child: Image.network(
                                 _metadata!.image!,
                                 fit: BoxFit.cover,
@@ -1608,7 +1412,11 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.link, size: 13, color: AppColors.primaryPalette[600]),
+                            Icon(
+                              Icons.link,
+                              size: 13,
+                              color: AppColors.primaryPalette[600],
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -1642,12 +1450,16 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                 // Open icon
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: Icon(Icons.open_in_new, size: 13, color: AppColors.primaryPalette[400]),
+                  child: Icon(
+                    Icons.open_in_new,
+                    size: 13,
+                    color: AppColors.primaryPalette[400],
+                  ),
                 ),
               ],
             ),
           ),
-          
+
           // Navigation + Counter (Outside border, แสดงเฉพาะเมื่อมีหลายลิงก์)
           if (widget.hasMultiple)
             Padding(
@@ -1662,19 +1474,22 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                     child: widget.onPrevious != null
                         ? IconButton(
                             onPressed: widget.onPrevious,
-                            icon: Icon(Icons.chevron_left, size: 18),
+                            icon: const Icon(Icons.chevron_left, size: 18),
                             color: AppColors.primaryPalette[600],
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           )
-                        : SizedBox.shrink(),
+                        : const SizedBox.shrink(),
                   ),
 
                   const SizedBox(width: 8),
 
                   // Counter
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryPalette[50],
                       borderRadius: BorderRadius.circular(12),
@@ -1699,12 +1514,12 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                     child: widget.onNext != null
                         ? IconButton(
                             onPressed: widget.onNext,
-                            icon: Icon(Icons.chevron_right, size: 18),
+                            icon: const Icon(Icons.chevron_right, size: 18),
                             color: AppColors.primaryPalette[600],
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           )
-                        : SizedBox.shrink(),
+                        : const SizedBox.shrink(),
                   ),
                 ],
               ),

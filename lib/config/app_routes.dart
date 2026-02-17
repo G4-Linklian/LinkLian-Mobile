@@ -16,4 +16,9 @@ class AppRoutes {
   //static String? get authGate => null;
   static const String authGate = '/auth-gate';
   static const String searchPost = '/search-post';
+  static const createCommunity = '/createCommunity';
+  static const communityDetail = '/community-detail';
+  static const createPostCommunity = '/create-post-community';
+  static const String communityComment = '/community-comment';
+  static const communitySearch = '/community-search';
 }

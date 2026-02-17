@@ -41,6 +41,12 @@ class ClassDetailController extends GetxController {
   void initializeWithArgs(Map<String, dynamic> args) {
     final newSectionId = args['sectionId'] as int?;
     
+    // ✅ Reset filter เมื่อเปลี่ยน class
+    if (sectionId.value != null && sectionId.value != newSectionId) {
+      selectedFilter.value = ClassPostFilter.all;
+      debugPrint('📝 [ClassDetail] Filter reset to ALL for new section');
+    }
+    
     // If same section, don't refetch
     if (sectionId.value == newSectionId && posts.isNotEmpty) {
       debugPrint('📝 [ClassDetail] Same section with data, skipping refetch');

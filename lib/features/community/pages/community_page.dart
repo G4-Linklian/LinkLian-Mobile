@@ -1,90 +1,333 @@
+import 'dart:async';
+
+import 'package:LinkLian/config/app_routes.dart';
+import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/features/layout/controllers/navigation_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/coupons_controller.dart';
-import '../widgets/coupon_widgets.dart';
-import '../../../core/constants/sizes.dart';
+import '../controllers/community_controller.dart';
+import '../../../data/model/community_model.dart';
 
-class CommuPage extends StatelessWidget {
+class CommuPage extends StatefulWidget {
   const CommuPage({super.key});
 
   @override
+  State<CommuPage> createState() => _CommuPageState();
+}
+
+class _CommuPageState extends State<CommuPage> {
+  late final CommunityController controller;
+  Timer? _debounce;
+
+  get color => null;
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.find<CommunityController>();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (controller.communities.isEmpty) {
+        controller.loadCommunities(
+          keyword: controller.searchKeyword.value.isEmpty
+              ? null
+              : controller.searchKeyword.value,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.put(CouponsController());
-    
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        body: Column(
+    return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSizes.md),
-              child: Row(
-                children: [
-                  Text(
-                    'ชุมชน',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+            const SizedBox(height: 8),
+            _buildSearch(),
+            const SizedBox(height: 16),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Obx(
+                () => Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        controller.searchKeyword.value.isEmpty
+                            ? 'ชุมชนของคุณ'
+                            : 'ผลลัพธ์สำหรับ "${controller.searchKeyword.value}"',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            // const TabBar(
-            //   tabs: [
-            //     Tab(text: 'คูปองที่ใช้ได้'),
-            //     Tab(text: 'คูปองที่ใช้แล้ว'),
-            //   ],
-            // ),
-            // Expanded(
-            //   child: Obx(() => controller.isLoading.value 
-            //     ? const Center(child: CircularProgressIndicator())
-            //     : TabBarView(
-            //         children: [
-            //           // Available coupons
-            //           controller.availableCoupons.isEmpty
-            //             ? const Center(child: Text('ไม่มีคูปองที่ใช้ได้'))
-            //             : ListView.builder(
-            //                 padding: const EdgeInsets.all(16),
-            //                 itemCount: controller.availableCoupons.length,
-            //                 itemBuilder: (context, index) {
-            //                   final coupon = controller.availableCoupons[index];
-            //                   return CouponCard(
-            //                     title: coupon['title'] ?? 'คูปองส่วนลด',
-            //                     discount: controller.getCouponDiscount(coupon),
-            //                     description: coupon['description'] ?? 'รายละเอียดคูปอง',
-            //                     expireDate: coupon['expireDate'] ?? '31/12/2025',
-            //                     isUsed: false,
-            //                     onTap: () {
-            //                       controller.useCoupon(coupon);
-            //                     },
-            //                   );
-            //                 },
-            //               ),
-            //           // Used coupons
-            //           controller.usedCoupons.isEmpty
-            //             ? const Center(child: Text('ไม่มีคูปองที่ใช้แล้ว'))
-            //             : ListView.builder(
-            //                 padding: const EdgeInsets.all(16),
-            //                 itemCount: controller.usedCoupons.length,
-            //                 itemBuilder: (context, index) {
-            //                   final coupon = controller.usedCoupons[index];
-            //                   return CouponCard(
-            //                     title: coupon['title'] ?? 'คูปองส่วนลด',
-            //                     discount: controller.getCouponDiscount(coupon),
-            //                     description: coupon['description'] ?? 'รายละเอียดคูปอง',
-            //                     expireDate: coupon['expireDate'] ?? '31/12/2025',
-            //                     isUsed: true,
-            //                   );
-            //                 },
-            //               ),
-            //         ],
-            //       ),
-            //   ),
-            // ),
+
+            const SizedBox(height: 12),
+
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('กำลังโหลด...'),
+                      ],
+                    ),
+                  );
+                }
+
+                if (controller.communities.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.groups_outlined,
+                          size: 70,
+                          color: AppColors.primaryPalette[700],
+                        ),
+                        Text(
+                          'ยังไม่มีชุมชน',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.primaryPalette[700],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  itemCount: controller.communities.length,
+                  itemBuilder: (context, index) {
+                    final community = controller.communities[index];
+                    return _buildCommunityCard(community);
+                  },
+                );
+              }),
+            ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildSearch() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Obx(
+        () => SizedBox(
+          height: 45,
+          child: TextField(
+            controller: controller.searchController,
+            onChanged: (value) {
+              controller.searchKeyword.value = value;
+
+              if (_debounce?.isActive ?? false) {
+                _debounce!.cancel();
+              }
+
+              _debounce = Timer(const Duration(milliseconds: 500), () {
+                controller.loadCommunities(
+                  keyword: value.isEmpty ? null : value,
+                );
+              });
+            },
+            decoration: InputDecoration(
+              hintText: "ค้นหาชุมชน...",
+              hintStyle: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF9E9E9E),
+              ),
+              prefixIcon: Icon(
+                Icons.search,
+                color: AppColors.buttonPalette[600]!,
+                size: 22,
+              ),
+              suffixIcon: controller.searchKeyword.value.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      color: AppColors.buttonPalette[600],
+                      onPressed: () {
+                        controller.searchController.clear();
+                        controller.searchKeyword.value = "";
+                        controller.loadCommunities();
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: AppColors.buttonPalette[100]!.withOpacity(0.2),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide(
+                  color: AppColors.buttonPalette[300]!,
+                  width: 1.2,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide(
+                  color: AppColors.buttonPalette[300]!,
+                  width: 1.2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  Widget _buildCommunityCard(CommunityModel community) {
+  return GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: () {
+      final navController = Get.find<NavigationController>();
+      navController.showCommunityDetail({
+        'communityId': community.communityId,
+      });
+    },
+    child: Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            spreadRadius: 2,
+            offset: const Offset(0, 0),
+          ),
+        ],
+        image: DecorationImage(
+          image: NetworkImage(community.imageBanner),
+          fit: BoxFit.cover,
+          onError: (error, stackTrace) {
+          },
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            stops: const [0.0, 0.35, 1.0],
+            colors: [
+              AppColors.primaryPalette[300]!.withOpacity(0.5),
+              AppColors.primaryPalette[300]!.withOpacity(0.4),
+              const Color.fromARGB(0, 254, 254, 254),
+            ],
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Spacer(), 
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryPalette[100],
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          community.communityName,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.black,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "สมาชิก ${community.memberCount} คน",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.black.withOpacity(0.7),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                   
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 3,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      community.isPrivate ? "กลุ่มส่วนตัว" : "กลุ่มสาธารณะ",
+                      style: TextStyle(
+                        color: community.isPrivate
+                            ? AppColors.dangerPalette[500]
+                            : AppColors.successPalette[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+
 }

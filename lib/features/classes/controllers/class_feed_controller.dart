@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:get/get.dart';
 
 import '/data/model/class_feed_model.dart';
@@ -73,6 +74,7 @@ class ClassFeedController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = null;
+      print('🚀 [ClassFeed] Loading initial data for instId: ${auth.instId.value}');
 
       await fetchSemesters();
     } finally {
@@ -83,13 +85,12 @@ class ClassFeedController extends GetxController {
   /// FETCH SEMESTER
   Future<void> fetchSemesters() async {
     try {
-      print('📅 [ClassFeed] Fetching semesters for instId: ${auth.instId.value}');
-      
+      AppLogger.info('📅 [ClassFeed] Fetching semesters for instId: ${auth.instId.value}');
       final result = await semesterRepository.getSemesters(
         instId: auth.instId.value!,
       );
 
-      print('📅 [ClassFeed] Got ${result.length} semesters');
+      AppLogger.info('📅 [ClassFeed] Got ${result.length} semesters');
       
       semesters.assignAll(result);
 
