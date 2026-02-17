@@ -21,7 +21,7 @@ import '../features/assignment/pages/class_assignment_page.dart';
 import '../features/assignment/bindings/class_assignment_binding.dart';
 import '../features/assignment/pages/assignment_submission_page.dart';
 import '../features/assignment/bindings/assignment_submission_binding.dart';
-
+import '../features/classes/controllers/search_post_controller.dart';
 class AppRouter {
   static final routes = [
     GetPage(name: AppRoutes.authGate, page: () => const AuthGate()),
@@ -58,7 +58,13 @@ class AppRouter {
       page: () => const CommentPage(),
       binding: CommentBinding(),
     ),
-    GetPage(name: AppRoutes.searchPost, page: () => const SearchPostPage()),
+    GetPage(
+  name: '/search-post',
+  page: () => const SearchPostPage(),
+  binding: BindingsBuilder(() {
+    Get.lazyPut<SearchPostController>(() => SearchPostController());
+  }),
+),
     GetPage(
       name: AppRoutes.classAssignment,
       page: () => const ClassAssignmentPage(),

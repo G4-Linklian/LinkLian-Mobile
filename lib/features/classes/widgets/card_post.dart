@@ -553,7 +553,7 @@ final scoreText = maxScore == null
 
 Text('$scoreText คะแนน');
     return [
-      // ✅ Due Date Tag
+      // Due Date Tag
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -577,7 +577,7 @@ Text('$scoreText คะแนน');
         ),
       ),
 
-      // ✅ Score Tag
+      // Score Tag
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(

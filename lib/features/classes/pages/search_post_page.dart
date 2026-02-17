@@ -25,17 +25,18 @@ class _SearchPostPageState extends State<SearchPostPage> {
   List<PostModel> _results = [];
   String? _error;
   String _keyword = '';
-  late SearchPostController controller;
+late final SearchPostController controller;
 
   @override
   void initState() {
     super.initState();
     final args = Get.arguments as Map<String, dynamic>?;
 
-    _sectionId = args?['sectionId'] as int?;
-    _subjectName = args?['subjectName'] as String? ?? '';
-    controller = Get.put(SearchPostController());
-    controller.init(sectionId: _sectionId);
+  _sectionId = args?['sectionId'] as int?;
+  _subjectName = args?['subjectName'] as String? ?? '';
+
+  controller = Get.find<SearchPostController>();
+  controller.init(sectionId: _sectionId);
   }
 
   @override

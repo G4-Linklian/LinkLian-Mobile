@@ -113,7 +113,7 @@ Obx(() {
     return Expanded(
       child: Obx(() {
         final selected = controller.currentTab.value == index;
-        // ✅ Debug log
+        // Debug log
         if (selected) {
           AppLogger.info('📍 Active tab: $text (index=$index)');
         }
@@ -244,7 +244,7 @@ class _GroupTab extends StatelessWidget {
                   ),
                 ),
               ),
-              // ✅ ปุ่ม Edit
+              //  Edit
               IconButton(
                 onPressed: controller.startEditingGroup,
                 icon: const Icon(LinkLianIcon.pencil, size: 20),
@@ -326,7 +326,6 @@ class _GroupTab extends StatelessWidget {
     );
   }
 
-  // ===== UI Form สร้าง/แก้ไขกลุ่ม =====
   // ===== UI Form สร้าง/แก้ไขกลุ่ม =====
   Widget _buildGroupForm() {
     return Padding(
@@ -429,8 +428,6 @@ class _GroupTab extends StatelessWidget {
                 ),
               );
             }
-
-            // ✅ ถ้า students ว่างเปล่าตั้งแต่ต้น
             if (controller.students.isEmpty) {
               return Container(
                 padding: const EdgeInsets.all(24),
@@ -503,11 +500,8 @@ class _GroupTab extends StatelessWidget {
                   final lastName = student['last_name'] ?? '';
                   final name = '$firstName $lastName';
                   final profilePic = student['profile_pic'] as String?;
-
-                  // ✅ เช็คว่าเป็นตัวเองหรือไม่
                   final isCurrentUser = controller.isCurrentUser(userId);
 
-                  // ✅ ถ้าเป็นตัวเอง → ไม่แสดง checkbox, แสดงแค่ badge "คุณ"
                   if (isCurrentUser) {
                     return Container(
                       padding: const EdgeInsets.symmetric(
@@ -559,7 +553,6 @@ class _GroupTab extends StatelessWidget {
                     );
                   }
 
-                  // ✅ คนอื่น → แสดง checkbox ปกติ
                   return InkWell(
                     onTap: () {
                       AppLogger.info('👆 Tapped on user: $userId ($name)');
@@ -587,7 +580,6 @@ class _GroupTab extends StatelessWidget {
                             ),
                           ),
 
-                          // ✅ Checkmark
                           Obx(() {
                             final selected = controller.isStudentSelected(
                               userId,

@@ -244,46 +244,46 @@ class CreatePostController extends GetxController {
   }
 
   /// UPLOAD FILE (Strict Mode)
-Future<bool> uploadFiles(List<File> files) async {
-  uploadWarnings.clear();
-  isUploading.value = true;
+  Future<bool> uploadFiles(List<File> files) async {
+    uploadWarnings.clear();
+    isUploading.value = true;
 
-  try {
-    final uploadedFiles = await postRepository.uploadAttachments(
-      files: files,
-    );
+    try {
+      final uploadedFiles = await postRepository.uploadAttachments(
+        files: files,
+      );
 
-    if (uploadedFiles.isEmpty) return false;
+      if (uploadedFiles.isEmpty) return false;
 
-    for (int i = 0; i < files.length; i++) {
-      if (i >= uploadedFiles.length) continue;
+      for (int i = 0; i < files.length; i++) {
+        if (i >= uploadedFiles.length) continue;
 
-      final localFile = files[i];
-      final serverFile = uploadedFiles[i];
+        final localFile = files[i];
+        final serverFile = uploadedFiles[i];
 
-      final originalName = localFile.path.split('/').last;
+        final originalName = localFile.path.split('/').last;
 
-      attachments.add({
-        'file_url': serverFile['fileUrl'] ?? serverFile['file_url'],
-        'file_type': serverFile['fileType'] ?? serverFile['file_type'],
-        'file_blob_name': serverFile['fileName'] ?? serverFile['file_name'],
-        'file_name': originalName,        
-        'original_name': originalName,  
-        'file_size': await localFile.length(),
-      });
+        attachments.add({
+          'file_url': serverFile['fileUrl'] ?? serverFile['file_url'],
+          'file_type': serverFile['fileType'] ?? serverFile['file_type'],
+          'file_blob_name': serverFile['fileName'] ?? serverFile['file_name'],
+          'file_name': originalName,
+          'original_name': originalName,
+          'file_size': await localFile.length(),
+        });
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      isUploading.value = false;
     }
-
-    return true;
-  } catch (e) {
-    return false;
-  } finally {
-    isUploading.value = false;
   }
-}
 
-/// REMOVE ATTACHMENT
-Future<void> removeAttachment(int index) async {
-  if (index < 0 || index >= attachments.length) return;
+  /// REMOVE ATTACHMENT
+  Future<void> removeAttachment(int index) async {
+    if (index < 0 || index >= attachments.length) return;
 
     final file = attachments[index];
     final isLink = file['file_type'] == 'link';

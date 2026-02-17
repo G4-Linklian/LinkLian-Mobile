@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/services/api_client.dart';
 import '../../data/model/post_model.dart';
@@ -32,18 +33,23 @@ class PostRepository {
     // Add attachments only if not empty
     if (attachments != null && attachments.isNotEmpty) {
       final validAttachments = attachments
-          .where((a) => 
-              a['file_url'] != null && 
-              a['file_url'].toString().isNotEmpty &&
-              a['file_type'] != null &&
-              a['file_type'].toString().isNotEmpty)
-          .map((a) => {
-            'file_url': a['file_url'],
-            'file_type': a['file_type'],
-            if (a['original_name'] != null) 'original_name': a['original_name'],
-          })
+          .where(
+            (a) =>
+                a['file_url'] != null &&
+                a['file_url'].toString().isNotEmpty &&
+                a['file_type'] != null &&
+                a['file_type'].toString().isNotEmpty,
+          )
+          .map(
+            (a) => {
+              'file_url': a['file_url'],
+              'file_type': a['file_type'],
+              if (a['original_name'] != null)
+                'original_name': a['original_name'],
+            },
+          )
           .toList();
-      
+
       if (validAttachments.isNotEmpty) {
         data['attachments'] = validAttachments;
       }
@@ -77,7 +83,7 @@ class PostRepository {
     if (response.data is Map<String, dynamic>) {
       return response.data as Map<String, dynamic>;
     }
-    
+
     return {'success': true, 'data': response.data};
   }
 
@@ -88,7 +94,7 @@ class PostRepository {
     int offset = 0,
     int limit = 10,
   }) async {
-    final response = await _apiClient.get<List<dynamic>>(
+    final response = await _apiClient.get<Map<String, dynamic>>(
       '/social-feed/post',
       queryParameters: {
         'section_id': sectionId,
@@ -98,10 +104,13 @@ class PostRepository {
       },
     );
 
-    final list = response.data ?? [];
+    AppLogger.debug('GET POST RESPONSE RAW: ${response.data.runtimeType}');
 
-    return list
-        .map((e) => PostModel.fromJson(e as Map<String, dynamic>))
+    final rawList =
+        (response.data as Map<String, dynamic>)['data'] as List? ?? [];
+
+    return rawList
+        .map<PostModel>((e) => PostModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
@@ -116,9 +125,7 @@ class PostRepository {
     double? maxScore,
     bool? isGroup,
   }) async {
-    final body = <String, dynamic>{
-      'post_content_id': postContentId,
-    };
+    final body = <String, dynamic>{'post_content_id': postContentId};
 
     if (title != null) body['title'] = title;
     if (content != null) body['content'] = content;
@@ -129,16 +136,19 @@ class PostRepository {
 
     // Build attachments array - always send (even if empty) to allow clearing
     final List<Map<String, String>>? attachmentsList = attachments != null
-        ? attachments.map((a) {
-            final map = {
-              'file_url': a['file_url']?.toString() ?? '',
-              'file_type': a['file_type']?.toString() ?? '',
-            };
-            if (a['original_name'] != null) {
-              map['original_name'] = a['original_name']?.toString() ?? '';
-            }
-            return map;
-          }).where((a) => a['file_url']!.isNotEmpty).toList()
+        ? attachments
+              .map((a) {
+                final map = {
+                  'file_url': a['file_url']?.toString() ?? '',
+                  'file_type': a['file_type']?.toString() ?? '',
+                };
+                if (a['original_name'] != null) {
+                  map['original_name'] = a['original_name']?.toString() ?? '';
+                }
+                return map;
+              })
+              .where((a) => a['file_url']!.isNotEmpty)
+              .toList()
         : null;
 
     // Build the full request body
@@ -172,64 +182,64 @@ class PostRepository {
   }
 
   /// SEARCH POSTS
-Future<List<PostModel>> searchPosts({
-  int? sectionId,
-  required String keyword,
-  int limit = 50,
-}) async {
-  final response = await _apiClient.get<List<dynamic>>(
-    '/social-feed/post/search',
-    queryParameters: {
-      if (sectionId != null) 'section_id': sectionId,
-      'keyword': keyword,
-      'limit': limit,
-    },
-  );
+  Future<List<PostModel>> searchPosts({
+    int? sectionId,
+    required String keyword,
+    int limit = 50,
+  }) async {
+    final response = await _apiClient.get<Map<String, dynamic>>(
+      '/social-feed/post/search',
+      queryParameters: {
+        if (sectionId != null) 'section_id': sectionId,
+        'keyword': keyword,
+        'limit': limit,
+      },
+    );
 
-  final list = response.data ?? [];
+    AppLogger.debug('🔍 Search posts response: ${response.data.runtimeType}');
 
-  return list
-      .map((e) => PostModel.fromJson(e as Map<String, dynamic>))
-      .toList();
-}
+    final rawList =
+        (response.data as Map<String, dynamic>)['data'] as List? ?? [];
 
-
-Future<List<Map<String, dynamic>>> uploadAttachments({
-  required List<File> files,
-}) async {
-  final res = await _apiClient.uploadMultipart(
-    '/uploadFile/social-feed/fileattachment',
-    files: files,
-    fieldName: 'files',
-  );
-
-  final data = res.data;
-  if (data == null) return [];
-
-  if (data is Map && data['files'] is List) {
-    return List<Map<String, dynamic>>.from(data['files']);
+    return rawList
+        .map<PostModel>((e) => PostModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  if (data is List) {
-    return List<Map<String, dynamic>>.from(data);
+  Future<List<Map<String, dynamic>>> uploadAttachments({
+    required List<File> files,
+  }) async {
+    final res = await _apiClient.uploadMultipart(
+      '/uploadFile/social-feed/fileattachment',
+      files: files,
+      fieldName: 'files',
+    );
+
+    final data = res.data;
+    if (data == null) return [];
+
+    if (data is Map && data['files'] is List) {
+      return List<Map<String, dynamic>>.from(data['files']);
+    }
+
+    if (data is List) {
+      return List<Map<String, dynamic>>.from(data);
+    }
+
+    return [];
   }
 
-  return [];
-}
-Future<void> deleteAttachmentBlob(String blobName) async {
-  await _apiClient.delete(
-    '/deleteFile/social-feed',
-    data: {
-      'fileNames': [blobName],
-    },
-  );
-}
+  Future<void> deleteAttachmentBlob(String blobName) async {
+    await _apiClient.delete(
+      '/deleteFile/social-feed',
+      data: {
+        'fileNames': [blobName],
+      },
+    );
+  }
 
-/// DELETE POST
-Future<void> deletePost({
-  int? postId,
-  int? postContentId,
-}) async {
+  /// DELETE POST
+  Future<void> deletePost({int? postId, int? postContentId}) async {
     // If postId is provided, use DELETE /social-feed/post/:postId
     if (postId != null && postId > 0) {
       await _apiClient.delete('/social-feed/post/$postId');

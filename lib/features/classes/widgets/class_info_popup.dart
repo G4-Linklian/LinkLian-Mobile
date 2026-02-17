@@ -4,18 +4,35 @@ import '../../../core/constants/colors.dart';
 import '../controllers/class_info_controller.dart';
 import '../../../core/utils/formatter.dart';
 
-class ClassInfoPopup extends StatelessWidget {
+class ClassInfoPopup extends StatefulWidget {
   final int sectionId;
 
   const ClassInfoPopup({super.key, required this.sectionId});
 
   @override
-  Widget build(BuildContext context) {
-final controller = Get.put(
-  ClassInfoController(sectionId: sectionId),
-  tag: 'class_info_$sectionId',
-);
+  State<ClassInfoPopup> createState() => _ClassInfoPopupState();
+}
 
+class _ClassInfoPopupState extends State<ClassInfoPopup> {
+  late final ClassInfoController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.put(
+      ClassInfoController(sectionId: widget.sectionId),
+      tag: 'class_info_${widget.sectionId}',
+    );
+  }
+
+  @override
+  void dispose() {
+    Get.delete<ClassInfoController>(tag: 'class_info_${widget.sectionId}');
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
@@ -203,9 +220,7 @@ final controller = Get.put(
       }
 
       return ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxHeight: 200, 
-        ),
+        constraints: const BoxConstraints(maxHeight: 200),
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.primaryPalette[200]!),
@@ -216,7 +231,7 @@ final controller = Get.put(
             thumbVisibility: true,
             child: ListView.builder(
               controller: scrollController,
-              shrinkWrap: true, 
+              shrinkWrap: true,
               physics: const ClampingScrollPhysics(),
               itemCount: controller.members.length,
               itemBuilder: (context, index) {

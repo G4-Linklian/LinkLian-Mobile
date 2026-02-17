@@ -12,8 +12,8 @@ class AssignmentRepository {
   Future<List<AssignmentModel>> getClassAssignments({
     required int sectionId,
     String? role,
-     int offset = 0,
-  int limit = 10,
+    int offset = 0,
+    int limit = 10,
   }) async {
     try {
       final response = await _apiClient.get(
@@ -22,7 +22,7 @@ class AssignmentRepository {
           'section_id': sectionId,
           if (role != null) 'role': role,
           'offset': offset,
-        'limit': limit,
+          'limit': limit,
         },
       );
 
@@ -49,8 +49,10 @@ class AssignmentRepository {
         queryParameters: {'post_id': postId, if (role != null) 'role': role},
       );
 
+      AppLogger.info('🔍 getPostAssignment response: ${response.data}');
+
       if (response.statusCode == 200) {
-        return response.data;
+        return response.data['data'] as Map<String, dynamic>?;
       }
       return null;
     } catch (e) {
@@ -95,7 +97,6 @@ class AssignmentRepository {
       AppLogger.info('🔍 getGroup response: ${response.data}');
 
       if (response.statusCode == 200) {
-        // ✅ ตอนนี้ดึงจาก data wrapper
         if (response.data is Map<String, dynamic>) {
           final data = response.data['data'];
           return data as Map<String, dynamic>?;
@@ -115,7 +116,7 @@ class AssignmentRepository {
     required int assignmentId,
   }) async {
     try {
-      AppLogger.info('📡 กำลังดึงกลุ่มทั้งหมดจาก assignment_id: $assignmentId');
+      AppLogger.info('📡 Fetching all groups from assignment_id: $assignmentId');
 
       final response = await _apiClient.get(
         '/assignment/all-groups',
@@ -126,7 +127,7 @@ class AssignmentRepository {
 
       if (response.statusCode == 200) {
         final data = response.data['data'] ?? [];
-        AppLogger.info('✅ ได้กลุ่มทั้งหมด: ${data.length} กลุ่ม');
+        AppLogger.info('All group: ${data.length} groups');
         return List<Map<String, dynamic>>.from(data);
       }
       return [];
@@ -155,58 +156,52 @@ class AssignmentRepository {
     }
   }
 
-// assignment_repository.dart
-Future<Map<String, dynamic>?> updateGroup({
-  required int assignmentId,
-  required int groupId,
-  required String groupName,
-  required List<int> memberIds,
-}) async {
-  try {
-    AppLogger.info('📡 updateGroup API call:');
-    AppLogger.info('  - assignmentId: $assignmentId');
-    AppLogger.info('  - groupId: $groupId');
-    AppLogger.info('  - groupName: $groupName');
-    AppLogger.info('  - memberIds: $memberIds');
+  // assignment_repository.dart
+  Future<Map<String, dynamic>?> updateGroup({
+    required int assignmentId,
+    required int groupId,
+    required String groupName,
+    required List<int> memberIds,
+  }) async {
+    try {
+      AppLogger.info('📡 updateGroup API call:');
+      AppLogger.info('  - assignmentId: $assignmentId');
+      AppLogger.info('  - groupId: $groupId');
+      AppLogger.info('  - groupName: $groupName');
+      AppLogger.info('  - memberIds: $memberIds');
 
-    final response = await _apiClient.post(
-      '/assignment/update-group',
-      data: {
-        'assignment_id': assignmentId,
-        'group_id': groupId,
-        'group_name': groupName,
-        'member_ids': memberIds,
-      },
-    );
+      final response = await _apiClient.post(
+        '/assignment/update-group',
+        data: {
+          'assignment_id': assignmentId,
+          'group_id': groupId,
+          'group_name': groupName,
+          'member_ids': memberIds,
+        },
+      );
 
-    AppLogger.info('📥 updateGroup response status: ${response.statusCode}');
-    AppLogger.info('📥 updateGroup response data: ${response.data}');
-    AppLogger.info('📥 updateGroup response type: ${response.data.runtimeType}');
+      AppLogger.info('📥 updateGroup response status: ${response.statusCode}');
+      AppLogger.info('📥 updateGroup response data: ${response.data}');
+      AppLogger.info(
+        '📥 updateGroup response type: ${response.data.runtimeType}',
+      );
 
-    // ✅ เช็ค status code ให้ครอบคลุม
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      // ✅ ตรวจสอบว่า response.data เป็น Map หรือไม่
-      if (response.data is Map<String, dynamic>) {
-        AppLogger.info('✅ Returning response.data as Map');
-        return response.data as Map<String, dynamic>;
-      } else {
-        AppLogger.info('⚠️ response.data is not a Map: ${response.data}');
-        // ถ้า response.data ไม่ใช่ Map ให้ wrap มันใหม่
-        return {
-          'success': true,
-          'data': response.data,
-        };
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data is Map<String, dynamic>) {
+          AppLogger.info('✅ Returning response.data as Map');
+          return response.data as Map<String, dynamic>;
+        } else {
+          AppLogger.info('⚠️ response.data is not a Map: ${response.data}');
+          return {'success': true, 'data': response.data};
+        }
       }
+
+      AppLogger.info('❌ Status code not 200/201: ${response.statusCode}');
+      return null;
+    } catch (e, stackTrace) {
+      AppLogger.info('❌ Error updating group: $e');
+      AppLogger.info('❌ Stack trace: $stackTrace');
+      return null;
     }
-
-    AppLogger.info('❌ Status code not 200/201: ${response.statusCode}');
-    return null;
-  } catch (e, stackTrace) {
-    AppLogger.info('❌ Error updating group: $e');
-    AppLogger.info('❌ Stack trace: $stackTrace');
-    return null;
   }
-}
-
-
 }
