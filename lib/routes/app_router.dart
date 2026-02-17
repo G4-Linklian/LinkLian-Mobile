@@ -31,6 +31,11 @@ import '../features/classes/pages/comment_page.dart';
 import '../features/classes/bindings/comment_binding.dart';
 import '../features/profile/bindings/bookmark_binding.dart';
 import '../features/classes/pages/search_post_page.dart';
+import '../features/assignment/pages/class_assignment_page.dart';
+import '../features/assignment/bindings/class_assignment_binding.dart';
+import '../features/assignment/pages/assignment_submission_page.dart';
+import '../features/assignment/bindings/assignment_submission_binding.dart';
+import '../features/classes/controllers/search_post_controller.dart';
 
 class AppRouter {
   static final routes = [
@@ -68,7 +73,25 @@ class AppRouter {
       page: () => const CommentPage(),
       binding: CommentBinding(),
     ),
-    GetPage(name: AppRoutes.searchPost, page: () => const SearchPostPage()),
+    GetPage(
+      name: '/search-post',
+      page: () => const SearchPostPage(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<SearchPostController>(() => SearchPostController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.classAssignment,
+      page: () => const ClassAssignmentPage(),
+      binding: ClassAssignmentBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.assignmentSubmission,
+      page: () => const AssignmentSubmissionPage(),
+      binding: AssignmentSubmissionBinding(),
+      transition: Transition.rightToLeft,
+    ),
 
     GetPage(
       name: AppRoutes.community,
@@ -81,37 +104,36 @@ class AppRouter {
       binding: CreateCommunityBinding(),
     ),
     GetPage(
-  name: AppRoutes.communityDetail,
-  page: () => const CommunityDetailPage(),
-  binding: CommunityDetailBinding(),
-),
-GetPage(
-  name: AppRoutes.createPostCommunity,
-  page: () => const CreatePostCommunityPage(),
-  binding: CreatePostCommunityBinding(),
-),
-GetPage(
-  name: AppRoutes.communityComment,
-  page: () => const CommunityCommentPage(),
-  binding: BindingsBuilder(() {
-    Get.put(CommunityCommentController());
-  }),
-),
-GetPage(
-  name: '/community-members',
-  page: () => const CommunityMemberPage(),
-  binding: CommunityMemberBinding(),
-),
-GetPage(
-  name: '/community-pending',
-  page: () => const CommunityPendingPage(),
-  binding: CommunityPendingBinding(),
-),
-GetPage(
-  name: AppRoutes.communitySearch,
-  page: () => const CommunitySearchPage(),
-),
-
+      name: AppRoutes.communityDetail,
+      page: () => const CommunityDetailPage(),
+      binding: CommunityDetailBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.createPostCommunity,
+      page: () => const CreatePostCommunityPage(),
+      binding: CreatePostCommunityBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.communityComment,
+      page: () => const CommunityCommentPage(),
+      binding: BindingsBuilder(() {
+        Get.put(CommunityCommentController());
+      }),
+    ),
+    GetPage(
+      name: '/community-members',
+      page: () => const CommunityMemberPage(),
+      binding: CommunityMemberBinding(),
+    ),
+    GetPage(
+      name: '/community-pending',
+      page: () => const CommunityPendingPage(),
+      binding: CommunityPendingBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.communitySearch,
+      page: () => const CommunitySearchPage(),
+    ),
 
     GetPage(
       name: AppRoutes.profile,

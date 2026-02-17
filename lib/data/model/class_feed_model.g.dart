@@ -15,6 +15,9 @@ ClassFeedModel _$ClassFeedModelFromJson(Map<String, dynamic> json) =>
       subjectNameEn: json['subject_name_en'] as String,
       learningAreaName: json['learning_area_name'] as String?,
       semester: json['semester'] as String,
+      studentCount: json['student_count'] == null
+          ? 0
+          : ClassFeedModel._intFromJson(json['student_count']),
       schedules: (json['schedules'] as List<dynamic>)
           .map((e) => ClassScheduleModel.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -37,6 +40,7 @@ Map<String, dynamic> _$ClassFeedModelToJson(ClassFeedModel instance) =>
       'subject_name_en': instance.subjectNameEn,
       'learning_area_name': instance.learningAreaName,
       'semester': instance.semester,
+      'student_count': instance.studentCount,
       'schedules': instance.schedules,
       'position': instance.position,
       'edu_type': instance.eduType,

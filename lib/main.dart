@@ -17,6 +17,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'data/repository/bookmark_repository.dart';
 import 'features/profile/controllers/bookmark_controller.dart';
 import 'features/layout/controllers/navigation_controller.dart';
+import 'data/repository/assignment_repository.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +47,7 @@ void main() async {
     BookmarkController(Get.find<BookmarkRepository>()),
     permanent: true,
   );
+  Get.put<AssignmentRepository>(AssignmentRepository(), permanent: true);
 
   runApp(const MyApp());
 }
@@ -62,6 +65,16 @@ class MyApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       home: const AuthGate(),
       getPages: AppRouter.routes,
+      locale: const Locale('th', 'TH'),
+      supportedLocales: const [
+        Locale('th', 'TH'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       // home: const MainPage(),
     );
   }

@@ -136,9 +136,15 @@ class LinkLianIcon {
   static const IconData check = TablerIcons.check;
   static const IconData cancel = TablerIcons.cancel;
   static const IconData delete = TablerIcons.trash;
-  
 
-
+  // assignment
+  static const IconData assignment = TablerIcons.clipboard_list;
+  static const IconData assignmentCheck = TablerIcons.clipboard_check;
+  static const IconData clock = TablerIcons.clock;
+  static const IconData alertCircle = TablerIcons.alert_circle;
+  static const IconData circleCheck = TablerIcons.circle_check;
+  static const IconData circleDot = TablerIcons.circle_dot;
+  static const IconData users = TablerIcons.users;
 
   static double? get fontSubheading => null;
 

@@ -13,10 +13,7 @@ class PostModel {
   final String title;
   final String content;
 
-  @JsonKey(
-    name: 'post_type',
-    fromJson: _stringFromJson,
-  )
+  @JsonKey(name: 'post_type', fromJson: _stringFromJson)
   final String postType;
 
   @JsonKey(name: 'is_anonymous')
@@ -40,7 +37,13 @@ class PostModel {
   @JsonKey(name: 'role_name')
   final String? roleName;
 
+  @JsonKey(name: 'section_id')
+  final int? sectionId;
+
   final List<PostAttachmentModel>? attachments;
+  final DateTime? dueDate;
+  final double? maxScore;
+  final bool? isGroup;
 
   const PostModel({
     required this.postId,
@@ -53,22 +56,27 @@ class PostModel {
     this.userSysId,
     this.displayName,
     this.email,
-    this.profilePic,
     this.roleName,
+    this.profilePic,
     this.attachments,
+    this.dueDate,
+    this.maxScore,
+    this.isGroup,
+    this.sectionId,
   });
 
   // ===== Json helpers =====
   static int _intFromJson(dynamic v) {
     if (v is int) return v;
-    if (v is String) return int.parse(v);
-    throw Exception('Invalid int value: $v');
+    if (v is String) return int.tryParse(v) ?? 0;
+    return 0;
   }
 
   static String _stringFromJson(dynamic value) {
+    if (value == null) return '';
     if (value is String) return value;
     if (value is int) return value.toString();
-    throw Exception('Invalid post_type: $value');
+    return '';
   }
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
@@ -82,8 +90,9 @@ class PostModel {
       content: json['content'] ?? '',
       postType: _stringFromJson(json['post_type']),
       isAnonymous: json['is_anonymous'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
-      // Support both nested user object and flat fields
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
+          : DateTime.now(), // Support both nested user object and flat fields
       userSysId: user != null
           ? _parseIntNullable(user['user_sys_id'])
           : _parseIntNullable(json['user_sys_id']),
@@ -92,6 +101,16 @@ class PostModel {
       profilePic: user?['profile_pic'] ?? json['profile_pic'],
       roleName: user?['role_name'] ?? json['role_name'],
       attachments: _parseAttachments(json['attachments']),
+      dueDate: json['due_date'] != null
+          ? DateTime.tryParse(json['due_date'].toString())
+          : null,
+      maxScore: json['max_score'] != null
+          ? (json['max_score'] is double
+                ? json['max_score']
+                : double.tryParse(json['max_score'].toString()))
+          : null,
+      isGroup: json['is_group'] as bool?,
+      sectionId: _parseIntNullable(json['section_id']),
     );
   }
 
@@ -127,6 +146,8 @@ class PostModel {
     String? content,
     String? postType,
     List<PostAttachmentModel>? attachments,
+    DateTime? dueDate,
+    double? maxScore,
   }) {
     return PostModel(
       postId: postId,
@@ -142,6 +163,8 @@ class PostModel {
       profilePic: profilePic,
       roleName: roleName,
       attachments: attachments ?? this.attachments,
+      dueDate: dueDate ?? this.dueDate,
+      maxScore: maxScore ?? this.maxScore,
     );
   }
 }
@@ -179,16 +202,13 @@ class PostAttachmentModel {
       _$PostAttachmentModelFromJson(json);
 
   Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{
-      'file_url': fileUrl,
-      'file_type': fileType,
-    };
-    
+    final map = <String, dynamic>{'file_url': fileUrl, 'file_type': fileType};
+
     // Always include original_name (even if null, backend will handle it)
     if (originalName != null) {
       map['original_name'] = originalName;
     }
-    
+
     return map;
   }
 }

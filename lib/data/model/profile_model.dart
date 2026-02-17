@@ -2,7 +2,6 @@ import 'package:json_annotation/json_annotation.dart';
 import 'education_model.dart';
 import 'teaching_schedule_model.dart';
 
-
 part 'profile_model.g.dart';
 
 int _intFromJson(dynamic value) => int.parse(value.toString());
@@ -10,11 +9,7 @@ String _intToJson(int value) => value.toString();
 
 @JsonSerializable()
 class ProfileModel {
-  @JsonKey(
-    name: 'user_sys_id',
-    fromJson: _intFromJson,
-    toJson: _intToJson,
-  )
+  @JsonKey(name: 'user_sys_id', fromJson: _intFromJson, toJson: _intToJson)
   final int userSysId;
 
   final String email;
@@ -36,7 +31,7 @@ class ProfileModel {
   final String roleName;
 
   @JsonKey(name: 'role_group')
-  final String? roleGroup; 
+  final String? roleGroup;
 
   @JsonKey(name: 'profile_pic')
   final String? profilePic;
@@ -46,7 +41,6 @@ class ProfileModel {
 
   // @JsonKey(name: 'teaching_schedule')
   // final List<TeachingScheduleModel>? teachingSchedule;
-
 
   ProfileModel({
     this.code,
@@ -64,31 +58,32 @@ class ProfileModel {
   });
 
   ProfileModel copyWith({
-  String? firstName,
-  String? middleName,
-  String? lastName,
-  String? phone,
-  String? profilePic,
-  bool clearProfilePic = false,
-  EducationModel? education,
-  String? code,
-  // List<TeachingScheduleModel>? teachingSchedule,
-}) {
-  final profile = ProfileModel(
-    userSysId: userSysId,
-    email: email,
-    firstName: firstName ?? this.firstName,
-    middleName: middleName ?? this.middleName,
-    lastName: lastName ?? this.lastName,
-    roleName: roleName,
-    roleGroup: roleGroup,
-    profilePic: clearProfilePic ? null : (profilePic ?? this.profilePic),
-    education: education ?? this.education,
-     code: code ?? this.code,
-    // teachingSchedule: teachingSchedule ?? this.teachingSchedule,
-  );
-  return profile;
-}
+    String? firstName,
+    String? middleName,
+    String? lastName,
+    String? phone,
+    String? profilePic,
+    bool clearProfilePic = false,
+    EducationModel? education,
+    String? code,
+    // List<TeachingScheduleModel>? teachingSchedule,
+  }) {
+    final profile = ProfileModel(
+      userSysId: userSysId,
+      email: email,
+      firstName: firstName ?? this.firstName,
+      middleName: middleName ?? this.middleName,
+      lastName: lastName ?? this.lastName,
+      roleName: roleName,
+      roleGroup: roleGroup,
+      profilePic: clearProfilePic ? null : (profilePic ?? this.profilePic),
+      education: education ?? this.education,
+      code: code ?? this.code,
+      // teachingSchedule: teachingSchedule ?? this.teachingSchedule,
+    );
+    return profile;
+  }
+
   String get displayName {
     if (isStudent && code != null && code!.isNotEmpty) {
       return code!;
@@ -96,13 +91,13 @@ class ProfileModel {
     return fullName;
   }
 
-  String get fullName =>
-      middleName != null && middleName!.isNotEmpty
-          ? '$firstName $middleName $lastName'
-          : '$firstName $lastName';
+  String get fullName {
+    if ((firstName ?? '').isEmpty) return lastName ?? '';
+    if ((lastName ?? '').isEmpty) return firstName ?? '';
+    return '$firstName $lastName';
+  }
 
-  bool get isStudent =>
-      roleGroup == 'student' || roleName.contains('student');
+  bool get isStudent => roleGroup == 'student' || roleName.contains('student');
 
   bool get isTeacher =>
       roleGroup == 'teacher' ||

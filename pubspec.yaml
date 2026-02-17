@@ -30,13 +30,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_tabler_icons: ^1.43.0
 
 
   # UI and Navigation
   cupertino_icons: ^1.0.8
   get: ^4.6.5
-  intl: ^0.19.0
+  intl: ^0.20.2
   
   # HTTP and API
   dio: ^5.4.0

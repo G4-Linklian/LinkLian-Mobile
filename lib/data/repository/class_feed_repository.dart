@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import '../model/class_feed_model.dart';
 import '../../core/services/api_client.dart';
 import '../../features/auth/controller/auth_controller.dart';
@@ -16,21 +17,22 @@ class ClassFeedRepository {
     final auth = Get.find<AuthController>();
     final userId = auth.userId.value;
     final roleName = auth.roleName.value;
-    
+
     if (userId == null) {
       throw Exception('User not authenticated');
     }
 
-    print('🧪 semesterId sent to API = $semesterId, userId = $userId, role = $roleName, offset = $offset, limit = $limit');
+    AppLogger.info(
+      '🧪 semesterId sent to API = $semesterId, userId = $userId, role = $roleName, offset = $offset, limit = $limit',
+    );
 
     // Determine endpoint based on role
     final isTeacher = roleName == 'teacher' || roleName == 'instructor';
-    final endpoint = isTeacher 
+    final endpoint = isTeacher
         ? '/social-feed/feed/teacher'
         : '/social-feed/feed/student';
-
     // API returns List directly
-    final response = await _apiClient.get<List<dynamic>>(
+    final response = await _apiClient.get<Map<String, dynamic>>(
       endpoint,
       queryParameters: {
         'user_id': userId,
@@ -40,36 +42,37 @@ class ClassFeedRepository {
       },
     );
 
-    final data = response.data;
-    print('🏫 [ClassFeedRepo] Got response: ${data?.length} items');
-    
-    if (data == null) {
+    final responseMap = response.data;
+
+    if (responseMap == null || responseMap['data'] == null) {
       throw Exception('Failed to fetch class feed');
     }
 
-    return data
-        .map((json) => ClassFeedModel.fromJson(json as Map<String, dynamic>))
+    final List responseData = responseMap['data'] as List;
+
+    return responseData
+        .map((e) => ClassFeedModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   /// GET CLASS DETAIL (posts in section)
   Future<ClassFeedModel?> getClassDetail({required int sectionId}) async {
     try {
-      final response = await _apiClient.get<List<dynamic>>(
+      final response = await _apiClient.get<Map<String, dynamic>>(
         '/social-feed/post',
-        queryParameters: {
-          'section_id': sectionId,
-        },
+        queryParameters: {'section_id': sectionId},
       );
 
-      final data = response.data;
-      if (data == null || data.isEmpty) {
-        return null;
+      final responseMap = response.data as Map<String, dynamic>?;
+
+      final List data = responseMap?['data'];
+      if (responseMap == null || responseMap['data'] == null) {
+        throw Exception('Failed to fetch class feed');
       }
 
       return ClassFeedModel.fromJson(data.first as Map<String, dynamic>);
     } catch (e) {
-      print('Error fetching class detail: $e');
+      AppLogger.info('Error fetching class detail: $e');
       return null;
     }
   }
@@ -80,7 +83,7 @@ class ClassFeedRepository {
     String? postType,
     bool? teacherOnly,
   }) async {
-    final response = await _apiClient.get<List<dynamic>>(
+    final response = await _apiClient.get<Map<String, dynamic>>(
       '/social-feed/post',
       queryParameters: {
         'section_id': sectionId,
@@ -88,10 +91,7 @@ class ClassFeedRepository {
       },
     );
 
-    return {
-      'success': true,
-      'data': response.data ?? [],
-    };
+    return {'success': true, 'data': response.data?['data'] ?? []};
   }
 
   /// GET SECTION EDUCATORS
@@ -105,28 +105,38 @@ class ClassFeedRepository {
       );
 
       if (response.data != null) {
-        return response.data!
-            .map((e) => e as Map<String, dynamic>)
-            .toList();
+        return response.data!.map((e) => e as Map<String, dynamic>).toList();
       }
       return null;
     } catch (e) {
-      debugPrint('❌ Error fetching section educators: $e');
+      AppLogger.info('❌ Error fetching section educators: $e');
       return null;
     }
   }
 
   /// GET CLASS INFO (schedules, members, educators)
-  Future<Map<String, dynamic>?> getClassInfo({
-    required int sectionId,
-  }) async {
+  Future<Map<String, dynamic>?> getClassInfo({required int sectionId}) async {
     try {
-      final response = await _apiClient.get<Map<String, dynamic>>(
+      final response = await _apiClient.get(
         '/social-feed/class-info/$sectionId',
       );
-      return response.data;
+
+      AppLogger.info('📦 class-info raw response = ${response.data}');
+
+      // กรณี ApiClient unwrap data มาแล้ว
+      if (response.data is Map<String, dynamic>) {
+        // ถ้ามี key data → ใช้ data
+        if (response.data['data'] != null) {
+          return Map<String, dynamic>.from(response.data['data']);
+        }
+
+        // ถ้าไม่มี key data → ใช้ทั้งก้อน
+        return Map<String, dynamic>.from(response.data);
+      }
+
+      return null;
     } catch (e) {
-      debugPrint('❌ Error fetching class info: $e');
+      AppLogger.info('❌ Error fetching class info: $e');
       return null;
     }
   }

@@ -1,6 +1,7 @@
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/data/model/bookmark_model.dart';
 import 'package:flutter/material.dart';
+import '../../../core/constants/colors.dart';
 
 class BookmarkCard extends StatelessWidget {
   final BookmarkModel item;
@@ -30,12 +31,12 @@ class BookmarkCard extends StatelessWidget {
         children: [
           /// PDF Icon
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: AppColors.dangerPalette[200],
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.picture_as_pdf, color: Colors.red),
+            child: const Icon(Icons.file_present, color: Colors.red),
           ),
 
           const SizedBox(width: 12),

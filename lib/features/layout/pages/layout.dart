@@ -30,6 +30,8 @@ import '../../../data/repository/semester_repository.dart';
 import '../../classes/bindings/create_post_binding.dart';
 import '../controllers/navigation_controller.dart';
 import '../../classes/pages/class_detail_page.dart';
+import '../../classes/controllers/create_post_controller.dart';
+import '../../../config/app_routes.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -61,8 +63,11 @@ class _MainPageState extends State<MainPage> {
     }
 
     // Sync with NavigationController
+  WidgetsBinding.instance.addPostFrameCallback((_) {
     _navController.selectedIndex.value = _selectedIndex;
+  });
 
+  
     if (!Get.isRegistered<ClassFeedController>()) {
       Get.put<ClassFeedController>(
         ClassFeedController(
@@ -201,7 +206,19 @@ class _MainPageState extends State<MainPage> {
                     if (!_hideAddIcon)
                       GestureDetector(
                         onTap: () {
-                          if (_selectedIndex == 1) {
+                          if (_selectedIndex == 0) {
+                            Get.toNamed(
+                              AppRoutes.createPost,
+                              arguments: {
+                                'mode': CreatePostMode.create,
+                                'source': CreatePostSource.classFeed,
+
+                                // 🔒 บังคับเป็นการบ้าน
+                                'postType': 'assignment',
+                                'lockPostType': true,
+                              },
+                            );
+                          } else if (_selectedIndex == 1) {
                             Get.to(
                               () => const CreatePostClassPage(),
                               binding: CreatePostBinding(),
