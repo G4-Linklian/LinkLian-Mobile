@@ -1,4 +1,6 @@
 import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/data/repository/community_repository.dart';
+import 'package:LinkLian/features/community/controllers/community_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'config/theme.dart';
@@ -25,6 +27,12 @@ void main() async {
   await initializeDateFormatting('th', null);
 
   Get.put(ApiClient(), permanent: true);
+  Get.put(CommunityRepository(), permanent: true);
+
+  Get.put(
+    CommunityController(Get.find<CommunityRepository>()),
+    permanent: true,
+  );
   Get.put(AuthController(), permanent: true);
   Get.put(NavigationController(), permanent: true);
 

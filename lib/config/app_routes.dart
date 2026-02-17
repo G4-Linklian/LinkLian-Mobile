@@ -19,4 +19,9 @@ class AppRoutes {
   static const String classAssignment = '/class-assignment';
   static const String assignmentSubmission = '/assignment-submission';
 
+  static const createCommunity = '/createCommunity';
+  static const communityDetail = '/community-detail';
+  static const createPostCommunity = '/create-post-community';
+  static const String communityComment = '/community-comment';
+  static const communitySearch = '/community-search';
 }

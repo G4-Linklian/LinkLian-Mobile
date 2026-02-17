@@ -1,6 +1,12 @@
+import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/data/repository/community_member_repository.dart';
+import 'package:LinkLian/data/repository/community_post_repository.dart';
+import 'package:LinkLian/data/repository/community_repository.dart';
 import 'package:LinkLian/data/repository/profile_repository.dart';
 import 'package:LinkLian/data/repository/teaching_schedule_repository.dart';
+import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
+import 'package:LinkLian/features/community/pages/community_detail_page.dart';
 import 'package:LinkLian/features/profile/controllers/profile_controller.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
@@ -14,7 +20,6 @@ import '../../../core/constants/sizes.dart';
 import '../../../core/constants/logo.dart';
 import '../widgets/activeIcon.dart';
 import '../../classes/pages/create_post_class_page.dart';
-import '../../community/pages/create_post_commu_page.dart';
 import '../../notification/pages/notification_page.dart';
 import '../../chat/pages/chat.page.dart';
 import '../../auth/controller/auth_controller.dart';
@@ -75,9 +80,6 @@ class _MainPageState extends State<MainPage> {
     if (!Get.isRegistered<ProfileRepository>()) {
       Get.put(ProfileRepository(Get.find<ApiClient>()), permanent: true);
     }
-    if (!Get.isRegistered<ProfileRepository>()) {
-      Get.put(ProfileRepository(Get.find<ApiClient>()), permanent: true);
-    }
     if (!Get.isRegistered<TeachingScheduleRepository>()) {
       Get.put(
         TeachingScheduleRepository(Get.find<ApiClient>()),
@@ -91,6 +93,27 @@ class _MainPageState extends State<MainPage> {
         ProfileController(
           Get.find<ProfileRepository>(),
           Get.find<TeachingScheduleRepository>(),
+        ),
+        permanent: true,
+      );
+    }
+    if (!Get.isRegistered<CommunityRepository>()) {
+      Get.put(CommunityRepository(), permanent: true);
+    }
+    if (!Get.isRegistered<CommunityPostRepository>()) {
+      Get.put(CommunityPostRepository(), permanent: true);
+    }
+    if (!Get.isRegistered<CommunityMemberRepository>()) {
+      Get.put(CommunityMemberRepository(), permanent: true);
+    }
+
+    // 3️⃣ register CommunityDetailController (ส่ง dependency เข้าไป)
+    if (!Get.isRegistered<CommunityDetailController>()) {
+      Get.put(
+        CommunityDetailController(
+          Get.find<CommunityRepository>(),
+          Get.find<CommunityPostRepository>(),
+          Get.find<CommunityMemberRepository>(),
         ),
         permanent: true,
       );
@@ -146,6 +169,9 @@ class _MainPageState extends State<MainPage> {
     if (_navController.isShowingClassDetail.value && _selectedIndex == 1) {
       return true;
     }
+    if (_navController.isShowingCommunityDetail.value && _selectedIndex == 2) {
+      return true;
+    }
     return (!isStudent && _selectedIndex == 2) ||
         (isStudent && _selectedIndex == 3);
   }
@@ -156,6 +182,9 @@ class _MainPageState extends State<MainPage> {
       final showClassDetail =
           _navController.isShowingClassDetail.value &&
           _navController.selectedIndex.value == 1;
+      final showCommunityDetail =
+          _navController.isShowingCommunityDetail.value &&
+          _navController.selectedIndex.value == 2;
 
       return Scaffold(
         appBar: _hideAppBar
@@ -195,7 +224,8 @@ class _MainPageState extends State<MainPage> {
                               binding: CreatePostBinding(),
                             );
                           } else if (_selectedIndex == 2) {
-                            _goTo(const CreatePostCommuPage());
+                            //_goTo(const CreateCommunityPage());
+                            Get.toNamed(AppRoutes.createCommunity);
                           }
                         },
                         child: Icon(
@@ -261,6 +291,15 @@ class _MainPageState extends State<MainPage> {
                     ? const ClassDetailPage(key: ValueKey('classDetail'))
                     : const ClassesPage(key: ValueKey('classesPage')),
               )
+            : _selectedIndex == 2 && isStudent
+            ? AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: showCommunityDetail
+                    ? const CommunityDetailPage(
+                        key: ValueKey('communityDetail'),
+                      )
+                    : const CommuPage(key: ValueKey('communityPage')),
+              )
             : _getPageForIndex(_selectedIndex),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
@@ -270,7 +309,6 @@ class _MainPageState extends State<MainPage> {
               _selectedIndex = index;
             });
           },
-
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppColors.primaryPalette[900],
           unselectedItemColor: AppColors.primaryPalette[800],
