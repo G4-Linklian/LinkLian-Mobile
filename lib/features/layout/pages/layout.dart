@@ -30,8 +30,8 @@ import '../../../data/repository/semester_repository.dart';
 import '../../classes/bindings/create_post_binding.dart';
 import '../controllers/navigation_controller.dart';
 import '../../classes/pages/class_detail_page.dart';
+import '../../classes/controllers/class_detail_controller.dart';
 import '../../classes/controllers/create_post_controller.dart';
-import '../../../config/app_routes.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -45,6 +45,9 @@ class _MainPageState extends State<MainPage> {
   final AuthController _auth = Get.find<AuthController>();
   final NavigationController _navController = Get.find<NavigationController>();
 
+  // Tag ของ ClassDetailController ที่กำลัง active อยู่
+  String? _activeClassDetailTag;
+
   bool get isStudent {
     final role = _auth.roleName.value;
     return role == 'high school student' || role == 'uni student';
@@ -54,20 +57,69 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
 
-    // Check if navigated with selectedIndex argument
     final args = Get.arguments;
     if (args is Map && args.containsKey('selectedIndex')) {
       _selectedIndex = args['selectedIndex'] as int;
     } else {
-      _selectedIndex = 1; // ClassesPage ทั้ง student และ teacher
+      _selectedIndex = 1;
     }
 
-    // Sync with NavigationController
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _navController.selectedIndex.value = _selectedIndex;
-  });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navController.selectedIndex.value = _selectedIndex;
+    });
 
-  
+    _registerDependencies();
+
+    // ── Manage ClassDetailController lifecycle ────────────────────────────
+    // สร้าง controller เมื่อ showClassDetail() ถูกเรียก
+    // ลบ controller เมื่อ hideClassDetail() ถูกเรียก
+    ever(_navController.isShowingClassDetail, (bool showing) {
+      if (showing) {
+        _createClassDetailController();
+      } else {
+        _deleteClassDetailController();
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ClassDetailController lifecycle management
+  // ─────────────────────────────────────────────────────────────────────────
+
+  void _createClassDetailController() {
+    final args = _navController.classDetailArgs.value;
+    if (args == null) return;
+
+    final sectionId = args['sectionId'];
+    if (sectionId == null) return;
+
+    final tag = 'class_detail_$sectionId';
+
+    // ถ้า section เดิมและ controller ยังอยู่ → ไม่ต้องสร้างใหม่
+    if (_activeClassDetailTag == tag &&
+        Get.isRegistered<ClassDetailController>(tag: tag)) {
+      return;
+    }
+
+    // ลบ controller เก่าของ section ก่อนหน้า (ถ้ามี)
+    _deleteClassDetailController();
+
+    _activeClassDetailTag = tag;
+    // permanent: false เพื่อให้ลบได้ด้วย Get.delete()
+    Get.put(ClassDetailController(), tag: tag, permanent: false);
+  }
+
+  void _deleteClassDetailController() {
+    if (_activeClassDetailTag != null &&
+        Get.isRegistered<ClassDetailController>(tag: _activeClassDetailTag)) {
+      Get.delete<ClassDetailController>(tag: _activeClassDetailTag);
+    }
+    _activeClassDetailTag = null;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
+  void _registerDependencies() {
     if (!Get.isRegistered<ClassFeedController>()) {
       Get.put<ClassFeedController>(
         ClassFeedController(
@@ -86,8 +138,6 @@ class _MainPageState extends State<MainPage> {
         permanent: true,
       );
     }
-
-    //2. แล้วค่อย put Controller
     if (!Get.isRegistered<ProfileController>()) {
       Get.put(
         ProfileController(
@@ -106,8 +156,6 @@ class _MainPageState extends State<MainPage> {
     if (!Get.isRegistered<CommunityMemberRepository>()) {
       Get.put(CommunityMemberRepository(), permanent: true);
     }
-
-    // 3️⃣ register CommunityDetailController (ส่ง dependency เข้าไป)
     if (!Get.isRegistered<CommunityDetailController>()) {
       Get.put(
         CommunityDetailController(
@@ -124,7 +172,6 @@ class _MainPageState extends State<MainPage> {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
   }
 
-  /// Get page widget for given index (excluding class tab which is handled separately)
   Widget _getPageForIndex(int index) {
     if (isStudent) {
       switch (index) {
@@ -150,41 +197,56 @@ class _MainPageState extends State<MainPage> {
   }
 
   bool get _hideAddIcon {
-    // Hide add icon when showing class detail (it has its own)
     if (_navController.isShowingClassDetail.value && _selectedIndex == 1) {
       return true;
     }
-
     if (isStudent) {
-      // student: แสดงเฉพาะ class (1) และ community (2)
       return !(_selectedIndex == 1 || _selectedIndex == 2);
     } else {
-      // teacher: แสดงเฉพาะ assignment (0) และ class (1)
       return !(_selectedIndex == 0 || _selectedIndex == 1);
     }
   }
 
   bool get _hideAppBar {
-    // Hide app bar when showing class detail (it has its own header)
     if (_navController.isShowingClassDetail.value && _selectedIndex == 1) {
       return true;
     }
     if (_navController.isShowingCommunityDetail.value && _selectedIndex == 2) {
       return true;
     }
+    if (_navController.isShowingClassAssignment.value && _selectedIndex == 0) {
+      return true;
+    }
     return (!isStudent && _selectedIndex == 2) ||
         (isStudent && _selectedIndex == 3);
+  }
+
+  Widget _slideTransition(
+    Widget child,
+    Animation<double> animation, {
+    required bool isForward,
+  }) {
+    final slideAnimation = Tween<Offset>(
+      begin: isForward ? const Offset(1.0, 0.0) : const Offset(-0.3, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+    return SlideTransition(position: slideAnimation, child: child);
   }
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final currentTab = _navController.selectedIndex.value;
       final showClassDetail =
-          _navController.isShowingClassDetail.value &&
-          _navController.selectedIndex.value == 1;
+          _navController.isShowingClassDetail.value && currentTab == 1;
       final showCommunityDetail =
-          _navController.isShowingCommunityDetail.value &&
-          _navController.selectedIndex.value == 2;
+          _navController.isShowingCommunityDetail.value && currentTab == 2;
+      final showClassAssignment =
+          _navController.isShowingClassAssignment.value && currentTab == 0;
+
+      if (_selectedIndex != currentTab) {
+        _selectedIndex = currentTab;
+      }
 
       return Scaffold(
         appBar: _hideAppBar
@@ -200,9 +262,7 @@ class _MainPageState extends State<MainPage> {
                       height: 25,
                       fit: BoxFit.contain,
                     ),
-
                     const Spacer(),
-
                     if (!_hideAddIcon)
                       GestureDetector(
                         onTap: () {
@@ -211,9 +271,7 @@ class _MainPageState extends State<MainPage> {
                               AppRoutes.createPost,
                               arguments: {
                                 'mode': CreatePostMode.create,
-                                'source': CreatePostSource.classFeed,
-
-                                // 🔒 บังคับเป็นการบ้าน
+                                'source': CreatePostSource.assignmentFeed,
                                 'postType': 'assignment',
                                 'lockPostType': true,
                               },
@@ -224,7 +282,6 @@ class _MainPageState extends State<MainPage> {
                               binding: CreatePostBinding(),
                             );
                           } else if (_selectedIndex == 2) {
-                            //_goTo(const CreateCommunityPage());
                             Get.toNamed(AppRoutes.createCommunity);
                           }
                         },
@@ -234,9 +291,7 @@ class _MainPageState extends State<MainPage> {
                           size: 32,
                         ),
                       ),
-
                     if (!_hideAddIcon) const SizedBox(width: 12),
-
                     GestureDetector(
                       onTap: () => _goTo(const NotificationPage()),
                       child: Icon(
@@ -245,9 +300,7 @@ class _MainPageState extends State<MainPage> {
                         size: 32,
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
                     GestureDetector(
                       onTap: () => _goTo(const ChatPage()),
                       child: Icon(
@@ -259,104 +312,128 @@ class _MainPageState extends State<MainPage> {
                   ],
                 ),
               ),
-        // Use AnimatedSwitcher for smooth transition between ClassesPage and ClassDetailPage
-        body: _selectedIndex == 1
-            ? AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, animation) {
-                  // Slide from right when showing ClassDetail, slide to right when hiding
-                  final isShowingDetail = child is ClassDetailPage;
-                  final slideAnimation =
-                      Tween<Offset>(
-                        begin: isShowingDetail
-                            ? const Offset(1.0, 0.0) // Slide in from right
-                            : const Offset(
-                                -0.3,
-                                0.0,
-                              ), // Slide in from left (smaller)
-                        end: Offset.zero,
-                      ).animate(
-                        CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeOutCubic,
-                        ),
-                      );
-
-                  return SlideTransition(
-                    position: slideAnimation,
-                    child: child,
-                  );
-                },
-                child: showClassDetail
-                    ? const ClassDetailPage(key: ValueKey('classDetail'))
-                    : const ClassesPage(key: ValueKey('classesPage')),
-              )
-            : _selectedIndex == 2 && isStudent
-            ? AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: showCommunityDetail
-                    ? const CommunityDetailPage(
-                        key: ValueKey('communityDetail'),
-                      )
-                    : const CommuPage(key: ValueKey('communityPage')),
-              )
-            : _getPageForIndex(_selectedIndex),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) {
-            _navController.changeTab(index);
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primaryPalette[900],
-          unselectedItemColor: AppColors.primaryPalette[800],
-          backgroundColor: AppColors.primaryPalette[200],
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
-          items: isStudent
-              ? const [
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.homework),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
-                    label: AppStrings.homework,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.classroom),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
-                    label: AppStrings.classroom,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.community),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.community),
-                    label: AppStrings.community,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.profile),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
-                    label: AppStrings.profile,
-                  ),
-                ]
-              : const [
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.homework),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
-                    label: AppStrings.homework,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.classroom),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
-                    label: AppStrings.classroom,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.profile),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
-                    label: AppStrings.profile,
-                  ),
-                ],
+        body: _buildBody(
+          showClassDetail: showClassDetail,
+          showCommunityDetail: showCommunityDetail,
+          showClassAssignment: showClassAssignment,
+          currentTab: currentTab,
         ),
+        bottomNavigationBar: _buildBottomNav(currentTab),
       );
     });
+  }
+Widget _buildBody({
+  required bool showClassDetail,
+  required bool showCommunityDetail,
+  required bool showClassAssignment,
+  required int currentTab,
+}) {
+  return KeyedSubtree(
+    key: ValueKey(currentTab), // 🔥 สำคัญมาก
+    child: Builder(
+      builder: (_) {
+        // TAB 1
+        if (currentTab == 1) {
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) {
+              final isShowingDetail = child is ClassDetailPage;
+              return _slideTransition(
+                child,
+                animation,
+                isForward: isShowingDetail,
+              );
+            },
+            child: showClassDetail
+                ? const ClassDetailPage(key: ValueKey('classDetail'))
+                : const ClassesPage(key: ValueKey('classesPage')),
+          );
+        }
+
+        // TAB 2
+        if (currentTab == 2 && isStudent) {
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) {
+              final isShowingDetail = child is CommunityDetailPage;
+              return _slideTransition(
+                child,
+                animation,
+                isForward: isShowingDetail,
+              );
+            },
+            child: showCommunityDetail
+                ? const CommunityDetailPage(key: ValueKey('communityDetail'))
+                : const CommuPage(key: ValueKey('communityPage')),
+          );
+        }
+
+        // TAB 0 & others
+        return _getPageForIndex(currentTab);
+      },
+    ),
+  );
+}
+  // return type เป็น Widget? เพื่อให้ return null ได้
+  Widget? _buildBottomNav(int currentTab) {
+    // ClassAssignmentPage มี nav bar ของตัวเอง → return null
+    // เพื่อให้ Scaffold ของ MainPage ไม่ consume MediaQuery.padding.bottom
+    if (_navController.isShowingClassAssignment.value && currentTab == 0) {
+      return null;
+    }
+
+    return BottomNavigationBar(
+      currentIndex: currentTab,
+      onTap: (index) {
+        _navController.changeTab(index);
+        setState(() => _selectedIndex = index);
+      },
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: AppColors.primaryPalette[900],
+      unselectedItemColor: AppColors.primaryPalette[800],
+      backgroundColor: AppColors.primaryPalette[200],
+      selectedFontSize: 12,
+      unselectedFontSize: 12,
+      items: isStudent
+          ? const [
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.homework),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
+                label: AppStrings.homework,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.classroom),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
+                label: AppStrings.classroom,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.community),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.community),
+                label: AppStrings.community,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.profile),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
+                label: AppStrings.profile,
+              ),
+            ]
+          : const [
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.homework),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
+                label: AppStrings.homework,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.classroom),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
+                label: AppStrings.classroom,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.profile),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
+                label: AppStrings.profile,
+              ),
+            ],
+    );
   }
 }

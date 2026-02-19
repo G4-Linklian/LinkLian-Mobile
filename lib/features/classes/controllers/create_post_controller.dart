@@ -9,14 +9,19 @@ import '../../../core/services/api_client.dart';
 import '../controllers/class_feed_controller.dart';
 import '../../../data/model/post_model.dart';
 
-enum CreatePostSource { classFeed, classDetail }
+enum CreatePostSource { 
+  classFeed,        
+  assignmentFeed,   
+  classDetail,      
+  classAssignment,  
+}
 
 enum CreatePostMode { create, edit }
 
 enum ClosePostAction {
-  closeImmediately, // ปิดได้เลย
-  confirmDiscardEdit, // แก้ไขอยู่
-  confirmDiscardCreate, // กำลังสร้างโพสต์
+  closeImmediately, 
+  confirmDiscardEdit, 
+  confirmDiscardCreate, 
 }
 
 class CreatePostController extends GetxController {
@@ -29,7 +34,7 @@ class CreatePostController extends GetxController {
   final RxBool isPostTypeLocked = false.obs;
   final RxBool isUploading = false.obs;
 
-  CreatePostSource source = CreatePostSource.classFeed; // Not late
+  CreatePostSource source = CreatePostSource.classFeed;
 
   int? fromSectionId;
 
@@ -52,7 +57,7 @@ class CreatePostController extends GetxController {
 
   final RxBool isLoading = false.obs;
   final isSectionLocked = false.obs;
-  final RxList<String> uploadWarnings = <String>[].obs; // เพิ่ม warnings list
+  final RxList<String> uploadWarnings = <String>[].obs; 
 
   List<int> get effectiveSectionIds {
     if (selectedSectionIds.isEmpty) {
@@ -76,25 +81,21 @@ class CreatePostController extends GetxController {
     return ClosePostAction.closeImmediately;
   }
 
-  /// Check if user has entered any content
   bool get hasContent {
     return title.value.trim().isNotEmpty ||
         content.value.trim().isNotEmpty ||
         attachments.isNotEmpty;
   }
 
-  /// Check if there are changes from original (for edit mode)
   bool get hasChanges {
     if (mode.value != CreatePostMode.edit) return false;
 
-    // Compare with original values (stored when entering edit mode)
     return _originalTitle != title.value ||
         _originalContent != content.value ||
         _hasAttachmentChanges ||
         _hasAssignmentChanges;
   }
 
-  // Store original values for comparison
   String _originalTitle = '';
   String _originalContent = '';
   List<Map<String, dynamic>> _originalAttachments = [];
@@ -144,7 +145,7 @@ class CreatePostController extends GetxController {
     final args = Get.arguments as Map<String, dynamic>?;
 
     // ===== SET SOURCE (DEFAULT TO CLASS FEED) =====
-    source = CreatePostSource.classFeed; // Default
+    source = CreatePostSource.classFeed;
 
     if (args == null) {
       AppLogger.info('📝 No arguments, using default source: classFeed');
@@ -198,7 +199,6 @@ class CreatePostController extends GetxController {
       postType.value = post.postType;
       isAnonymous.value = post.isAnonymous;
 
-      // Store original values for change detection
       _originalTitle = post.title;
       _originalContent = post.content;
 
@@ -222,7 +222,7 @@ class CreatePostController extends GetxController {
                 'original_name': a.originalName ?? a.fileName ?? 'ไฟล์แนบ',
                 'file_name': a.originalName ?? a.fileName ?? 'ไฟล์แนบ',
                 'file_blob_name': a.fileBlobName,
-                'file_size': a.fileSize ?? 0, // ใช้ค่าที่มีอยู่ หรือ 0 ถ้าไม่มี
+                'file_size': a.fileSize ?? 0,
               };
             }).toList() ??
             [],
@@ -311,7 +311,6 @@ class CreatePostController extends GetxController {
           continue;
 
         try {
-          // Use HTTP HEAD request to get file size
           final response = await http.head(Uri.parse(fileUrl));
 
           if (response.statusCode == 200) {
@@ -319,7 +318,6 @@ class CreatePostController extends GetxController {
             if (contentLength != null) {
               final fileSize = int.tryParse(contentLength) ?? 0;
 
-              // Update attachment with real file size
               attachments[i] = {...attachment, 'file_size': fileSize};
 
               AppLogger.info(
@@ -373,7 +371,6 @@ class CreatePostController extends GetxController {
       effectiveTitle = content.value.trim();
     }
 
-    // ส่ง sectionIds (รองรับ multiple sections)
     return postRepository.createPost(
       sectionIds: effectiveSectionIds,
       title: effectiveTitle,
@@ -381,7 +378,6 @@ class CreatePostController extends GetxController {
       postType: postType.value,
       isAnonymous: isAnonymous.value,
       attachments: attachments,
-      // Assignment-specific fields
       dueDate: dueDate.value?.toIso8601String(),
       maxScore: maxScore.value,
       isGroup: isGroup.value,
@@ -400,7 +396,6 @@ class CreatePostController extends GetxController {
         title: title.value,
         content: content.value,
         attachments: attachments.toList(),
-        // Assignment fields (only for teacher + assignment type)
         dueDate: isTeacher && postType.value == 'assignment'
             ? dueDate.value?.toIso8601String()
             : null,
