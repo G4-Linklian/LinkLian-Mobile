@@ -45,7 +45,6 @@ class _MainPageState extends State<MainPage> {
   final AuthController _auth = Get.find<AuthController>();
   final NavigationController _navController = Get.find<NavigationController>();
 
-  // Tag ของ ClassDetailController ที่กำลัง active อยู่
   String? _activeClassDetailTag;
 
   bool get isStudent {
@@ -70,21 +69,17 @@ class _MainPageState extends State<MainPage> {
 
     _registerDependencies();
 
-    // ── Manage ClassDetailController lifecycle ────────────────────────────
-    // สร้าง controller เมื่อ showClassDetail() ถูกเรียก
-    // ลบ controller เมื่อ hideClassDetail() ถูกเรียก
-    ever(_navController.isShowingClassDetail, (bool showing) {
-      if (showing) {
-        _createClassDetailController();
-      } else {
-        _deleteClassDetailController();
-      }
+    ever<String?>(_auth.roleName, (role) {
+      if (role == null) return;
+
+      final isStudentRole =
+          role == 'high school student' || role == 'uni student';
+
+      _navController.resetForRoleChange(isStudentRole);
     });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
   // ClassDetailController lifecycle management
-  // ─────────────────────────────────────────────────────────────────────────
 
   void _createClassDetailController() {
     final args = _navController.classDetailArgs.value;
@@ -95,17 +90,14 @@ class _MainPageState extends State<MainPage> {
 
     final tag = 'class_detail_$sectionId';
 
-    // ถ้า section เดิมและ controller ยังอยู่ → ไม่ต้องสร้างใหม่
     if (_activeClassDetailTag == tag &&
         Get.isRegistered<ClassDetailController>(tag: tag)) {
       return;
     }
 
-    // ลบ controller เก่าของ section ก่อนหน้า (ถ้ามี)
     _deleteClassDetailController();
 
     _activeClassDetailTag = tag;
-    // permanent: false เพื่อให้ลบได้ด้วย Get.delete()
     Get.put(ClassDetailController(), tag: tag, permanent: false);
   }
 
@@ -116,8 +108,6 @@ class _MainPageState extends State<MainPage> {
     }
     _activeClassDetailTag = null;
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
 
   void _registerDependencies() {
     if (!Get.isRegistered<ClassFeedController>()) {
@@ -322,68 +312,69 @@ class _MainPageState extends State<MainPage> {
       );
     });
   }
-Widget _buildBody({
-  required bool showClassDetail,
-  required bool showCommunityDetail,
-  required bool showClassAssignment,
-  required int currentTab,
-}) {
-  return KeyedSubtree(
-    key: ValueKey(currentTab), // 🔥 สำคัญมาก
-    child: Builder(
-      builder: (_) {
-        // TAB 1
-        if (currentTab == 1) {
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (child, animation) {
-              final isShowingDetail = child is ClassDetailPage;
-              return _slideTransition(
-                child,
-                animation,
-                isForward: isShowingDetail,
-              );
-            },
-            child: showClassDetail
-                ? const ClassDetailPage(key: ValueKey('classDetail'))
-                : const ClassesPage(key: ValueKey('classesPage')),
-          );
-        }
 
-        // TAB 2
-        if (currentTab == 2 && isStudent) {
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (child, animation) {
-              final isShowingDetail = child is CommunityDetailPage;
-              return _slideTransition(
-                child,
-                animation,
-                isForward: isShowingDetail,
-              );
-            },
-            child: showCommunityDetail
-                ? const CommunityDetailPage(key: ValueKey('communityDetail'))
-                : const CommuPage(key: ValueKey('communityPage')),
-          );
-        }
+  Widget _buildBody({
+    required bool showClassDetail,
+    required bool showCommunityDetail,
+    required bool showClassAssignment,
+    required int currentTab,
+  }) {
+    return KeyedSubtree(
+      key: ValueKey(currentTab),
+      child: Builder(
+        builder: (_) {
+          // TAB 1
+          if (currentTab == 1) {
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                final isShowingDetail = child is ClassDetailPage;
+                return _slideTransition(
+                  child,
+                  animation,
+                  isForward: isShowingDetail,
+                );
+              },
+              child: showClassDetail
+                  ? const ClassDetailPage(key: ValueKey('classDetail'))
+                  : const ClassesPage(key: ValueKey('classesPage')),
+            );
+          }
 
-        // TAB 0 & others
-        return _getPageForIndex(currentTab);
-      },
-    ),
-  );
-}
-  // return type เป็น Widget? เพื่อให้ return null ได้
+          // TAB 2
+          if (currentTab == 2 && isStudent) {
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                final isShowingDetail = child is CommunityDetailPage;
+                return _slideTransition(
+                  child,
+                  animation,
+                  isForward: isShowingDetail,
+                );
+              },
+              child: showCommunityDetail
+                  ? const CommunityDetailPage(key: ValueKey('communityDetail'))
+                  : const CommuPage(key: ValueKey('communityPage')),
+            );
+          }
+
+          // TAB 0 & others
+          return _getPageForIndex(currentTab);
+        },
+      ),
+    );
+  }
+
   Widget? _buildBottomNav(int currentTab) {
-    // ClassAssignmentPage มี nav bar ของตัวเอง → return null
-    // เพื่อให้ Scaffold ของ MainPage ไม่ consume MediaQuery.padding.bottom
     if (_navController.isShowingClassAssignment.value && currentTab == 0) {
       return null;
     }
+    final maxIndex = isStudent ? 3 : 2;
+    final safeIndex = currentTab > maxIndex ? 1 : currentTab;
 
     return BottomNavigationBar(
-      currentIndex: currentTab,
+      currentIndex: safeIndex,
       onTap: (index) {
         _navController.changeTab(index);
         setState(() => _selectedIndex = index);
