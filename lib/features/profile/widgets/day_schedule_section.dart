@@ -25,7 +25,6 @@ class DayScheduleSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // แถบวัน
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Container(
@@ -45,7 +44,6 @@ class DayScheduleSection extends StatelessWidget {
           ),
         ),
 
-        // แสดงตารางสอนแต่ละคาบ 
         Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -56,10 +54,7 @@ class DayScheduleSection extends StatelessWidget {
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(8),
                   // border: Border.all(color: Colors.grey.shade200),
-                  border: Border.all(
-                    color: color.withOpacity(0.3),
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: color.withOpacity(0.3), width: 1.5),
                   boxShadow: [
                     BoxShadow(
                       color: color.withOpacity(0.15),
@@ -71,13 +66,11 @@ class DayScheduleSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // เนื้อหา
                     Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ชื่อวิชา
                           Text(
                             s.subjectName,
                             style: const TextStyle(
@@ -88,12 +81,11 @@ class DayScheduleSection extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
 
-                          // เวลาและห้องเรียน
                           Row(
                             children: [
                               Expanded(
                                 child: Text(
-                                  '${s.startTime} - ${s.endTime}',
+                                  '${_formatTime(s.startTime)} - ${_formatTime(s.endTime)}',
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: Colors.black54,
@@ -113,7 +105,6 @@ class DayScheduleSection extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
 
-                          // ห้องเรียน
                           Row(
                             children: [
                               const Icon(
@@ -176,25 +167,34 @@ class DayScheduleSection extends StatelessWidget {
     return days[day] ?? '';
   }
 
+  String _formatTime(String time) {
+    final parts = time.split(':');
+    if (parts.length < 2) return time;
+
+    final hour = parts[0].padLeft(2, '0');
+    final minute = parts[1].padLeft(2, '0');
+
+    return '$hour:$minute';
+  }
 }
 
 /// สีประจำวัน
 Color dayColor(int day) {
   switch (day) {
     case 1:
-      return Colors.yellow.shade700; 
+      return Colors.yellow.shade700;
     case 2:
-      return Colors.pink.shade300; 
+      return Colors.pink.shade300;
     case 3:
-      return Colors.green.shade400; 
+      return Colors.green.shade400;
     case 4:
-      return Colors.orange.shade400; 
+      return Colors.orange.shade400;
     case 5:
-      return Colors.blue.shade400; 
+      return Colors.blue.shade400;
     case 6:
-      return Colors.purple.shade300; 
+      return Colors.purple.shade300;
     case 7:
-      return Colors.red.shade400; 
+      return Colors.red.shade400;
     default:
       return Colors.grey;
   }
