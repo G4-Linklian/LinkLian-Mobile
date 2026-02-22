@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:LinkLian/data/repository/community_bookmark_repository.dart';
+import 'package:LinkLian/features/profile/controllers/bookmark_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:get/get.dart';
@@ -71,25 +72,25 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
   }
 
   Future<void> _loadBookmarkStatus() async {
-  try {
-    final status =
-        await _bookmarkRepo.checkBookmark(widget.post.postId);
+    try {
+      final status = await _bookmarkRepo.checkBookmark(widget.post.postId);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isBookmarked = status;
-    });
-  } catch (e) {
-    debugPrint("Bookmark load error: $e");
+      setState(() {
+        _isBookmarked = status;
+      });
+    } catch (e) {
+      debugPrint("Bookmark load error: $e");
+    }
   }
-}
 
   void _openComment() {
     Get.toNamed(
       AppRoutes.communityComment,
       arguments: {
         'postCommuId': widget.post.postId,
+        'communityId': widget.post.communityId,
         'postCardWidget': widget,
         'userSysId': Get.find<AuthController>().userId.value,
       },
@@ -293,10 +294,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       // No URLs, show plain text
       return Text(
         content,
-        style: TextStyle(
-          fontSize: 15,
-          color: AppColors.black.withOpacity(0.8),
-        ),
+        style: TextStyle(fontSize: 15, color: AppColors.black.withOpacity(0.8)),
         maxLines: maxLines,
         overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
       );
@@ -309,61 +307,70 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     for (final match in matches) {
       // Add text before the URL
       if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: content.substring(lastEnd, match.start),
-          style: TextStyle(
-            fontSize: 15,
-            color: AppColors.black.withOpacity(0.8),
+        spans.add(
+          TextSpan(
+            text: content.substring(lastEnd, match.start),
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.black.withOpacity(0.8),
+            ),
           ),
-        ));
+        );
       }
 
       // Add clickable URL
       final url = match.group(0)!;
-      spans.add(TextSpan(
-        text: url,
-        style: TextStyle(
-          fontSize: 15,
-          color: AppColors.primaryPalette[600],
-          decoration: TextDecoration.underline,
-          decorationColor: AppColors.primaryPalette[600],
-        ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () async {
-            debugPrint('🔗 Tapped link in content: $url');
-            try {
-              final uri = Uri.parse(url);
-              final launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
-              if (!launched) {
+      spans.add(
+        TextSpan(
+          text: url,
+          style: TextStyle(
+            fontSize: 15,
+            color: AppColors.primaryPalette[600],
+            decoration: TextDecoration.underline,
+            decorationColor: AppColors.primaryPalette[600],
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () async {
+              debugPrint('🔗 Tapped link in content: $url');
+              try {
+                final uri = Uri.parse(url);
+                final launched = await launchUrl(
+                  uri,
+                  mode: LaunchMode.platformDefault,
+                );
+                if (!launched) {
+                  Get.snackbar(
+                    'ไม่สามารถเปิดลิงก์ได้',
+                    url,
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                }
+              } catch (e) {
+                debugPrint('❌ Error opening link: $e');
                 Get.snackbar(
                   'ไม่สามารถเปิดลิงก์ได้',
-                  url,
+                  'กรุณาลองใหม่อีกครั้ง',
                   snackPosition: SnackPosition.BOTTOM,
                 );
               }
-            } catch (e) {
-              debugPrint('❌ Error opening link: $e');
-              Get.snackbar(
-                'ไม่สามารถเปิดลิงก์ได้',
-                'กรุณาลองใหม่อีกครั้ง',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            }
-          },
-      ));
+            },
+        ),
+      );
 
       lastEnd = match.end;
     }
 
     // Add remaining text after last URL
     if (lastEnd < content.length) {
-      spans.add(TextSpan(
-        text: content.substring(lastEnd),
-        style: TextStyle(
-          fontSize: 15,
-          color: AppColors.black.withOpacity(0.8),
+      spans.add(
+        TextSpan(
+          text: content.substring(lastEnd),
+          style: TextStyle(
+            fontSize: 15,
+            color: AppColors.black.withOpacity(0.8),
+          ),
         ),
-      ));
+      );
     }
 
     return RichText(
@@ -426,7 +433,8 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                     ),
                   ),
 
-                if (hasMultiple && _currentAttachmentIndex < attachments.length - 1)
+                if (hasMultiple &&
+                    _currentAttachmentIndex < attachments.length - 1)
                   Positioned(
                     right: 8,
                     top: 0,
@@ -514,10 +522,10 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           : null,
       onNext: _currentAttachmentIndex < totalCount - 1
           ? () => setState(() {
-                _currentAttachmentIndex++;
-                _localPdfPath = null;
-                _pdfLoadFailed = false;
-              })
+              _currentAttachmentIndex++;
+              _localPdfPath = null;
+              _pdfLoadFailed = false;
+            })
           : null,
     );
   }
@@ -608,10 +616,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
             const SizedBox(height: 8),
             Text(
               'ไม่สามารถโหลด PDF ได้',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -677,8 +682,10 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     if (type.contains('image')) return Icons.image;
     if (type.contains('video')) return Icons.video_file;
     if (type.contains('word') || type.contains('doc')) return Icons.description;
-    if (type.contains('excel') || type.contains('xls')) return Icons.table_chart;
-    if (type.contains('powerpoint') || type.contains('ppt')) return Icons.slideshow;
+    if (type.contains('excel') || type.contains('xls'))
+      return Icons.table_chart;
+    if (type.contains('powerpoint') || type.contains('ppt'))
+      return Icons.slideshow;
     return Icons.insert_drive_file;
   }
 
@@ -753,17 +760,16 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     );
   }
 
-//   void _onEditPost() {
-//   Get.toNamed(
-//     AppRoutes.createCommunityPost,
-//     arguments: {
-//       'isEdit': true,
-//       'post': widget.post,
-//     },
-//   );
-// }
+  //   void _onEditPost() {
+  //   Get.toNamed(
+  //     AppRoutes.createCommunityPost,
+  //     arguments: {
+  //       'isEdit': true,
+  //       'post': widget.post,
+  //     },
+  //   );
+  // }
 
-  
   // void _onDeletePost() async {
   //   final confirm = await Get.dialog<bool>(
   //     AlertDialog(
@@ -789,13 +795,13 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   //   try {
   //     await CommunityPostRepository().deletePost(postId: widget.post.postId);
-      
+
   //     DialogHelper.showNotification(
   //       title: 'ลบโพสต์สำเร็จ',
   //       message: 'โพสต์ถูกลบเรียบร้อยแล้ว',
   //       type: NotificationType.success,
   //     );
-      
+
   //     Get.back(); // Go back after successful deletion
   //   } catch (e) {
   //     DialogHelper.showNotification(
@@ -851,29 +857,41 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
   }
 
   void _toggleBookmark() async {
-  if (_isBookmarkLoading) return;
+    if (_isBookmarkLoading) return;
 
-  setState(() => _isBookmarkLoading = true);
+    setState(() => _isBookmarkLoading = true);
 
-  try {
-    final result = await _bookmarkRepo
-        .toggleBookmark(postId: widget.post.postId);
+    try {
+      final result = await _bookmarkRepo.toggleBookmark(
+        postId: widget.post.postId,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isBookmarked = result['action'] == 'created';
-    });
-  } catch (e) {
-    DialogHelper.showErrorDialog(
-      description: "ไม่สามารถบันทึกได้",
-    );
-  } finally {
-    if (mounted) {
-      setState(() => _isBookmarkLoading = false);
+      final action = result['action'];
+
+      setState(() {
+        _isBookmarked = action == 'created';
+      });
+      if (Get.isRegistered<BookmarkController>()) {
+        Get.find<BookmarkController>().loadCommunityBookmarks();
+      }
+
+      DialogHelper.showNotification(
+        title: 'สำเร็จ',
+        message: action == 'created'
+            ? 'บันทึกโพสต์เรียบร้อยแล้ว'
+            : 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
+        type: NotificationType.success,
+      );
+    } catch (e) {
+      DialogHelper.showErrorDialog(description: "ไม่สามารถบันทึกได้");
+    } finally {
+      if (mounted) {
+        setState(() => _isBookmarkLoading = false);
+      }
     }
   }
-}
 
   void _openFileFullscreen(CommunityAttachmentModel file) {
     Get.to(
@@ -887,9 +905,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     try {
       // Show loading dialog
       Get.dialog(
-        const Center(
-          child: CircularProgressIndicator(),
-        ),
+        const Center(child: CircularProgressIndicator()),
         barrierDismissible: false,
       );
 
@@ -917,9 +933,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       if (Platform.isIOS) {
         // iOS: Use Share Sheet to let user save file
         try {
-          final result = await Share.shareXFiles(
-            [XFile(filePath)],
-          );
+          final result = await Share.shareXFiles([XFile(filePath)]);
 
           if (result.status == ShareResultStatus.success) {
             Get.snackbar(
@@ -969,7 +983,8 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           final nameWithoutExt = nameParts.length > 1
               ? nameParts.sublist(0, nameParts.length - 1).join('.')
               : fileName;
-          finalPath = '${downloadsDir.path}/$nameWithoutExt ($counter)${extension.isNotEmpty ? '.$extension' : ''}';
+          finalPath =
+              '${downloadsDir.path}/$nameWithoutExt ($counter)${extension.isNotEmpty ? '.$extension' : ''}';
           counter++;
         }
 
@@ -1125,7 +1140,8 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           child: Image.network(
             widget.file.fileUrl,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => _buildErrorState('ไม่สามารถโหลดรูปภาพได้'),
+            errorBuilder: (_, __, ___) =>
+                _buildErrorState('ไม่สามารถโหลดรูปภาพได้'),
           ),
         ),
       );
@@ -1389,17 +1405,17 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                           child: CircularProgressIndicator(strokeWidth: 1.5),
                         )
                       : _metadata?.image != null && _metadata!.image!.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: const BorderRadius.horizontal(
-                                left: Radius.circular(8),
-                              ),
-                              child: Image.network(
-                                _metadata!.image!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _buildLinkIcon(),
-                              ),
-                            )
-                          : _buildLinkIcon(),
+                      ? ClipRRect(
+                          borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(8),
+                          ),
+                          child: Image.network(
+                            _metadata!.image!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _buildLinkIcon(),
+                          ),
+                        )
+                      : _buildLinkIcon(),
                 ),
 
                 // Title & URL

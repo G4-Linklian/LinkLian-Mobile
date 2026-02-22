@@ -60,6 +60,11 @@ class CommunityDetailController extends GetxController {
     scrollController.addListener(_onScroll);
   }
 
+  void initFromOutside(int id) async {
+    communityId = id;
+    await loadDetail();
+  }
+
   void _onScroll() {
     if (scrollController.position.pixels >=
         scrollController.position.maxScrollExtent - 200) {

@@ -28,8 +28,12 @@ class CommunityPostModel {
   @JsonKey(fromJson: _attachmentsFromJson)
   final List<CommunityAttachmentModel> attachments;
 
+  @JsonKey(name: 'community_id', fromJson: _intFromJson)
+final int communityId;
+
   const CommunityPostModel({
     required this.postId,
+    required this.communityId,
     required this.userId, 
     required this.content,
     required this.createdAt,

@@ -1,39 +1,59 @@
-// import 'package:flutter/material.dart';
-// import '../../../data/model/community_bookmark_model.dart';
+import 'package:LinkLian/features/community/widgets/community_card_post.dart';
+import 'package:flutter/material.dart';
+import '../../../data/repository/community_bookmark_repository.dart';
+import '../../../data/model/community_post_model.dart';
 
-// class CommunityBookmarkCard extends StatelessWidget {
-//   final CommunityBookmarkModel item;
+class BookmarkCommunityPage extends StatefulWidget {
+  const BookmarkCommunityPage({super.key});
 
-//   const CommunityBookmarkCard({super.key, required this.item});
+  @override
+  State<BookmarkCommunityPage> createState() => _BookmarkCommunityPageState();
+}
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       margin: const EdgeInsets.only(bottom: 12),
-//       padding: const EdgeInsets.all(12),
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(12),
-//         border: Border.all(color: Colors.grey.shade200),
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Text(
-//             item.creatorName,
-//             style: const TextStyle(
-//               fontWeight: FontWeight.bold,
-//               fontSize: 14,
-//             ),
-//           ),
-//           const SizedBox(height: 6),
-//           Text(
-//             item.content,
-//             maxLines: 2,
-//             overflow: TextOverflow.ellipsis,
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+class _BookmarkCommunityPageState extends State<BookmarkCommunityPage> {
+  final _repo = CommunityBookmarkRepository();
+
+  List<CommunityPostModel> _posts = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookmarks();
+  }
+
+  Future<void> _loadBookmarks() async {
+    try {
+      final result = await _repo.getMyBookmarks();
+
+      setState(() {
+        _posts = result;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_posts.isEmpty) {
+      return const Scaffold(body: Center(child: Text("ยังไม่มีบุ๊กมาร์ก")));
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("บุ๊กมาร์ก")),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _posts.length,
+        itemBuilder: (context, index) {
+          return CardPostCommunity(post: _posts[index]);
+        },
+      ),
+    );
+  }
+}

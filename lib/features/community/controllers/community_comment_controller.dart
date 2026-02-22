@@ -1,3 +1,4 @@
+import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -45,6 +46,11 @@ class CommunityCommentController extends GetxController {
     postCommuId = args['postCommuId'];
     postCardWidget = args['postCardWidget'];
     userSysId = args['userSysId'];
+
+    final int communityId = args['communityId'];
+
+    final detailController = Get.find<CommunityDetailController>();
+    detailController.initFromOutside(communityId);
 
     loadComments();
   }
