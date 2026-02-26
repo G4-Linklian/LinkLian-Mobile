@@ -24,11 +24,13 @@ import '../../auth/controller/auth_controller.dart';
 class CardPostCommunity extends StatefulWidget {
   final CommunityPostModel post;
   final String? highlightKeyword;
+  final bool showMoreButton;
 
   const CardPostCommunity({
     super.key,
     required this.post,
     this.highlightKeyword,
+    this.showMoreButton = true,
   });
 
   @override
@@ -160,7 +162,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                           ],
                         ),
                       ),
-                      _buildMoreButton(context),
+                      if (widget.showMoreButton) _buildMoreButton(context),
                     ],
                   ),
 

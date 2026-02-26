@@ -144,7 +144,7 @@ class BookmarkSwitcher extends GetView<BookmarkController> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Column(
                 children: controller.communityBookmarks
-                    .map((post) => CardPostCommunity(post: post))
+                    .map((post) => CardPostCommunity(post: post,showMoreButton: false,))
                     .toList(),
               ),
             );

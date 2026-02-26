@@ -51,7 +51,7 @@ class _BookmarkCommunityPageState extends State<BookmarkCommunityPage> {
         padding: const EdgeInsets.all(16),
         itemCount: _posts.length,
         itemBuilder: (context, index) {
-          return CardPostCommunity(post: _posts[index]);
+          return CardPostCommunity(post: _posts[index],showMoreButton: false,);
         },
       ),
     );
