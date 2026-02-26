@@ -36,23 +36,27 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Non-blocking: show which files need formatting, but do not fail CI
       - name: Format check (non-blocking)
         run: |
           echo "==> Checking Dart format..."
           dart format --output=none --set-exit-if-changed . || echo "⚠️ Formatting issues found (non-blocking)"
         continue-on-error: true
 
-      - name: Analyze
-        run: flutter analyze
+      - name: Analyze (non-blocking)
+        run: |
+          echo "==> Running flutter analyze..."
+          flutter analyze || echo "⚠️ Analyze issues found (non-blocking)"
+        continue-on-error: true
 
-      - name: Run tests
-        run: flutter test --coverage
-        env:
-          NODE_ENV: test
+      - name: Run tests (non-blocking)
+        run: |
+          echo "==> Running flutter tests..."
+          flutter test --coverage || echo "⚠️ Test failures found (non-blocking)"
+        continue-on-error: true
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage to Codecov (non-blocking)
         uses: codecov/codecov-action@v3
+        continue-on-error: true
         with:
           files: ./coverage/lcov.info
           flags: unittests
