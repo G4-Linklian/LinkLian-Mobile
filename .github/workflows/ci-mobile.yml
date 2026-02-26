@@ -2,14 +2,10 @@ name: LINKLIAN-MOBILE CI
 
 on:
   pull_request:
-    branches: ["main", "staging"]
+    branches: [main, staging]
   push:
-    branches: ["main", "staging"]
+    branches: [main, staging]
   workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: read
 
 jobs:
   mobile-ci:
@@ -49,7 +45,24 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
 
-      - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
         with:
-          args: detect --redact --no-git
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  secret-scan:
+    name: Secret Scan (gitleaks)
+    needs: [mobile-ci]
+    runs-on: ubuntu-latest
+  
+    steps:
+      - uses: actions/checkout@v4
+  
+      - name: Run Gitleaks (Free CLI)
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/repo \
+            zricethezav/gitleaks:latest \
+            detect --source=/repo --verbose --redact --exit-code 1
