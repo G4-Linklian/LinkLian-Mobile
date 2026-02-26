@@ -3,9 +3,21 @@ name: LINKLIAN-MOBILE CI
 on:
   pull_request:
     branches: [main, staging]
+    paths:
+      - "**"
   push:
     branches: [main, staging]
+    paths:
+      - "**"
   workflow_dispatch:
+
+concurrency:
+  group: ci-mobile-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
 
 jobs:
   mobile-ci:
@@ -14,47 +26,35 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
           cache: gradle
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Flutter doctor
-        run: flutter doctor -v
-
-      - name: Install dependencies
-        run: flutter pub get
+      - run: flutter doctor -v
+      - run: flutter pub get
 
       - name: Format check (non-blocking)
-        run: |
-          echo "==> Checking Dart format..."
-          dart format --output=none --set-exit-if-changed . || echo "⚠️ Formatting issues found (non-blocking)"
         continue-on-error: true
+        run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze (non-blocking)
-        run: |
-          echo "==> Running flutter analyze..."
-          flutter analyze || echo "⚠️ Analyze issues found (non-blocking)"
         continue-on-error: true
+        run: flutter analyze
 
       - name: Run tests (non-blocking)
-        run: |
-          echo "==> Running flutter tests..."
-          flutter test --coverage || echo "⚠️ Test failures found (non-blocking)"
         continue-on-error: true
+        run: flutter test --coverage
 
-      - name: Upload coverage to Codecov (non-blocking)
+      - name: Upload coverage (non-blocking)
         uses: codecov/codecov-action@v3
         continue-on-error: true
         with:
@@ -64,17 +64,29 @@ jobs:
 
   secret-scan:
     name: Secret Scan (gitleaks)
+    runs-on: ubuntu-latest
     needs: [mobile-ci]
     if: always()
-    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Run Gitleaks (Free CLI)
+      - name: Run Gitleaks (SARIF)
+        continue-on-error: true
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/repo \
+            -v "${{ github.workspace }}:/repo" \
             zricethezav/gitleaks:latest \
-            detect --source=/repo --verbose --redact --exit-code 1
+            detect \
+              --source=/repo \
+              --redact \
+              --verbose \
+              --report-format=sarif \
+              --report-path=/repo/gitleaks.sarif \
+              --exit-code 1
+
+      - name: Upload Gitleaks SARIF
+        if: ${{ always() && hashFiles('gitleaks.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: gitleaks.sarif
