@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/data/model/community_attachment_model.dart';
 import 'package:LinkLian/data/repository/profile_repository.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +29,8 @@ class CreatePostCommunityController extends GetxController {
   final RxList<Map<String, dynamic>> filesPreviews =
       <Map<String, dynamic>>[].obs;
 
+  final RxList<CommunityAttachmentModel> existingAttachments =
+    <CommunityAttachmentModel>[].obs;
   late int communityId;
 
   @override
@@ -47,6 +51,26 @@ class CreatePostCommunityController extends GetxController {
         final post = args['post'];
         editingPostId = post.postId;
         contentController.text = post.content;
+        userProfileImage.value = post.profilePic ?? '';
+  userFullName.value = "${post.firstName} ${post.lastName}";
+    //     for (var att in post.attachments) {
+    // existingAttachments.add({
+    //   'url': att.fileUrl,
+    //   'type': att.fileType,
+    //   'original_name': att.originalName,
+    // });
+    for (var att in post.attachments) {
+  existingAttachments.add(att);
+
+    filesPreviews.add({
+      'file_type': att.fileType,
+      'file_url': att.fileUrl,
+      'file_name': att.originalName,
+      'is_existing': true,
+      'is_uploading': false,
+    });
+  }
+
       }
     } else {
       communityId = 0;
@@ -62,8 +86,6 @@ class CreatePostCommunityController extends GetxController {
       if (file == null) {
         return;
       }
-
-      debugPrint('📸 Image selected: ${file.path}');
 
       final imageFile = File(file.path);
       selectedFiles.add(imageFile);
@@ -96,8 +118,6 @@ class CreatePostCommunityController extends GetxController {
         return;
       }
 
-      debugPrint('📸 Photo taken: ${file.path}');
-
       final imageFile = File(file.path);
       selectedFiles.add(imageFile);
 
@@ -123,7 +143,6 @@ class CreatePostCommunityController extends GetxController {
 
   Future<void> uploadFiles(List<File> files) async {
     try {
-      debugPrint('📎 Adding ${files.length} files...');
 
       for (final file in files) {
         selectedFiles.add(file);
@@ -141,7 +160,7 @@ class CreatePostCommunityController extends GetxController {
         await _simulateUpload(previewIndex);
       }
     } catch (e) {
-      debugPrint('❌ Add files error: $e');
+      AppLogger.info('[community]Add files error: $e');
     }
   }
 
@@ -162,8 +181,6 @@ class CreatePostCommunityController extends GetxController {
       filesPreviews[index]['upload_progress'] = 1.0;
       filesPreviews.refresh();
     }
-
-    debugPrint('✅ Upload completed for file at index $index');
   }
 
   void addLink(String url) {
@@ -189,32 +206,51 @@ class CreatePostCommunityController extends GetxController {
       'upload_progress': 1.0,
     });
 
-    debugPrint('🔗 Link added: $url');
   }
 
+  // void removeAttachment(int index) {
+  //   if (index < 0 || index >= filesPreviews.length) {
+  //     return;
+  //   }
+
+  //   final preview = filesPreviews[index];
+
+  //   if (preview['is_uploading'] == true) {
+  //     DialogHelper.showNotification(
+  //       title: 'กรุณารอสักครู่',
+  //       message: 'กำลังอัปโหลดไฟล์อยู่ กรุณารอให้เสร็จก่อน',
+  //       type: NotificationType.warning,
+  //     );
+  //     return;
+  //   }
+
+  //   if (preview['file_type'] != 'link') {
+  //     final filePath = preview['file_path'];
+  //     selectedFiles.removeWhere((file) => file.path == filePath);
+  //   }
+
+  //   filesPreviews.removeAt(index);
+  // }
   void removeAttachment(int index) {
-    if (index < 0 || index >= filesPreviews.length) {
-      return;
-    }
+  if (index < 0 || index >= filesPreviews.length) return;
 
-    final preview = filesPreviews[index];
+  final preview = filesPreviews[index];
 
-    if (preview['is_uploading'] == true) {
-      DialogHelper.showNotification(
-        title: 'กรุณารอสักครู่',
-        message: 'กำลังอัปโหลดไฟล์อยู่ กรุณารอให้เสร็จก่อน',
-        type: NotificationType.warning,
-      );
-      return;
-    }
-
-    if (preview['file_type'] != 'link') {
-      final filePath = preview['file_path'];
-      selectedFiles.removeWhere((file) => file.path == filePath);
-    }
-
-    filesPreviews.removeAt(index);
+  if (preview['is_existing'] == true) {
+    // existingAttachments.removeWhere(
+    //   (e) => e['url'] == preview['file_url'],
+    // );
+    existingAttachments.removeWhere(
+  (e) => e.fileUrl == preview['file_url'],
+);
+  } 
+  else if (preview['file_type'] != 'link') {
+    final filePath = preview['file_path'];
+    selectedFiles.removeWhere((file) => file.path == filePath);
   }
+
+  filesPreviews.removeAt(index);
+}
 
   Future<void> submitPost() async {
     final content = contentController.text.trim();
@@ -237,17 +273,71 @@ class CreatePostCommunityController extends GetxController {
         ? "$content\n${links.join("\n")}"
         : content;
 
-    print("🧠 FULL CONTENT:");
-    print(fullContent);
+    try {
+      isSubmitting.value = true;
 
-    await _repo.createPost(
-      communityId: communityId,
-      content: fullContent,
-      files: selectedFiles.isNotEmpty ? selectedFiles : null,
-    );
+      if (isEditMode.value && editingPostId != null) {
+        final updatedPost = await _repo.updatePost(
+  postId: editingPostId!,
+  content: fullContent,
+  files: selectedFiles.isNotEmpty ? selectedFiles : null,
+  keepAttachments: existingAttachments.toList(),
+);
 
-    Get.back(result: true);
+        Get.back(result: updatedPost);
+      } else {
+        final newPost = await _repo.createPost(
+          communityId: communityId,
+          content: fullContent,
+          files: selectedFiles.isNotEmpty ? selectedFiles : null,
+        );
+
+        Get.back(result: newPost);
+      }
+    } catch (e) {
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่สามารถบันทึกโพสต์ได้\n$e',
+        type: NotificationType.error,
+      );
+    } finally {
+      isSubmitting.value = false;
+    }
   }
+
+  // Future<void> submitPost() async {
+  //   final content = contentController.text.trim();
+
+  //   final links = filesPreviews
+  //       .where((e) => e['file_type'] == 'link')
+  //       .map((e) => e['file_url'] as String)
+  //       .toList();
+
+  //   if (content.isEmpty && links.isEmpty) {
+  //     DialogHelper.showNotification(
+  //       title: 'กรุณากรอกข้อความ',
+  //       message: 'โปรดพิมพ์ข้อความหรือแนบลิงก์ก่อนโพสต์',
+  //       type: NotificationType.warning,
+  //     );
+  //     return;
+  //   }
+
+  //   final fullContent = links.isNotEmpty
+  //       ? "$content\n${links.join("\n")}"
+  //       : content;
+
+  //   print("🧠 FULL CONTENT:");
+  //   print(fullContent);
+
+  //   await _repo.createPost(
+  //     communityId: communityId,
+  //     content: fullContent,
+  //     files: selectedFiles.isNotEmpty ? selectedFiles : null,
+  //   );
+
+  //   Get.back(result: true);
+  // }
+
   Future<void> pickImageFromGallery() async {
     try {
       final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
@@ -280,7 +370,7 @@ class CreatePostCommunityController extends GetxController {
       userProfileImage.value = profile.profilePic ?? '';
       userFullName.value = "${profile.firstName} ${profile.lastName}";
     } catch (e) {
-      debugPrint("โหลดโปรไฟล์ไม่สำเร็จ: $e");
+      AppLogger.info("[community]Upload file successful: $e");
     }
   }
 

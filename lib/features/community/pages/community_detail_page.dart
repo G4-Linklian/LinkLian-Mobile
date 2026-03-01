@@ -148,11 +148,16 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.md,
                     ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final post = controller.posts[index];
-                        return CardPostCommunity(post: post);
-                      }, childCount: controller.posts.length),
+                    sliver: Obx(
+                      () => SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final post = controller.posts[index];
+                          return CardPostCommunity(
+                            key: ValueKey(post.postId),
+                            post: post,
+                          );
+                        }, childCount: controller.posts.length),
+                      ),
                     ),
                   ),
               ],
@@ -288,8 +293,8 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                                     .value,
                                               },
                                             );
-                                            if (result == true) {
-                                              controller.loadDetail();
+                                            if (result != null) {
+                                              await controller.loadDetail();
                                               DialogHelper.showNotification(
                                                 title: 'โพสต์สำเร็จ',
                                                 message:

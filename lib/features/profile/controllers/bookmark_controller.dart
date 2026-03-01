@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/data/model/community_post_model.dart';
 import 'package:LinkLian/data/repository/community_bookmark_repository.dart';
 import 'package:get/get.dart';
@@ -18,7 +19,6 @@ class BookmarkController extends GetxController {
   final CommunityBookmarkRepository communityRepo =
       CommunityBookmarkRepository();
 
-  // เก็บ bookmark ทั้งหมด (แสดงใน BookmarkSwitcher)
   final bookmarks = <BookmarkModel>[].obs;
   final isToggling = false.obs;
   final bookmarkedPostIds = <int>{}.obs;
@@ -33,7 +33,6 @@ class BookmarkController extends GetxController {
 
     final auth = Get.find<AuthController>();
 
-    // ตรวจสอบเมื่อ userId เปลี่ยน
     ever<int?>(auth.userId, (userId) {
       if (userId != null) {
         _fetchBookmarks(userId);
@@ -43,13 +42,12 @@ class BookmarkController extends GetxController {
       }
     });
 
-    // โหลด bookmark ครั้งแรก
     if (auth.userId.value != null) {
       _fetchBookmarks(auth.userId.value!);
     }
   }
 
-  /// ดึงข้อมูล bookmark จาก backend
+
   Future<void> _fetchBookmarks(int userId) async {
     try {
       loading.value = true;
@@ -97,7 +95,6 @@ class BookmarkController extends GetxController {
     final wasBookmarked = isBookmarked(postId);
 
     try {
-      // Optimistic update - อัปเดต UI ก่อน
       if (wasBookmarked) {
         bookmarkedPostIds.remove(postId);
         bookmarks.removeWhere((b) => b.postId == postId);
@@ -105,30 +102,23 @@ class BookmarkController extends GetxController {
         bookmarkedPostIds.add(postId);
       }
 
-      // เรียก API
       final result = await repo.createBookmark(userId: userId, postId: postId);
 
-      // ตรวจสอบ response
       if (result['success'] != true) {
         throw Exception(result['message'] ?? 'Unknown error');
       }
 
-      final action = result['data']['action']; // 'created' หรือ 'removed'
+      final action = result['data']['action']; 
 
       if (action == 'created') {
-        // สร้าง bookmark สำเร็จ
-        print('✅ Bookmark created for post $postId');
         DialogHelper.showNotification(
           title: 'สำเร็จ',
           message: 'บันทึกโพสต์เรียบร้อยแล้ว',
           type: NotificationType.success,
         );
 
-        // Refresh bookmark list เพื่อได้ข้อมูลทั้งหมด
         await _fetchBookmarks(userId);
       } else if (action == 'removed') {
-        // ลบ bookmark สำเร็จ
-        print('✅ Bookmark removed for post $postId');
         DialogHelper.showNotification(
           title: 'สำเร็จ',
           message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
@@ -136,7 +126,6 @@ class BookmarkController extends GetxController {
         );
       }
     } catch (e) {
-      print('❌ Error toggling bookmark: $e');
 
       if (wasBookmarked) {
         bookmarkedPostIds.add(postId);
@@ -152,7 +141,6 @@ class BookmarkController extends GetxController {
     }
   }
 
-  /// ลบ bookmark จาก BookmarkSwitcher
   Future<void> removeBookmark(int postId) async {
     final auth = Get.find<AuthController>();
     final userId = auth.userId.value;
@@ -164,17 +152,14 @@ class BookmarkController extends GetxController {
       bookmarks.removeWhere((b) => b.postId == postId);
       bookmarkedPostIds.remove(postId);
 
-      // เรียก API
       await repo.deleteBookmark(userId: userId, postId: postId);
 
-      print('✅ Bookmark removed for post $postId');
       DialogHelper.showNotification(
         title: 'สำเร็จ',
         message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
         type: NotificationType.success,
       );
     } catch (e) {
-      print('❌ Error removing bookmark: $e');
 
       // Rollback
       await _fetchBookmarks(userId);
@@ -201,15 +186,15 @@ class BookmarkController extends GetxController {
       communityBookmarks.assignAll(result);
       sortCommunityBookmarks();
 
-      print("✅ Loaded ${result.length} community bookmarks");
+      AppLogger.info("[Bookmark]Loaded ${result.length} community bookmarks");
     } catch (e) {
-      print("❌ Error loading community bookmarks: $e");
+      AppLogger.info("[Bookmark]Error loading community bookmarks: $e");
     } finally {
       loading.value = false;
     }
   }
   Future<void> toggleCommunityBookmark(int postId) async {
-  if (isToggling.value) return; // 🔥 กันยิงซ้ำ
+  if (isToggling.value) return; 
 
   try {
     isToggling.value = true;

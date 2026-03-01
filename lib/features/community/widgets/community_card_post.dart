@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/data/repository/community_bookmark_repository.dart';
+import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
 import 'package:LinkLian/features/profile/controllers/bookmark_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -70,6 +72,11 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
   @override
   void initState() {
     super.initState();
+    AppLogger.info(
+      "CARD DATA -> postId: ${widget.post.postId}, "
+      "communityId: ${widget.post.communityId}",
+    );
+
     _loadBookmarkStatus();
   }
 
@@ -83,7 +90,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         _isBookmarked = status;
       });
     } catch (e) {
-      debugPrint("Bookmark load error: $e");
+      AppLogger.info("[community]Bookmark load error: $e");
     }
   }
 
@@ -101,6 +108,8 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Get.find<AuthController>();
+    final isOwner = widget.post.userId == auth.userId.value;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _openComment,
@@ -162,7 +171,9 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                           ],
                         ),
                       ),
-                      if (widget.showMoreButton) _buildMoreButton(context),
+                      // if (widget.showMoreButton) _buildMoreButton(context),
+                      if (widget.showMoreButton && isOwner)
+                        _buildMoreButton(context),
                     ],
                   ),
 
@@ -333,7 +344,6 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           ),
           recognizer: TapGestureRecognizer()
             ..onTap = () async {
-              debugPrint('🔗 Tapped link in content: $url');
               try {
                 final uri = Uri.parse(url);
                 final launched = await launchUrl(
@@ -341,18 +351,17 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                   mode: LaunchMode.platformDefault,
                 );
                 if (!launched) {
-                  Get.snackbar(
-                    'ไม่สามารถเปิดลิงก์ได้',
-                    url,
-                    snackPosition: SnackPosition.BOTTOM,
+                  DialogHelper.showNotification(
+                    title: 'ไม่สามารถเปิดลิงก์ได้',
+                    message: url,
+                    type: NotificationType.error,
                   );
                 }
               } catch (e) {
-                debugPrint('❌ Error opening link: $e');
-                Get.snackbar(
-                  'ไม่สามารถเปิดลิงก์ได้',
-                  'กรุณาลองใหม่อีกครั้ง',
-                  snackPosition: SnackPosition.BOTTOM,
+                DialogHelper.showNotification(
+                  title: 'ไม่สามารถเปิดลิงก์ได้',
+                  message: 'กรุณาลองใหม่อีกครั้ง',
+                  type: NotificationType.error,
                 );
               }
             },
@@ -591,13 +600,13 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         defaultPage: 0,
         fitPolicy: FitPolicy.BOTH,
         onRender: (pages) {
-          debugPrint('PDF rendered: $pages pages');
+          AppLogger.info('[community]PDF rendered: $pages pages');
         },
         onError: (error) {
-          debugPrint('PDF error: $error');
+          AppLogger.info('[community]PDF error: $error');
         },
         onPageError: (page, error) {
-          debugPrint('PDF page error: $page | $error');
+          AppLogger.info('[community]PDF page error: $page | $error');
         },
       ),
     );
@@ -654,7 +663,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         });
       }
     } catch (e) {
-      debugPrint('PDF download error: $e');
+      AppLogger.info('[community]PDF download error: $e');
       if (mounted) {
         setState(() {
           _isPdfLoading = false;
@@ -718,7 +727,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     if (isOwner) {
       items.add(
         PopupMenuItem(
-          // onTap: _onEditPost,
+          onTap: _onEditPost,
           child: const ListTile(
             leading: Icon(Icons.edit),
             title: Text('แก้ไขโพสต์'),
@@ -728,23 +737,13 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
       items.add(
         PopupMenuItem(
-          // onTap: _onDeletePost,
+          onTap: _onDeletePost,
           child: ListTile(
             leading: Icon(Icons.delete, color: AppColors.dangerPalette[500]),
             title: Text(
               'ลบโพสต์',
               style: TextStyle(color: AppColors.dangerPalette[700]),
             ),
-          ),
-        ),
-      );
-    } else {
-      items.add(
-        PopupMenuItem(
-          onTap: _onReportPost,
-          child: const ListTile(
-            leading: Icon(Icons.flag),
-            title: Text('รายงานโพสต์'),
           ),
         ),
       );
@@ -762,67 +761,105 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     );
   }
 
-  //   void _onEditPost() {
-  //   Get.toNamed(
-  //     AppRoutes.createCommunityPost,
+  // void _onEditPost() async {
+  //   final result = await Get.toNamed(
+  //     AppRoutes.createPostCommunity,
   //     arguments: {
   //       'isEdit': true,
   //       'post': widget.post,
+  //       'community_id': widget.post.communityId,
   //     },
   //   );
-  // }
 
-  // void _onDeletePost() async {
-  //   final confirm = await Get.dialog<bool>(
-  //     AlertDialog(
-  //       title: const Text('ยืนยันการลบ'),
-  //       content: const Text('คุณต้องการลบโพสต์นี้หรือไม่'),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Get.back(result: false),
-  //           child: const Text('ยกเลิก'),
-  //         ),
-  //         TextButton(
-  //           onPressed: () => Get.back(result: true),
-  //           child: Text(
-  //             'ลบ',
-  //             style: TextStyle(color: AppColors.dangerPalette[500]),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
+  //   if (result == true) {
+  //     final controller = Get.find<CommunityDetailController>();
 
-  //   if (confirm != true) return;
-
-  //   try {
-  //     await CommunityPostRepository().deletePost(postId: widget.post.postId);
+  //     await controller.loadDetail();
 
   //     DialogHelper.showNotification(
-  //       title: 'ลบโพสต์สำเร็จ',
-  //       message: 'โพสต์ถูกลบเรียบร้อยแล้ว',
+  //       title: 'แก้ไขสำเร็จ',
+  //       message: 'โพสต์ถูกอัปเดตแล้ว',
   //       type: NotificationType.success,
-  //     );
-
-  //     Get.back(); // Go back after successful deletion
-  //   } catch (e) {
-  //     DialogHelper.showNotification(
-  //       title: 'เกิดข้อผิดพลาด',
-  //       message: 'ไม่สามารถลบโพสต์ได้: $e',
-  //       type: NotificationType.error,
   //     );
   //   }
   // }
-
-  void _onReportPost() {
-    // TODO: Implement report post
-    debugPrint('📝 Report post: ${widget.post.postId}');
-    Get.snackbar(
-      'รายงานโพสต์',
-      'ฟีเจอร์นี้กำลังพัฒนา',
-      snackPosition: SnackPosition.BOTTOM,
+  void _onEditPost() async {
+    final result = await Get.toNamed(
+      AppRoutes.createPostCommunity,
+      arguments: {
+        'isEdit': true,
+        'post': widget.post,
+        'community_id': widget.post.communityId,
+      },
     );
+
+    if (result is CommunityPostModel) {
+      final controller = Get.find<CommunityDetailController>();
+
+      controller.updatePostInList(result);
+
+      DialogHelper.showNotification(
+        title: 'แก้ไขสำเร็จ',
+        message: 'โพสต์ถูกอัปเดตแล้ว',
+        type: NotificationType.success,
+      );
+    }
   }
+
+  void _onDeletePost() async {
+    AppLogger.info("[community]DELETE POST ID: ${widget.post.postId}");
+    AppLogger.info("[community]DELETE COMMUNITY ID: ${widget.post.communityId}");
+    final confirm = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('ยืนยันการลบ'),
+        content: const Text('คุณต้องการลบโพสต์นี้หรือไม่'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text(
+              'ลบ',
+              style: TextStyle(color: AppColors.dangerPalette[500]),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await CommunityPostRepository().deletePost(postId: widget.post.postId);
+
+      final controller = Get.find<CommunityDetailController>();
+      controller.removePost(widget.post.postId);
+
+      DialogHelper.showNotification(
+        title: 'ลบโพสต์สำเร็จ',
+        message: 'โพสต์ถูกลบเรียบร้อยแล้ว',
+        type: NotificationType.success,
+      );
+    } catch (e) {
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่สามารถลบโพสต์ได้: $e',
+        type: NotificationType.error,
+      );
+    }
+  }
+
+  // void _onReportPost() {
+  //   // TODO: Implement report post
+  //   debugPrint('📝 Report post: ${widget.post.postId}');
+  //   Get.snackbar(
+  //     'รายงานโพสต์',
+  //     'ฟีเจอร์นี้กำลังพัฒนา',
+  //     snackPosition: SnackPosition.BOTTOM,
+  //   );
+  // }
 
   // ================= PROFILE AVATAR =================
   Widget _buildProfileAvatar() {
@@ -938,22 +975,18 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           final result = await Share.shareXFiles([XFile(filePath)]);
 
           if (result.status == ShareResultStatus.success) {
-            Get.snackbar(
-              'แชร์ไฟล์สำเร็จ',
-              'คุณสามารถบันทึกไฟล์ได้แล้ว',
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(seconds: 2),
-              backgroundColor: AppColors.successPalette[100],
+            DialogHelper.showNotification(
+              title: 'แชร์ไฟล์สำเร็จ',
+              message: 'คุณสามารถบันทึกไฟล์ได้แล้ว',
+              type: NotificationType.success,
             );
           }
         } catch (e) {
           // Fallback: Show file location
-          Get.snackbar(
-            'ดาวน์โหลดสำเร็จ',
-            'ไฟล์ถูกบันทึกไว้แล้ว\n$filePath',
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(seconds: 3),
-            backgroundColor: AppColors.successPalette[100],
+          DialogHelper.showNotification(
+            title: 'ดาวน์โหลดสำเร็จ',
+            message: 'ไฟล์ถูกบันทึกไว้แล้ว',
+            type: NotificationType.success,
           );
         }
       } else {
@@ -962,10 +995,10 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         if (!status.isGranted) {
           status = await Permission.storage.request();
           if (!status.isGranted) {
-            Get.snackbar(
-              'ไม่มีสิทธิ์เข้าถึง',
-              'กรุณาอนุญาตการเข้าถึงที่เก็บข้อมูลเพื่อดาวน์โหลดไฟล์',
-              snackPosition: SnackPosition.BOTTOM,
+            DialogHelper.showNotification(
+              title: 'ไม่มีสิทธิ์เข้าถึง',
+              message: 'กรุณาอนุญาตการเข้าถึงที่เก็บข้อมูล',
+              type: NotificationType.error,
             );
             return;
           }
@@ -992,29 +1025,24 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
         await downloadedFile.copy(finalPath);
 
-        Get.snackbar(
-          'ดาวน์โหลดสำเร็จ',
-          'บันทึกไฟล์ไว้ที่: Download/$fileName',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 3),
-          backgroundColor: AppColors.successPalette[100],
+        DialogHelper.showNotification(
+          title: 'ดาวน์โหลดสำเร็จ',
+          message: 'บันทึกไฟล์ไว้ที่ Download',
+          type: NotificationType.success,
         );
       }
 
-      debugPrint('✅ File downloaded: $fileName');
     } catch (e) {
       // Close loading if still open
       if (Get.isDialogOpen == true) {
         Get.back();
       }
 
-      debugPrint('❌ Download error: $e');
 
-      Get.snackbar(
-        'เกิดข้อผิดพลาด',
-        'ไม่สามารถดาวน์โหลดไฟล์ได้: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.dangerPalette[100],
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่สามารถดาวน์โหลดไฟล์ได้',
+        type: NotificationType.error,
       );
     }
   }
@@ -1087,7 +1115,6 @@ class _FileViewerPageState extends State<_FileViewerPage> {
         });
       }
     } catch (e) {
-      debugPrint('PDF download error: $e');
       if (mounted) {
         setState(() {
           _isPdfLoading = false;
@@ -1173,7 +1200,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           setState(() {
             _totalPages = pages ?? 0;
           });
-          debugPrint('PDF rendered: $pages pages');
+          AppLogger.info('[community]PDF rendered: $pages pages');
         },
         onPageChanged: (page, total) {
           setState(() {
@@ -1182,7 +1209,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           });
         },
         onError: (error) {
-          debugPrint('PDF error: $error');
+          AppLogger.info('[community]PDF error: $error');
         },
       );
     }
@@ -1297,7 +1324,6 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Metadata fetch error: $e');
       if (mounted) {
         setState(() => _loading = false);
       }
@@ -1306,7 +1332,6 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
 
   Future<void> _openLink() async {
     final url = widget.url;
-    debugPrint('🔗 Opening link: $url');
 
     try {
       final uri = Uri.parse(url);
@@ -1318,11 +1343,10 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
       try {
         launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
         if (launched) {
-          debugPrint('✅ Opened with platformDefault');
           return;
         }
       } catch (e) {
-        debugPrint('⚠️ platformDefault failed: $e');
+        AppLogger.info('[community]platformDefault failed: $e');
       }
 
       // Try 2: External application
@@ -1330,11 +1354,10 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
         try {
           launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
           if (launched) {
-            debugPrint('✅ Opened with externalApplication');
             return;
           }
         } catch (e) {
-          debugPrint('⚠️ externalApplication failed: $e');
+          AppLogger.info('[community]externalApplication failed: $e');
         }
       }
 
@@ -1343,28 +1366,25 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
         try {
           launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
           if (launched) {
-            debugPrint('✅ Opened with inAppBrowserView');
             return;
           }
         } catch (e) {
-          debugPrint('⚠️ inAppBrowserView failed: $e');
+          AppLogger.info('[community]inAppBrowserView failed: $e');
         }
       }
 
       if (!launched) {
-        Get.snackbar(
-          'ไม่สามารถเปิดลิงก์ได้',
-          'ลิงก์: $url',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 3),
+        DialogHelper.showNotification(
+          title: 'ไม่สามารถเปิดลิงก์ได้',
+          message: url,
+          type: NotificationType.error,
         );
       }
     } catch (e) {
-      debugPrint('❌ Error opening link: $e');
-      Get.snackbar(
-        'ไม่สามารถเปิดลิงก์ได้',
-        'กรุณาลองใหม่อีกครั้ง',
-        snackPosition: SnackPosition.BOTTOM,
+      DialogHelper.showNotification(
+        title: 'ไม่สามารถเปิดลิงก์ได้',
+        message: 'กรุณาลองใหม่อีกครั้ง',
+        type: NotificationType.error,
       );
     }
   }

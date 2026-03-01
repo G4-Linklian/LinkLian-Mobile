@@ -1,6 +1,8 @@
 import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/core/utils/dialog_helper.dart';
 import 'package:LinkLian/data/repository/community_member_repository.dart';
 import 'package:LinkLian/data/repository/community_post_repository.dart';
+import 'package:LinkLian/features/community/controllers/community_controller.dart';
 import 'package:LinkLian/features/layout/controllers/navigation_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -42,6 +44,18 @@ class CommunityDetailController extends GetxController {
   final scrollController = ScrollController();
 
   late int communityId;
+
+  void removePost(int postId) {
+    posts.removeWhere((p) => p.postId == postId);
+  }
+  void updatePostInList(CommunityPostModel updatedPost)  {
+  final index = posts.indexWhere((p) => p.postId == updatedPost.postId);
+
+  if (index != -1) {
+    posts[index] = updatedPost;
+    posts.refresh(); 
+  }
+}
 
   @override
   void onInit() {
@@ -171,33 +185,110 @@ class CommunityDetailController extends GetxController {
     super.onClose();
   }
 
-  Future<void> joinCommunity() async {
-    try {
-      await _memberRepo.join(communityId);
+Future<void> joinCommunity() async {
+  try {
+    await _memberRepo.join(communityId);
 
-      await loadDetail();
-    } catch (e) {
-      Get.snackbar(
-        "ผิดพลาด",
-        "ไม่สามารถเข้าร่วมกลุ่มได้",
-        snackPosition: SnackPosition.BOTTOM,
+    await loadDetail();
+     if (Get.isRegistered<CommunityController>()) {
+      final commuController = Get.find<CommunityController>();
+
+      final index = commuController.communities.indexWhere(
+        (c) => c.communityId == communityId,
       );
+
+      if (index != -1) {
+        final old = commuController.communities[index];
+
+        commuController.communities[index] = old.copyWith(
+          memberCount: old.memberCount + 1,
+          membershipStatus: community.value?.isPrivate == true
+              ? 'pending'
+              : 'active',
+        );
+
+        commuController.communities.refresh();
+      }
     }
+
+    DialogHelper.showNotification(
+      title: "สำเร็จ",
+      message: community.value?.isPrivate == true
+          ? "ส่งคำขอเข้าร่วมแล้ว"
+          : "เข้าร่วมกลุ่มเรียบร้อยแล้ว",
+      type: NotificationType.success,
+    );
+  } catch (e) {
+
+    DialogHelper.showNotification(
+      title: "ผิดพลาด",
+      message: e.toString(),
+      type: NotificationType.error,
+    );
   }
+}
+Future<void> leaveCommunity() async {
+  try {
+    await _memberRepo.leave(communityId);
 
-  Future<void> leaveCommunity() async {
-    try {
-      await _memberRepo.leave(communityId);
+    if (Get.isRegistered<CommunityController>()) {
+      final commuController = Get.find<CommunityController>();
 
-      await loadDetail();
-    } catch (e) {
-      Get.snackbar(
-        "ผิดพลาด",
-        "ไม่สามารถออกจากกลุ่มได้",
-        snackPosition: SnackPosition.BOTTOM,
+      final index = commuController.communities.indexWhere(
+        (c) => c.communityId == communityId,
       );
+
+      if (index != -1) {
+        final old = commuController.communities[index];
+
+        commuController.communities[index] = old.copyWith(
+          memberCount: old.memberCount - 1,
+          membershipStatus: 'none',
+        );
+
+        commuController.communities.refresh();
+      }
     }
+
+    DialogHelper.showNotification(
+      title: "ออกจากกลุ่มแล้ว",
+      message: "คุณออกจากกลุ่มเรียบร้อยแล้ว",
+      type: NotificationType.success,
+    );
+
+  } catch (e) {
+    DialogHelper.showNotification(
+      title: "ผิดพลาด",
+      message: "ไม่สามารถออกจากกลุ่มได้",
+      type: NotificationType.error,
+    );
   }
+}
+
+  // Future<void> leaveCommunity() async {
+  //   try {
+  //     await _memberRepo.leave(communityId);
+  //     if (Get.isRegistered<CommunityController>()) {
+  //     final commuController = Get.find<CommunityController>();
+
+  //     commuController.communities.removeWhere(
+  //       (c) => c.communityId == communityId,
+  //     );
+  //   }
+
+  //   final nav = Get.find<NavigationController>();
+  //   nav.hideCommunityDetail();
+  //   nav.changeTab(2);
+
+  //     // await loadDetail();
+  //   } catch (e) {
+  //     Get.snackbar(
+  //       "ผิดพลาด",
+  //       "ไม่สามารถออกจากกลุ่มได้",
+  //       snackPosition: SnackPosition.BOTTOM,
+  //     );
+  //   }
+  // }
 
   void confirmLeaveCommunity(String communityName) {
     Get.bottomSheet(
