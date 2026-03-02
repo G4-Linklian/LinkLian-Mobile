@@ -69,29 +69,45 @@ class ClassAssignmentController extends GetxController {
     fetchAssignments();
   }
 
+void reinitialise(Map<String, dynamic> args) {
+  final newSectionId = args['sectionId'] ?? 0;
 
-  void reinitialise(Map<String, dynamic> args) {
-    final newSectionId = args['sectionId'] ?? 0;
-    if (newSectionId == sectionId && _hasLoadedOnce) return;
-
-    sectionId = newSectionId;
-    className = args['className'] ?? '';
-    subjectName = args['subjectName'] ?? '';
-    userRole.value = args['role'] ?? 'student';
-
-    currentFilter.value = isStudent ? 'ทั้งหมด' : 'โพสต์ล่าสุด';
-
-    _hasLoadedOnce = false;
-    _isCurrentlyLoading = false;
-
-    teacherName.value = '';
-    assignments.clear();
-    filteredAssignments.clear();
-    errorMessage.value = '';
-
-    _fetchTeacherName();
-    fetchAssignments();
+  // เปรียบเทียบ sectionId ก่อน — ถ้าเป็น section เดิมและโหลดแล้ว ข้ามได้
+  if (newSectionId == sectionId && _hasLoadedOnce && !_isCurrentlyLoading) {
+    AppLogger.info(
+      '⏭️ Same sectionId ($newSectionId) already loaded — skip',
+      screen: 'ClassAssignmentScreen',
+    );
+    return;
   }
+
+  AppLogger.info(
+    '🔄 Reinitialise → sectionId: $newSectionId (was: $sectionId)',
+    screen: 'ClassAssignmentScreen',
+  );
+
+  sectionId = newSectionId;
+  className = args['className'] ?? '';
+  subjectName = args['subjectName'] ?? '';
+  userRole.value = args['role'] ?? 'student';
+  currentFilter.value = isStudent ? 'ทั้งหมด' : 'โพสต์ล่าสุด';
+
+  // Reset state ก่อนโหลดใหม่
+  _hasLoadedOnce = false;
+  _isCurrentlyLoading = false;
+  _currentOffset = 0;
+  _hasMoreData = true;
+
+  teacherName.value = '';
+  assignments.clear();
+  filteredAssignments.clear();
+  errorMessage.value = '';
+
+  AppLogger.screenEnter('ClassAssignmentScreen ($newSectionId)');
+
+  _fetchTeacherName();
+  fetchAssignments();
+}
 
   Future<void> _fetchTeacherName() async {
     try {
@@ -111,50 +127,38 @@ class ClassAssignmentController extends GetxController {
     }
   }
 
-  void applyFilter(String filter) {
-    currentFilter.value = filter;
+void applyFilter(String filter) {
+  currentFilter.value = filter;
 
-    if (isStudent) {
-      switch (filter) {
-        case 'ส่งช้า':
-          filteredAssignments.assignAll(
-            assignments.where((a) =>
-                a.studentStatus == 'ส่งแล้วเกินกำหนด' ||
-                a.studentStatus == 'ยังไม่ส่งเกินกำหนด'),
-          );
-          break;
-        case 'ยังไม่ส่ง':
-          filteredAssignments.assignAll(
-            assignments.where((a) =>
-                a.studentStatus == 'ยังไม่ส่ง' ||
-                a.studentStatus == 'ยังไม่ส่งเกินกำหนด'),
-          );
-          break;
-        case 'ส่งแล้ว':
-          filteredAssignments.assignAll(
-            assignments.where((a) =>
-                a.studentStatus == 'ส่งแล้ว' ||
-                a.studentStatus == 'ส่งแล้วเกินกำหนด'),
-          );
-          break;
-        default:
-          filteredAssignments.assignAll(assignments);
-      }
+  if (isStudent) {
+    filteredAssignments.assignAll(_filterItems(assignments));
+  } else {
+    final sorted = List<AssignmentModel>.from(assignments);
+
+    if (filter == 'โพสต์เก่าสุด') {
+      // เรียงจาก createdAt น้อย→มาก (เก่าสุดขึ้นก่อน)
+      sorted.sort((a, b) {
+        final aDate = a.createdAt ?? DateTime(2000);
+        final bDate = b.createdAt ?? DateTime(2000);
+        return aDate.compareTo(bDate);
+      });
     } else {
-      List<AssignmentModel> sorted = List.from(assignments);
-      if (filter == 'โพสต์เก่าสุด') {
-        sorted.sort((a, b) => (a.dueDate ?? DateTime(2099))
-            .compareTo(b.dueDate ?? DateTime(2099)));
-      } else {
-        sorted.sort((a, b) => (b.dueDate ?? DateTime(2099))
-            .compareTo(a.dueDate ?? DateTime(2099)));
-      }
-      filteredAssignments.assignAll(sorted);
+      // โพสต์ล่าสุด: createdAt มาก→น้อย (ใหม่สุดขึ้นก่อน)
+      sorted.sort((a, b) {
+        final aDate = a.createdAt ?? DateTime(2000);
+        final bDate = b.createdAt ?? DateTime(2000);
+        return bDate.compareTo(aDate);
+      });
     }
 
-    AppLogger.info('🔍 Filter applied: $filter');
-    AppLogger.info('📦 Filtered count: ${filteredAssignments.length}');
+    filteredAssignments.assignAll(sorted);
   }
+
+  AppLogger.info(
+    '🔍 Filter: $filter → ${filteredAssignments.length} items',
+    screen: 'ClassAssignmentScreen',
+  );
+}
 
   Future<void> fetchAssignments() async {
     AppLogger.info(
@@ -200,33 +204,63 @@ class ClassAssignmentController extends GetxController {
     }
   }
 
-  Future<void> loadMoreAssignments() async {
-    if (!_hasMoreData || isLoadingMore.value) return;
+Future<void> loadMoreAssignments() async {
+  if (!_hasMoreData || isLoadingMore.value || _isCurrentlyLoading) return;
 
-    isLoadingMore.value = true;
+  isLoadingMore.value = true;
 
-    try {
-      final result = await _assignmentRepository.getClassAssignments(
-        sectionId: sectionId,
-        role: userRole.value,
-        offset: _currentOffset,
-        limit: _limit,
-      );
+  try {
+    final result = await _assignmentRepository.getClassAssignments(
+      sectionId: sectionId,
+      role: userRole.value,
+      offset: _currentOffset,
+      limit: _limit,
+    );
 
-      if (result.isEmpty) {
-        _hasMoreData = false;
-      } else {
-        assignments.addAll(result);
-        _currentOffset += result.length;
-        _hasMoreData = result.length == _limit;
+    AppLogger.info('📦 Load more: got ${result.length} assignments');
+
+    if (result.isEmpty) {
+      _hasMoreData = false;
+    } else {
+      assignments.addAll(result);
+      _currentOffset += result.length;
+      _hasMoreData = result.length == _limit;
+
+      if (isTeacher) {
         applyFilter(currentFilter.value);
+      } else {
+        // student: เพิ่มเฉพาะ item ใหม่ที่ตรง filter ปัจจุบัน
+        final newFiltered = _filterItems(result);
+        filteredAssignments.addAll(newFiltered);
       }
-    } catch (e) {
-      AppLogger.info('❌ Error loading more: $e');
-    } finally {
-      isLoadingMore.value = false;
     }
+  } catch (e) {
+    AppLogger.error('loadMoreAssignments failed: $e', screen: 'ClassAssignmentScreen');
+  } finally {
+    isLoadingMore.value = false;
   }
+}
+
+// helper แยก filter logic ออกมา
+List<AssignmentModel> _filterItems(List<AssignmentModel> items) {
+  switch (currentFilter.value) {
+    case 'ส่งช้า':
+      return items.where((a) =>
+        a.studentStatus == 'ส่งแล้วเกินกำหนด' ||
+        a.studentStatus == 'ยังไม่ส่งเกินกำหนด').toList();
+    case 'ยังไม่ส่ง':
+      return items.where((a) =>
+        a.studentStatus == 'ยังไม่ส่ง' ||
+        a.studentStatus == 'ยังไม่ส่งเกินกำหนด').toList();
+    case 'ส่งแล้ว':
+      return items.where((a) =>
+        a.studentStatus == 'ส่งแล้ว' ||
+        a.studentStatus == 'ส่งแล้วเกินกำหนด').toList();
+    default:
+      return items;
+  }
+}
+
 
   Future<void> refreshAssignments() async {
     _hasLoadedOnce = false;

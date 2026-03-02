@@ -7,9 +7,6 @@ import '../../classes/widgets/class_card.dart';
 import '../../classes/widgets/semester_selector.dart';
 import '../../../config/app_routes.dart';
 import '../../layout/controllers/navigation_controller.dart';
-import '../pages/class_assignment_page.dart';
-import '../controllers/class_assignment_controller.dart';
-import '../bindings/class_assignment_binding.dart'; 
 
 class AssignmentPage extends StatefulWidget {
   const AssignmentPage({super.key});
@@ -50,34 +47,14 @@ class _AssignmentPageState extends State<AssignmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final showAssignment = _navController.isShowingClassAssignment.value &&
-          _navController.selectedIndex.value == 0;
-
-      return AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) {
-          final isShowingDetail = child is ClassAssignmentPage;
-          final slideAnimation = Tween<Offset>(
-            begin: isShowingDetail
-                ? const Offset(1.0, 0.0) 
-                : const Offset(-0.3, 0.0), 
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-          );
-          return SlideTransition(position: slideAnimation, child: child);
-        },
-        child: showAssignment
-            ? ClassAssignmentPage(key: const ValueKey('classAssignmentPage'))
-            : _AssignmentFeedBody(
-                key: const ValueKey('assignmentFeedBody'),
-                scrollController: _scrollController,
-                classFeedController: classFeedController,
-                onClassTap: _openClassAssignment,
-              ),
-      );
-    });
+    // Note: Transition is handled by layout.dart using Stack + AnimatedSlide
+    // This page only shows the feed body, overlay is managed by MainPage
+    return _AssignmentFeedBody(
+      key: const ValueKey('assignmentFeedBody'),
+      scrollController: _scrollController,
+      classFeedController: classFeedController,
+      onClassTap: _openClassAssignment,
+    );
   }
 }
 

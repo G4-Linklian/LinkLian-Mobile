@@ -15,6 +15,7 @@ AssignmentModel _$AssignmentModelFromJson(Map<String, dynamic> json) =>
       subjectNameEn: json['subject_name_en'] as String,
       assignmentType: json['assignment_type'] as String,
       isGroup: json['is_group'] as bool,
+      createdAt: _dateTimeFromJson(json['created_at']),
       dueDate: _dateTimeFromJson(json['due_date']),
       totalStudents: json['total_students'] == null
           ? 0
@@ -46,5 +47,6 @@ Map<String, dynamic> _$AssignmentModelToJson(AssignmentModel instance) =>
       'submitted_at': instance.submittedAt?.toIso8601String(),
       'total_groups': instance.totalGroups,
       'submitted_groups': instance.submittedGroups,
+      'created_at': instance.createdAt?.toIso8601String(),
       'educators': instance.educators,
     };

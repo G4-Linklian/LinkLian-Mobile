@@ -1,4 +1,5 @@
 import 'package:LinkLian/features/community/controllers/community_controller.dart';
+import 'package:LinkLian/features/assignment/controllers/class_assignment_controller.dart';
 import 'package:get/get.dart';
 
 class NavigationController extends GetxController {
@@ -45,6 +46,7 @@ class NavigationController extends GetxController {
     isShowingClassDetail.value = false;
     classDetailArgs.value = null;
   }
+  
 
   void showClassDetailFromRedirect(Map<String, dynamic> args) {
     classDetailArgs.value = args;
@@ -93,5 +95,10 @@ class NavigationController extends GetxController {
 
     isShowingClassAssignment.value = false;
     classAssignmentArgs.value = null;
+
+    // Delete ClassAssignmentController to clear stale state on role change
+    if (Get.isRegistered<ClassAssignmentController>()) {
+      Get.delete<ClassAssignmentController>(force: true);
+    }
   }
 }

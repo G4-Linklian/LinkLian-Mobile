@@ -11,6 +11,7 @@ import 'package:LinkLian/features/profile/controllers/profile_controller.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
 import '../../assignment/pages/assignment_page.dart';
+import '../../assignment/pages/class_assignment_page.dart';
 import '../../classes/pages/classes_page.dart';
 import '../../community/pages/community_page.dart';
 import '../../profile/pages/profile_page.dart';
@@ -211,18 +212,6 @@ class _MainPageState extends State<MainPage> {
         (isStudent && _selectedIndex == 3);
   }
 
-  Widget _slideTransition(
-    Widget child,
-    Animation<double> animation, {
-    required bool isForward,
-  }) {
-    final slideAnimation = Tween<Offset>(
-      begin: isForward ? const Offset(1.0, 0.0) : const Offset(-0.3, 0.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
-    return SlideTransition(position: slideAnimation, child: child);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -323,45 +312,62 @@ class _MainPageState extends State<MainPage> {
       key: ValueKey(currentTab),
       child: Builder(
         builder: (_) {
-          // TAB 1
+          // TAB 1: ClassesPage + ClassDetailPage overlay
           if (currentTab == 1) {
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) {
-                final isShowingDetail = child is ClassDetailPage;
-                return _slideTransition(
-                  child,
-                  animation,
-                  isForward: isShowingDetail,
-                );
-              },
-              child: showClassDetail
-                  ? const ClassDetailPage(key: ValueKey('classDetail'))
-                  : const ClassesPage(key: ValueKey('classesPage')),
+            return Stack(
+              children: [
+                const ClassesPage(key: ValueKey('classesPage')),
+                _buildSlideOverlay(
+                  isVisible: showClassDetail,
+                  child: const ClassDetailPage(key: ValueKey('classDetail')),
+                ),
+              ],
             );
           }
 
-          // TAB 2
+          // TAB 2: CommunityPage + CommunityDetailPage overlay
           if (currentTab == 2 && isStudent) {
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) {
-                final isShowingDetail = child is CommunityDetailPage;
-                return _slideTransition(
-                  child,
-                  animation,
-                  isForward: isShowingDetail,
-                );
-              },
-              child: showCommunityDetail
-                  ? const CommunityDetailPage(key: ValueKey('communityDetail'))
-                  : const CommuPage(key: ValueKey('communityPage')),
+            return Stack(
+              children: [
+                const CommuPage(key: ValueKey('communityPage')),
+                _buildSlideOverlay(
+                  isVisible: showCommunityDetail,
+                  child: const CommunityDetailPage(key: ValueKey('communityDetail')),
+                ),
+              ],
             );
           }
 
-          // TAB 0 & others
+          // TAB 0: AssignmentPage + ClassAssignmentPage overlay
+          if (currentTab == 0) {
+            return Stack(
+              children: [
+                const AssignmentPage(key: ValueKey('assignmentPage')),
+                _buildSlideOverlay(
+                  isVisible: showClassAssignment,
+                  child: const ClassAssignmentPage(key: ValueKey('classAssignment')),
+                ),
+              ],
+            );
+          }
+
           return _getPageForIndex(currentTab);
         },
+      ),
+    );
+  }
+
+  Widget _buildSlideOverlay({
+    required bool isVisible,
+    required Widget child,
+  }) {
+    return IgnorePointer(
+      ignoring: !isVisible,
+      child: AnimatedSlide(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        offset: isVisible ? Offset.zero : const Offset(1.0, 0.0),
+        child: child,
       ),
     );
   }
