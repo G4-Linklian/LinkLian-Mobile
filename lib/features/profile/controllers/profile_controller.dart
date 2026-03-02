@@ -1,6 +1,5 @@
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../data/model/profile_model.dart';
 import '../../../data/repository/profile_repository.dart';
@@ -9,7 +8,6 @@ import '../../auth/controller/auth_controller.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../data/model/teaching_schedule_model.dart';
-import 'package:flutter/foundation.dart';
 
 class ProfileController extends GetxController {
   final ProfileRepository repo;

@@ -4,7 +4,6 @@ import 'package:LinkLian/data/model/bookmark_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
-import '../../../core/constants/colors.dart';
 
 class BookmarkCard extends StatelessWidget {
   final BookmarkModel item;
@@ -34,7 +33,7 @@ class BookmarkCard extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade200, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -79,7 +78,7 @@ class BookmarkCard extends StatelessWidget {
                   const SizedBox(height: 6),
 
                   Text(
-                    '${item.subjectName ?? '-'}',
+                    item.subjectName ?? '-',
                     style: const TextStyle(fontSize: 10),
                   ),
 

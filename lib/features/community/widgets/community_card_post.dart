@@ -120,7 +120,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.22),
+              color: Colors.black.withValues(alpha: 0.22),
               blurRadius: 8,
               spreadRadius: 1,
               offset: const Offset(0, 0),
@@ -156,14 +156,16 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                                 Icon(
                                   Icons.access_time,
                                   size: 16,
-                                  color: AppColors.black.withOpacity(0.5),
+                                  color: AppColors.black.withValues(alpha: 0.5),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   _formatDateTime(widget.post.createdAt),
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: AppColors.black.withOpacity(0.5),
+                                    color: AppColors.black.withValues(
+                                      alpha: 0.5,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -307,7 +309,10 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       // No URLs, show plain text
       return Text(
         content,
-        style: TextStyle(fontSize: 15, color: AppColors.black.withOpacity(0.8)),
+        style: TextStyle(
+          fontSize: 15,
+          color: AppColors.black.withValues(alpha: 0.8),
+        ),
         maxLines: maxLines,
         overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
       );
@@ -325,7 +330,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
             text: content.substring(lastEnd, match.start),
             style: TextStyle(
               fontSize: 15,
-              color: AppColors.black.withOpacity(0.8),
+              color: AppColors.black.withValues(alpha: 0.8),
             ),
           ),
         );
@@ -378,7 +383,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           text: content.substring(lastEnd),
           style: TextStyle(
             fontSize: 15,
-            color: AppColors.black.withOpacity(0.8),
+            color: AppColors.black.withValues(alpha: 0.8),
           ),
         ),
       );
@@ -498,7 +503,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.black.withOpacity(0.7),
+                    color: AppColors.black.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -547,7 +552,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       icon: Icon(icon),
       color: AppColors.white,
       style: IconButton.styleFrom(
-        backgroundColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
       ),
     );
   }
@@ -558,7 +563,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         file.fileUrl,
         fit: BoxFit.cover,
         width: double.infinity,
-        errorBuilder: (_, __, ___) {
+        errorBuilder: (_, _, _) {
           return _buildFileIcon(file.fileType);
         },
       );
@@ -689,14 +694,31 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   IconData _getFileIconData(String fileType) {
     final type = fileType.toLowerCase();
-    if (type.contains('pdf')) return Icons.picture_as_pdf;
-    if (type.contains('image')) return Icons.image;
-    if (type.contains('video')) return Icons.video_file;
-    if (type.contains('word') || type.contains('doc')) return Icons.description;
-    if (type.contains('excel') || type.contains('xls'))
+
+    if (type.contains('pdf')) {
+      return Icons.picture_as_pdf;
+    }
+
+    if (type.contains('image')) {
+      return Icons.image;
+    }
+
+    if (type.contains('video')) {
+      return Icons.video_file;
+    }
+
+    if (type.contains('word') || type.contains('doc')) {
+      return Icons.description;
+    }
+
+    if (type.contains('excel') || type.contains('xls')) {
       return Icons.table_chart;
-    if (type.contains('powerpoint') || type.contains('ppt'))
+    }
+
+    if (type.contains('powerpoint') || type.contains('ppt')) {
       return Icons.slideshow;
+    }
+
     return Icons.insert_drive_file;
   }
 
@@ -808,7 +830,9 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   void _onDeletePost() async {
     AppLogger.info("[community]DELETE POST ID: ${widget.post.postId}");
-    AppLogger.info("[community]DELETE COMMUNITY ID: ${widget.post.communityId}");
+    AppLogger.info(
+      "[community]DELETE COMMUNITY ID: ${widget.post.communityId}",
+    );
     final confirm = await Get.dialog<bool>(
       AlertDialog(
         title: const Text('ยืนยันการลบ'),
@@ -1031,13 +1055,11 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           type: NotificationType.success,
         );
       }
-
     } catch (e) {
       // Close loading if still open
       if (Get.isDialogOpen == true) {
         Get.back();
       }
-
 
       DialogHelper.showNotification(
         title: 'เกิดข้อผิดพลาด',
@@ -1129,7 +1151,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
     return Scaffold(
       backgroundColor: AppColors.primaryPalette[200],
       appBar: AppBar(
-        backgroundColor: AppColors.primaryPalette[500]!.withOpacity(0.8),
+        backgroundColor: AppColors.primaryPalette[500]!.withValues(alpha: 0.8),
         leading: IconButton(
           icon: Icon(LinkLianIcon.close, color: AppColors.dangerPalette[700]),
           onPressed: () => Get.back(),
@@ -1169,7 +1191,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           child: Image.network(
             widget.file.fileUrl,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) =>
+            errorBuilder: (_, _, _) =>
                 _buildErrorState('ไม่สามารถโหลดรูปภาพได้'),
           ),
         ),
@@ -1225,13 +1247,13 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: AppColors.white.withOpacity(0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             message,
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -1248,13 +1270,13 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Icon(
             Icons.insert_drive_file,
             size: 64,
-            color: AppColors.white.withOpacity(0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             'ไม่รองรับการดูไฟล์ประเภทนี้',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -1262,7 +1284,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Text(
             'กรุณาดาวน์โหลดเพื่อเปิดดู',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.5),
+              color: AppColors.white.withValues(alpha: 0.5),
               fontSize: 14,
             ),
           ),
@@ -1404,7 +1426,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
               border: Border.all(color: AppColors.primaryPalette[200]!),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryPalette[100]!.withOpacity(0.3),
+                  color: AppColors.primaryPalette[100]!.withValues(alpha: 0.3),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -1434,7 +1456,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                           child: Image.network(
                             _metadata!.image!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildLinkIcon(),
+                            errorBuilder: (_, _, _) => _buildLinkIcon(),
                           ),
                         )
                       : _buildLinkIcon(),

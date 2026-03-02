@@ -54,10 +54,10 @@ class DayScheduleSection extends StatelessWidget {
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(8),
                   // border: Border.all(color: Colors.grey.shade200),
-                  border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+                  border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(0.15),
+                      color: color.withValues(alpha: 0.15),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

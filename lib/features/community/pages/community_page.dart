@@ -1,6 +1,4 @@
 import 'dart:async';
-
-import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/features/layout/controllers/navigation_controller.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +17,6 @@ class _CommuPageState extends State<CommuPage> {
   late final CommunityController controller;
   Timer? _debounce;
 
-  get color => null;
   @override
   void dispose() {
     _debounce?.cancel();
@@ -177,7 +174,7 @@ class _CommuPageState extends State<CommuPage> {
                     )
                   : null,
               filled: true,
-              fillColor: AppColors.buttonPalette[100]!.withOpacity(0.2),
+              fillColor: AppColors.buttonPalette[100]!.withValues(alpha: 0.2),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
                 borderSide: BorderSide(
@@ -218,7 +215,7 @@ class _CommuPageState extends State<CommuPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             spreadRadius: 2,
             offset: const Offset(0, 0),
@@ -239,8 +236,8 @@ class _CommuPageState extends State<CommuPage> {
             end: Alignment.topCenter,
             stops: const [0.0, 0.35, 1.0],
             colors: [
-              AppColors.primaryPalette[300]!.withOpacity(0.5),
-              AppColors.primaryPalette[300]!.withOpacity(0.4),
+              AppColors.primaryPalette[300]!.withValues(alpha: 0.5),
+              AppColors.primaryPalette[300]!.withValues(alpha: 0.4),
               const Color.fromARGB(0, 254, 254, 254),
             ],
           ),
@@ -281,7 +278,7 @@ class _CommuPageState extends State<CommuPage> {
                           "สมาชิก ${community.memberCount} คน",
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withValues(alpha: 0.7),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -302,7 +299,7 @@ class _CommuPageState extends State<CommuPage> {
                    
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 3,
                           offset: const Offset(0, 2),
                         ),

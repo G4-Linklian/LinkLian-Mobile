@@ -521,7 +521,7 @@ class _AvatarSection extends StatelessWidget {
                   width: 96,
                   height: 96,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) {
+                  errorBuilder: (_, _, _) {
                     return _buildInitialAvatar();
                   },
                 )
@@ -530,7 +530,7 @@ class _AvatarSection extends StatelessWidget {
                   width: 96,
                   height: 96,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) {
+                  errorBuilder: (_, _, _) {
                     return _buildInitialAvatar();
                   },
                 ),

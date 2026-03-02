@@ -59,7 +59,6 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxHeight = MediaQuery.of(context).size.height;
 
         return DraggableScrollableSheet(
           initialChildSize: 0.5,
@@ -370,7 +369,7 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
+                    color: Colors.black.withValues(alpha: 0.25),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),

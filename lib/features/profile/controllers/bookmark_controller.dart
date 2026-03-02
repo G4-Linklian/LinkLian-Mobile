@@ -231,47 +231,6 @@ class BookmarkController extends GetxController {
   }
 }
 
-  // Future<void> toggleCommunityBookmark(int postId) async {
-  //   final auth = Get.find<AuthController>();
-  //   final userId = auth.userId.value;
-
-  //   if (userId == null) return;
-
-  //   try {
-  //     loading.value = true;
-
-  //     // Optimistic update
-  //     final index = communityBookmarks.indexWhere((p) => p.postId == postId);
-
-  //     if (index != -1) {
-  //       communityBookmarks.removeAt(index);
-  //     }
-
-  //     final result = await communityRepo.toggleBookmark(postId: postId);
-  //     print("📦 Community Bookmark Response: $result");
-  //     final action = result['action'];
-  //     // final action = result['data']['action'];
-
-  //     if (action == 'removed') {
-  //       DialogHelper.showNotification(
-  //         title: 'สำเร็จ',
-  //         message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
-  //         type: NotificationType.success,
-  //       );
-  //     }
-  //   } catch (e) {
-  //     await loadCommunityBookmarks();
-
-  //     DialogHelper.showNotification(
-  //       title: 'เกิดข้อผิดพลาด',
-  //       message: 'ไม่สามารถลบบุ๊กมาร์กได้',
-  //       type: NotificationType.error,
-  //     );
-  //   } finally {
-  //     loading.value = false;
-  //   }
-  // }
-
   void changeSort(SortType value) {
     sortType.value = value;
 

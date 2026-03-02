@@ -113,10 +113,11 @@ class CreateCommunityPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<CreateCommunityController>();
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
         await _handleClose(controller);
-        return false;
       },
       child: Scaffold(
         backgroundColor: AppColors.white,
@@ -291,8 +292,8 @@ class CreateCommunityPage extends StatelessWidget {
                                           shape: BoxShape.circle,
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.2,
+                                              color: Colors.black.withValues(
+                                                alpha: 0.2,
                                               ),
                                               blurRadius: 4,
                                             ),
