@@ -25,57 +25,50 @@ class ClassDetailPage extends StatefulWidget {
 class _ClassDetailPageState extends State<ClassDetailPage> {
   late ClassDetailController controller;
   late bool isTeacher;
-  final ValueNotifier<double> _scrollOffset = ValueNotifier(0);
-  String? controllerTag; 
-  
+  String? controllerTag;
+
   @override
   void initState() {
     super.initState();
     _initController();
   }
-  
+
   void _initController() {
     final auth = Get.find<AuthController>();
-    isTeacher = auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
-    
-    // Get args from NavigationController
+    isTeacher =
+        auth.roleName.value == 'teacher' ||
+        auth.roleName.value == 'instructor';
+
     final navController = Get.find<NavigationController>();
     final args = navController.classDetailArgs.value;
-    
+
     if (args != null && args['sectionId'] != null) {
       controllerTag = 'class_detail_${args['sectionId']}';
     }
-    
+
     if (!Get.isRegistered<ClassDetailController>(tag: controllerTag)) {
-      Get.put(ClassDetailController(), tag: controllerTag);
+      Get.put(ClassDetailController(), tag: controllerTag, permanent: true);
     }
     controller = Get.find<ClassDetailController>(tag: controllerTag);
-    
-    // Initialize with args if available
+
     if (args != null) {
       controller.initializeWithArgs(args);
     }
-    
-    // Setup scroll listener
+
     controller.scrollController.addListener(_onScroll);
   }
-  
+
   void _onScroll() {
-    _scrollOffset.value = controller.scrollController.offset;
+    if (!controller.scrollController.hasClients) return;
     if (controller.scrollController.position.pixels >=
         controller.scrollController.position.maxScrollExtent - 200) {
       controller.fetchPosts(loadMore: true);
     }
   }
-  
+
   @override
   void dispose() {
     controller.scrollController.removeListener(_onScroll);
-    
-    if (controllerTag != null) {
-      Get.delete<ClassDetailController>(tag: controllerTag);
-    }
-    
     super.dispose();
   }
 
@@ -103,13 +96,14 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
             ),
             flexibleSpace: LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
-                // Calculate how much we've scrolled (0 = expanded, 1 = collapsed)
                 final double maxHeight = 210;
                 final double minHeight = 120;
                 final double currentHeight = constraints.maxHeight;
-                final double shrinkRatio = ((maxHeight - currentHeight) / (maxHeight - minHeight)).clamp(0.0, 1.0);
+                final double shrinkRatio =
+                    ((maxHeight - currentHeight) / (maxHeight - minHeight))
+                        .clamp(0.0, 1.0);
                 final bool isCollapsed = shrinkRatio > 0.7;
-                
+
                 return _ClassDetailHeader(
                   controller: controller,
                   isTeacher: isTeacher,
@@ -134,8 +128,8 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
           // Posts List
           Obx(() {
             if (controller.isLoading.value) {
-              return SliverToBoxAdapter(
-                child: const SizedBox(
+              return const SliverToBoxAdapter(
+                child: SizedBox(
                   height: 400,
                   child: Center(child: CircularProgressIndicator()),
                 ),
@@ -179,9 +173,7 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                     if (index >= controller.posts.length) {
                       return const Padding(
                         padding: EdgeInsets.all(16.0),
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                        child: Center(child: CircularProgressIndicator()),
                       );
                     }
 
@@ -208,6 +200,8 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
   }
 }
 
+// Header
+
 class _ClassDetailHeader extends StatelessWidget {
   final ClassDetailController controller;
   final bool isTeacher;
@@ -224,14 +218,13 @@ class _ClassDetailHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final expandRatio = (1.0 - shrinkRatio).clamp(0.0, 1.0);
-    
-    // Dynamic sizes based on shrink ratio
-    final titleFontSize = 18.0 + (6.0 * expandRatio); // 18-24
-    final sectionFontSize = 14.0 + (2.0 * expandRatio); // 14-16
-    final teacherFontSize = 12.0 + (2.0 * expandRatio); // 12-14
-    final iconSize = 22.0 + (4.0 * expandRatio); // 22-26
-    final addIconSize = 24.0 + (4.0 * expandRatio); // 24-28
-    
+
+    final titleFontSize = 18.0 + (6.0 * expandRatio);
+    final sectionFontSize = 14.0 + (2.0 * expandRatio);
+    final teacherFontSize = 12.0 + (2.0 * expandRatio);
+    final iconSize = 22.0 + (4.0 * expandRatio);
+    final addIconSize = 24.0 + (4.0 * expandRatio);
+
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
@@ -250,13 +243,16 @@ class _ClassDetailHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Top Action Bar - Always visible
                 Row(
                   children: [
                     IconButton(
-                      icon: Icon(LinkLianIcon.back, color: AppColors.primaryPalette[700]!),
+                      icon: Icon(
+                        LinkLianIcon.back,
+                        color: AppColors.primaryPalette[700]!,
+                      ),
                       onPressed: () {
-                        final navController = Get.find<NavigationController>();
+                        final navController =
+                            Get.find<NavigationController>();
                         navController.hideClassDetail();
                       },
                       padding: EdgeInsets.zero,
@@ -312,21 +308,22 @@ class _ClassDetailHeader extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: 4 + (4 * expandRatio)),
-                // Class Name and Info Button - Always visible
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Obx(() => Text(
-                        controller.subjectNameTh.value,
-                        style: TextStyle(
-                          fontSize: titleFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.black,
+                      child: Obx(
+                        () => Text(
+                          controller.subjectNameTh.value,
+                          style: TextStyle(
+                            fontSize: titleFontSize,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.black,
+                          ),
+                          maxLines: expandRatio > 0.5 ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: expandRatio > 0.5 ? 2 : 1,
-                        overflow: TextOverflow.ellipsis,
-                      )),
+                      ),
                     ),
                     IconButton(
                       icon: Icon(
@@ -340,48 +337,53 @@ class _ClassDetailHeader extends StatelessWidget {
                     ),
                   ],
                 ),
-                // Expandable content with opacity transition
                 if (expandRatio > 0.3) ...[
                   SizedBox(height: 4 * expandRatio),
                   Opacity(
-                    opacity: ((expandRatio - 0.3) / 0.7).clamp(0.0, 1.0),
-                    child: Obx(() => Text(
-                      controller.effectiveClassName.value,
-                      style: TextStyle(
-                        fontSize: sectionFontSize,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.black.withOpacity(0.7),
+                    opacity:
+                        ((expandRatio - 0.3) / 0.7).clamp(0.0, 1.0),
+                    child: Obx(
+                      () => Text(
+                        controller.effectiveClassName.value,
+                        style: TextStyle(
+                          fontSize: sectionFontSize,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.black.withOpacity(0.7),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    )),
+                    ),
                   ),
                   SizedBox(height: 4 * expandRatio),
                   Opacity(
-                    opacity: ((expandRatio - 0.3) / 0.7).clamp(0.0, 1.0),
-                    child: Obx(() => Row(
-                      children: [
-                        Text(
-                          'ครูผู้สอน ',
-                          style: TextStyle(
-                            fontSize: teacherFontSize,
-                            color: AppColors.black.withOpacity(0.6),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            controller.teacherName.value,
+                    opacity:
+                        ((expandRatio - 0.3) / 0.7).clamp(0.0, 1.0),
+                    child: Obx(
+                      () => Row(
+                        children: [
+                          Text(
+                            'ครูผู้สอน ',
                             style: TextStyle(
                               fontSize: teacherFontSize,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.black.withOpacity(0.8),
+                              color: AppColors.black.withOpacity(0.6),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
-                    )),
+                          Expanded(
+                            child: Text(
+                              controller.teacherName.value,
+                              style: TextStyle(
+                                fontSize: teacherFontSize,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.black.withOpacity(0.8),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ],
@@ -397,12 +399,13 @@ class _ClassDetailHeader extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ClassInfoPopup(
-        sectionId: controller.sectionId.value!,
-      ),
+      builder: (context) =>
+          ClassInfoPopup(sectionId: controller.sectionId.value!),
     );
   }
 }
+
+// Filter section
 
 class _FilterSection extends StatelessWidget {
   final ClassDetailController controller;
@@ -420,54 +423,59 @@ class _FilterSection extends StatelessWidget {
     return AnimatedBuilder(
       animation: scrollController,
       builder: (context, child) {
-        // Calculate if header is collapsed
-        final offset = scrollController.hasClients ? scrollController.offset : 0;
-        final isCollapsed = offset > 90; // เมื่อ scroll เกิน 90px = header เริ่มยุบ
-        
-        // Dynamic padding: ตอนขยาง 12px ตอนยุบ 8px
-        final topPadding = isCollapsed ? 8.0 : 12.0;
-        
-        return Container(
-          height: 64,
-          padding: EdgeInsets.fromLTRB(AppSizes.md, topPadding, AppSizes.md, 8),
-          child: Row(
-            children: [
-              Obx(
-                () => _FilterDropdown(
-                  selected: controller.selectedFilter.value,
-                  onChanged: (filter) => controller.changeFilter(filter),
-                ),
-              ),
-              const Spacer(),
-              if (!isTeacher)
-                Obx(() {
-                  final count = controller.selectedPostIdsForAI.length;
-                  return TextButton.icon(
-                    onPressed: count > 0 ? controller.generateAISummary : null,
-                    icon: Icon(
-                      Icons.auto_awesome,
-                      color: count > 0
-                          ? AppColors.primaryPalette[500]
-                          : Colors.grey,
-                      size: 18,
-                    ),
-                    label: Text(
-                      count > 0
-                          ? 'AI สรุปเนื้อหา ($count)'
-                          : 'AI สรุปเนื้อหา',
-                      style: TextStyle(
-                        color: count > 0
-                            ? AppColors.primaryPalette[500]
-                            : Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  );
-                }),
-            ],
-          ),
-        );
+        if (!scrollController.hasClients ||
+            scrollController.positions.length != 1) {
+          return _buildContent(0, false);
+        }
+        final offset = scrollController.offset;
+        final isCollapsed = offset > 90;
+        return _buildContent(isCollapsed ? 8.0 : 12.0, isCollapsed);
       },
+    );
+  }
+
+  Widget _buildContent(double topPadding, bool isCollapsed) {
+    return Container(
+      height: 64,
+      padding:
+          EdgeInsets.fromLTRB(AppSizes.md, topPadding, AppSizes.md, 8),
+      child: Row(
+        children: [
+          Obx(
+            () => _FilterDropdown(
+              selected: controller.selectedFilter.value,
+              onChanged: (filter) => controller.changeFilter(filter),
+            ),
+          ),
+          const Spacer(),
+          if (!isTeacher)
+            Obx(() {
+              final count = controller.selectedPostIdsForAI.length;
+              return TextButton.icon(
+                onPressed:
+                    count > 0 ? controller.generateAISummary : null,
+                icon: Icon(
+                  Icons.auto_awesome,
+                  color: count > 0
+                      ? AppColors.primaryPalette[500]
+                      : Colors.grey,
+                  size: 18,
+                ),
+                label: Text(
+                  count > 0
+                      ? 'AI สรุปเนื้อหา ($count)'
+                      : 'AI สรุปเนื้อหา',
+                  style: TextStyle(
+                    color: count > 0
+                        ? AppColors.primaryPalette[500]
+                        : Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }),
+        ],
+      ),
     );
   }
 }
@@ -482,28 +490,32 @@ class _FilterDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<ClassPostFilter>(
       onSelected: (value) => onChanged(value),
-      itemBuilder: (context) => ClassPostFilter.values.map((filter) {
-        return PopupMenuItem<ClassPostFilter>(
-          value: filter,
-          child: Center(
-            child: Text(
-              filter.label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primaryPalette[900],
-                height: 1.0,
+      itemBuilder: (context) => ClassPostFilter.values
+          .map(
+            (filter) => PopupMenuItem<ClassPostFilter>(
+              value: filter,
+              child: Center(
+                child: Text(
+                  filter.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primaryPalette[900],
+                    height: 1.0,
+                  ),
+                ),
               ),
             ),
-          ),
-        );
-      }).toList(),
+          )
+          .toList(),
       offset: const Offset(0, 50),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: AppColors.primaryPalette[300],
       child: Container(
         width: 115,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.primaryPalette[300],
           borderRadius: BorderRadius.circular(24),
@@ -550,11 +562,11 @@ class _FilterSectionDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: AppColors.white,
-      child: child,
-    );
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: AppColors.white, child: child);
   }
 
   @override

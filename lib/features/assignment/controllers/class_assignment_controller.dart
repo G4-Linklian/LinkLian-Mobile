@@ -3,15 +3,19 @@ import 'package:get/get.dart';
 import '../../../data/repository/assignment_repository.dart';
 import '../../../data/repository/class_feed_repository.dart';
 import '../../../data/model/assignment_model.dart';
+import '../../layout/controllers/navigation_controller.dart';
 
 class ClassAssignmentController extends GetxController {
-  final AssignmentRepository _assignmentRepository = Get.find<AssignmentRepository>();
-  final ClassFeedRepository _classFeedRepository = Get.find<ClassFeedRepository>();
+  final AssignmentRepository _assignmentRepository =
+      Get.find<AssignmentRepository>();
+  final ClassFeedRepository _classFeedRepository =
+      Get.find<ClassFeedRepository>();
 
   final RxList<AssignmentModel> assignments = <AssignmentModel>[].obs;
-  final RxList<AssignmentModel> filteredAssignments = <AssignmentModel>[].obs;
+  final RxList<AssignmentModel> filteredAssignments =
+      <AssignmentModel>[].obs;
   final RxBool isLoading = false.obs;
-  final RxBool isLoadingMore = false.obs; // ✅ เพิ่ม
+  final RxBool isLoadingMore = false.obs;
   final RxString errorMessage = ''.obs;
   final RxString currentFilter = ''.obs;
   final RxString userRole = 'student'.obs;
@@ -30,23 +34,28 @@ class ClassAssignmentController extends GetxController {
   bool get isStudent =>
       userRole.value == 'high school student' ||
       userRole.value == 'uni student';
-  
+
   bool _hasLoadedOnce = false;
   bool _isCurrentlyLoading = false;
 
-    /// Filter options based on role
-    List<String> get filterOptions {
-      if (isStudent) {
-        return ['ทั้งหมด', 'ส่งช้า', 'ยังไม่ส่ง', 'ส่งแล้ว'];
-      } else {
-        return ['โพสต์ล่าสุด', 'โพสต์เก่าสุด'];
-      }
+  List<String> get filterOptions {
+    if (isStudent) {
+      return ['ทั้งหมด', 'ส่งช้า', 'ยังไม่ส่ง', 'ส่งแล้ว'];
+    } else {
+      return ['โพสต์ล่าสุด', 'โพสต์เก่าสุด'];
     }
+  }
 
   @override
   void onInit() {
     super.onInit();
-    final args = Get.arguments as Map<String, dynamic>? ?? {};
+
+    Map<String, dynamic>? args;
+    if (Get.isRegistered<NavigationController>()) {
+      args = Get.find<NavigationController>().classAssignmentArgs.value;
+    }
+    args ??= Get.arguments as Map<String, dynamic>? ?? {};
+
     sectionId = args['sectionId'] ?? 0;
     className = args['className'] ?? '';
     subjectName = args['subjectName'] ?? '';
@@ -56,12 +65,34 @@ class ClassAssignmentController extends GetxController {
       currentFilter.value = isStudent ? 'ทั้งหมด' : 'โพสต์ล่าสุด';
     }
 
-    // Fetch teacher name และ assignments พร้อมกัน
     _fetchTeacherName();
     fetchAssignments();
   }
 
-  /// FETCH TEACHER NAME FROM SECTION EDUCATOR (เหมือน ClassDetail)
+
+  void reinitialise(Map<String, dynamic> args) {
+    final newSectionId = args['sectionId'] ?? 0;
+    if (newSectionId == sectionId && _hasLoadedOnce) return;
+
+    sectionId = newSectionId;
+    className = args['className'] ?? '';
+    subjectName = args['subjectName'] ?? '';
+    userRole.value = args['role'] ?? 'student';
+
+    currentFilter.value = isStudent ? 'ทั้งหมด' : 'โพสต์ล่าสุด';
+
+    _hasLoadedOnce = false;
+    _isCurrentlyLoading = false;
+
+    teacherName.value = '';
+    assignments.clear();
+    filteredAssignments.clear();
+    errorMessage.value = '';
+
+    _fetchTeacherName();
+    fetchAssignments();
+  }
+
   Future<void> _fetchTeacherName() async {
     try {
       final result = await _classFeedRepository.getSectionEducators(
@@ -69,13 +100,10 @@ class ClassAssignmentController extends GetxController {
       );
 
       if (result != null && result.isNotEmpty) {
-        // Get first educator (main teacher) - API returns sorted by position
-        final teacherDisplayName = result[0]['display_name'] ?? 'ไม่ระบุ';
-        teacherName.value = teacherDisplayName;
+        teacherName.value = result[0]['display_name'] ?? 'ไม่ระบุ';
         AppLogger.info('👨‍🏫 Teacher name set: ${teacherName.value}');
       } else {
         teacherName.value = 'ไม่พบผู้สอนหลัก';
-        AppLogger.info('⚠️ No educators found');
       }
     } catch (e) {
       AppLogger.info('❌ Error fetching teacher name: $e');
@@ -109,17 +137,15 @@ class ClassAssignmentController extends GetxController {
                 a.studentStatus == 'ส่งแล้วเกินกำหนด'),
           );
           break;
-        default: // ทั้งหมด
+        default:
           filteredAssignments.assignAll(assignments);
       }
     } else {
-      // Teacher filters
       List<AssignmentModel> sorted = List.from(assignments);
       if (filter == 'โพสต์เก่าสุด') {
         sorted.sort((a, b) => (a.dueDate ?? DateTime(2099))
             .compareTo(b.dueDate ?? DateTime(2099)));
       } else {
-        // โพสต์ล่าสุด (default)
         sorted.sort((a, b) => (b.dueDate ?? DateTime(2099))
             .compareTo(a.dueDate ?? DateTime(2099)));
       }
@@ -131,18 +157,16 @@ class ClassAssignmentController extends GetxController {
   }
 
   Future<void> fetchAssignments() async {
-    AppLogger.info('🔍 fetchAssignments called - hasLoaded: $_hasLoadedOnce, isLoading: $_isCurrentlyLoading');
-    
+    AppLogger.info(
+        '🔍 fetchAssignments called - hasLoaded: $_hasLoadedOnce, isLoading: $_isCurrentlyLoading');
+
     if (_hasLoadedOnce || _isCurrentlyLoading) {
       AppLogger.info('⚠️ Skipped - already loaded or loading');
       return;
     }
-    
+
     _isCurrentlyLoading = true;
     _hasLoadedOnce = true;
-    AppLogger.info('✅ Starting fetch...');
-
-    AppLogger.info('🔍 fetchAssignments called');
 
     isLoading.value = true;
     errorMessage.value = '';
@@ -157,26 +181,15 @@ class ClassAssignmentController extends GetxController {
         limit: _limit,
       );
 
-      AppLogger.info('📦 Raw result count: ${result.length}');
-      AppLogger.info('📋 Raw Assignment IDs: ${result.map((a) => a.assignmentId).toList()}');
-      AppLogger.info('📋 Raw Assignment Titles: ${result.map((a) => a.title).toList()}');
+      AppLogger.info('📦 Fetched ${result.length} assignments');
 
       assignments.clear();
       filteredAssignments.clear();
-
-      AppLogger.info('📦 Fetched ${result.length} assignments');
-
       assignments.assignAll(result);
       _currentOffset = result.length;
       _hasMoreData = result.length == _limit;
 
-      AppLogger.info('📦 assignments count after assignAll: ${assignments.length}');
-      AppLogger.info('📋 Assignment IDs after assignAll: ${assignments.map((a) => a.assignmentId).toList()}');
-
       applyFilter(currentFilter.value);
-
-      AppLogger.info('📦 filteredAssignments count after filter: ${filteredAssignments.length}');
-      AppLogger.info('📋 Filtered Assignment IDs: ${filteredAssignments.map((a) => a.assignmentId).toList()}');
     } catch (e) {
       AppLogger.info('❌ Error: $e');
       errorMessage.value = 'ไม่สามารถโหลดข้อมูลได้';
@@ -187,14 +200,9 @@ class ClassAssignmentController extends GetxController {
     }
   }
 
-
   Future<void> loadMoreAssignments() async {
-    if (!_hasMoreData || isLoadingMore.value) {
-      AppLogger.info('⚠️ No more data or already loading');
-      return;
-    }
+    if (!_hasMoreData || isLoadingMore.value) return;
 
-    AppLogger.info('🔄 Loading more assignments...');
     isLoadingMore.value = true;
 
     try {
@@ -205,11 +213,8 @@ class ClassAssignmentController extends GetxController {
         limit: _limit,
       );
 
-      AppLogger.info('📦 Loaded ${result.length} more assignments');
-
       if (result.isEmpty) {
         _hasMoreData = false;
-        AppLogger.info('✅ No more assignments to load');
       } else {
         assignments.addAll(result);
         _currentOffset += result.length;
@@ -223,15 +228,12 @@ class ClassAssignmentController extends GetxController {
     }
   }
 
-  // ✅ Pull to refresh (reset everything)
   Future<void> refreshAssignments() async {
-    AppLogger.info('🔄 Refreshing assignments...');
-
+    _hasLoadedOnce = false;
+    _isCurrentlyLoading = false;
     await Future.wait([
       _fetchTeacherName(),
       fetchAssignments(),
     ]);
-
-    AppLogger.info('✅ Refresh complete');
   }
 }

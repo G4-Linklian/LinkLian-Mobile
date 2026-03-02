@@ -1,22 +1,28 @@
 import 'package:LinkLian/features/community/controllers/community_controller.dart';
 import 'package:get/get.dart';
 
-/// Global navigation controller for managing bottom navigation state
-/// This allows sub-pages to change the main tab without destroying themselves
 class NavigationController extends GetxController {
   final RxInt selectedIndex = 1.obs; // Default to ClassesPage
 
-  /// Track if currently showing class detail overlay
+  // ─── Class Detail ─────────────────────────────────────────────────────────
   final RxBool isShowingClassDetail = false.obs;
-
-  /// Track the class detail arguments for restoration
   final Rx<Map<String, dynamic>?> classDetailArgs = Rx<Map<String, dynamic>?>(
     null,
   );
-  final isShowingCommunityDetail = false.obs;
-  final communityDetailArgs = Rxn<Map<String, dynamic>>();
 
-  /// Change to a specific tab
+  // ─── Community Detail ─────────────────────────────────────────────────────
+  final RxBool isShowingCommunityDetail = false.obs;
+  final Rxn<Map<String, dynamic>> communityDetailArgs =
+      Rxn<Map<String, dynamic>>();
+
+  // ─── Assignment sub-page (ClassAssignmentPage) ────────────────────────────
+  final RxBool isShowingClassAssignment = false.obs;
+  final Rxn<Map<String, dynamic>> classAssignmentArgs =
+      Rxn<Map<String, dynamic>>();
+
+  // Tab switching
+
+
   void changeTab(int index) {
     final previousIndex = selectedIndex.value;
     selectedIndex.value = index;
@@ -26,29 +32,30 @@ class NavigationController extends GetxController {
         Get.find<CommunityController>().resetSearch();
       }
     }
-    if (index != 1) {
-      isShowingClassDetail.value = false;
-      classDetailArgs.value = null;
-    }
-
-    if (index != 2) {
-      isShowingCommunityDetail.value = false;
-      communityDetailArgs.value = null;
-    }
-
   }
 
-  /// Show class detail overlay
+  // Class Detail (Tab 1)
+
   void showClassDetail(Map<String, dynamic> args) {
     classDetailArgs.value = args;
     isShowingClassDetail.value = true;
   }
 
-  /// Hide class detail overlay
   void hideClassDetail() {
     isShowingClassDetail.value = false;
     classDetailArgs.value = null;
   }
+
+  void showClassDetailFromRedirect(Map<String, dynamic> args) {
+    classDetailArgs.value = args;
+    isShowingClassDetail.value = true;
+    selectedIndex.value = 1;
+  }
+
+  bool get shouldRestoreClassDetail =>
+      isShowingClassDetail.value && classDetailArgs.value != null;
+
+  // Community Detail (Tab 2)
 
   void showCommunityDetail(Map<String, dynamic> args) {
     communityDetailArgs.value = args;
@@ -57,9 +64,34 @@ class NavigationController extends GetxController {
 
   void hideCommunityDetail() {
     isShowingCommunityDetail.value = false;
+    communityDetailArgs.value = null;
   }
 
-  /// Check if should show class detail when switching to class tab
-  bool get shouldRestoreClassDetail =>
-      isShowingClassDetail.value && classDetailArgs.value != null;
+  // Class Assignment (Tab 0 sub-page)
+
+  void showClassAssignment(Map<String, dynamic> args) {
+    classAssignmentArgs.value = args;
+    isShowingClassAssignment.value = true;
+  }
+
+  void hideClassAssignment() {
+    isShowingClassAssignment.value = false;
+    classAssignmentArgs.value = null;
+  }
+
+  void resetForRoleChange(bool isStudent) {
+    final maxIndex = isStudent ? 3 : 2;
+
+    if (selectedIndex.value > maxIndex) {
+      selectedIndex.value = 1;
+    }
+    isShowingClassDetail.value = false;
+    classDetailArgs.value = null;
+
+    isShowingCommunityDetail.value = false;
+    communityDetailArgs.value = null;
+
+    isShowingClassAssignment.value = false;
+    classAssignmentArgs.value = null;
+  }
 }
