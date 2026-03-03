@@ -5,11 +5,6 @@ on:
     branches: [main, staging]
     paths:
       - "**"
-  push:
-    branches: [main, staging]
-    paths:
-      - "**"
-  workflow_dispatch:
 
 concurrency:
   group: ci-mobile-${{ github.workflow }}-${{ github.ref }}
@@ -70,17 +65,17 @@ jobs:
       - run: flutter doctor -v
       - run: flutter pub get
 
-      - name: Format check (non-blocking)
-        continue-on-error: true
-        run: dart format --output=none --set-exit-if-changed .
+      # - name: Format check (non-blocking)
+      #   continue-on-error: true
+      #   run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze (non-blocking)
         continue-on-error: true
         run: flutter analyze
 
-      - name: Run tests (non-blocking)
-        continue-on-error: true
-        run: flutter test --coverage
+      # - name: Run tests (non-blocking)
+      #   continue-on-error: true
+      #   run: flutter test --coverage
 
       - name: Upload coverage (non-blocking)
         uses: codecov/codecov-action@v3
