@@ -36,6 +36,8 @@ import '../features/assignment/bindings/class_assignment_binding.dart';
 import '../features/assignment/pages/assignment_submission_page.dart';
 import '../features/assignment/bindings/assignment_submission_binding.dart';
 import '../features/classes/controllers/search_post_controller.dart';
+import '../features/assignment/pages/search_assignment_page.dart';
+import '../features/assignment/controllers/search_assignment_controller.dart';
 
 class AppRouter {
   static final routes = [
@@ -139,6 +141,14 @@ class AppRouter {
       name: AppRoutes.profile,
       page: () => const ProfilePage(),
       binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.searchAssignment,
+      page: () => const SearchAssignmentPage(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<SearchAssignmentController>(() => SearchAssignmentController());
+      }),
+      transition: Transition.rightToLeft,
     ),
   ];
 }

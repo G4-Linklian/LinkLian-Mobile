@@ -103,7 +103,7 @@ class _CardPostState extends State<CardPost> {
 
   bool get _canSelectForAI {
     final postType = widget.post.postType.toLowerCase();
-    return postType == 'assignment' || postType == 'announcement';
+    return postType == 'announcement';
   }
 
   @override
@@ -605,7 +605,7 @@ Text('$scoreText คะแนน');
 
   Widget _buildRadio() {
     return Obx(() {
-      // ถ้าไม่มี classController ไม่แสดง radio (เช่นอยู่ในหน้า search)
+      // ถ้าไม่มี classController ไม่แสดง AI button (เช่นอยู่ในหน้า search)
       if (!_hasClassController) {
         return const SizedBox.shrink();
       }
@@ -613,29 +613,61 @@ Text('$scoreText คะแนน');
       final isSelected = _classController!.selectedPostIdsForAI.contains(
         widget.post.postId,
       );
+      
+      // Check if can select this post (either already selected or has room)
+      final canSelect = _classController!.canSelectForAI(widget.post.postId);
 
-      return InkWell(
-        onTap: widget.onSelectForAI == null
-            ? null
-            : () => widget.onSelectForAI!(widget.post.postId),
+      return GestureDetector(
+        onTap: () {
+          if (canSelect && widget.onSelectForAI != null) {
+            widget.onSelectForAI!(widget.post.postId);
+          }
+        },
         child: Container(
-          width: 24,
-          height: 24,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
+            color: isSelected 
+                ? AppColors.primaryPalette[600] 
+                : canSelect 
+                    ? AppColors.primaryPalette[100]
+                    : AppColors.gray.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected
+              color: isSelected 
                   ? AppColors.primaryPalette[600]!
-                  : Colors.grey.shade400,
-              width: 2,
+                  : canSelect 
+                      ? AppColors.primaryPalette[400]!
+                      : AppColors.gray.withOpacity(0.5),
+              width: 1.5,
             ),
-            color: isSelected
-                ? AppColors.primaryPalette[600]
-                : Colors.transparent,
           ),
-          child: isSelected
-              ? const Icon(Icons.check, size: 16, color: Colors.white)
-              : null,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 14,
+                color: isSelected 
+                    ? Colors.white 
+                    : canSelect 
+                        ? AppColors.primaryPalette[600]
+                        : AppColors.gray,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'AI',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected 
+                      ? Colors.white 
+                      : canSelect 
+                          ? AppColors.primaryPalette[600]
+                          : AppColors.gray,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     });

@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../core/services/local_storage.dart';
 import 'package:flutter/foundation.dart';
+import '../../layout/controllers/navigation_controller.dart';
 
 enum AuthStatus { checking, unauthenticated, authenticated }
 
@@ -23,7 +24,6 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // print('🧠 AuthController hash = ${hashCode}');
     _tryAutoLogin();
     _loadFromStorage();
   }
@@ -116,14 +116,27 @@ class AuthController extends GetxController {
 
   /// ===== Logout / hot reload =====
   Future<void> logout() async {
+    await LocalStorage.clearAuthSession();
+
+    if (Get.isRegistered<NavigationController>()) {
+      final nav = Get.find<NavigationController>();
+      nav.selectedIndex.value = 1;
+      nav.hideClassDetail();
+      nav.hideCommunityDetail();
+      nav.hideClassAssignment();
+    }
+
     token.value = null;
     roleName.value = null;
     instId.value = null;
     userId.value = null;
+
     status.value = AuthStatus.unauthenticated;
   }
 
-  void _clearSession() {
+  void _clearSession() async {
+    await LocalStorage.clearAuthSession();
+
     token.value = null;
     roleName.value = null;
     instId.value = null;

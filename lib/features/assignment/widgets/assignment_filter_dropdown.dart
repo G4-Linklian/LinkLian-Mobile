@@ -24,22 +24,22 @@ class AssignmentFilterDropdown extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.primaryPalette[500],
+          color: AppColors.primaryPalette[300],
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+             Text(
               'กรองโพสต์',
               style: TextStyle(
                 fontSize: 13,
-                color: AppColors.white,
+                color: AppColors.primaryPalette[700],
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 4),
-            const Icon(LinkLianIcon.filterpost, color: AppColors.white, size: 18),
+            SizedBox(width: 4),
+            Icon(LinkLianIcon.filterpost, color: AppColors.primaryPalette[700], size: 18),
           ],
         ),
       ),

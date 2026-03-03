@@ -253,6 +253,10 @@ class AssignmentCard extends StatelessWidget {
   }
 
   Widget _pill(String text, Color color) {
+    final textColor = color == AppColors.warningPalette[500]
+        ? AppColors.primaryPalette[800]!
+        : AppColors.white;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
@@ -261,9 +265,9 @@ class AssignmentCard extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
-          color: AppColors.white,
+          color: textColor,
           fontWeight: FontWeight.w600,
         ),
       ),

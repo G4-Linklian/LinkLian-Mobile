@@ -204,4 +204,30 @@ class AssignmentRepository {
       return null;
     }
   }
+
+  /// Search assignments by keyword
+  Future<List<AssignmentModel>> searchAssignments({
+    required int sectionId,
+    required String keyword,
+    String role = 'student',
+    int limit = 50,
+  }) async {
+    final response = await _apiClient.get<Map<String, dynamic>>(
+      '/assignment/search',
+      queryParameters: {
+        'section_id': sectionId,
+        'keyword': keyword,
+        'role': role,
+        'limit': limit,
+      },
+    );
+
+    final rawList =
+        (response.data as Map<String, dynamic>)['data'] as List? ?? [];
+
+    return rawList
+        .map<AssignmentModel>(
+            (e) => AssignmentModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

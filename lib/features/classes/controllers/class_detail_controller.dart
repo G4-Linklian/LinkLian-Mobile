@@ -22,6 +22,10 @@ class ClassDetailController extends GetxController {
   final hasMore = true.obs;
   final RxList<PostModel> posts = <PostModel>[].obs;
   final RxSet<int> selectedPostIdsForAI = <int>{}.obs;
+  
+  // Maximum posts that can be selected for AI summary
+  // Currently 1, but can be increased in future for multi-select flow
+  static const int maxAISelectCount = 1;
 
   // final isLoadingClassInfo = false.obs;
   // final RxString classInfoError = ''.obs;
@@ -35,7 +39,10 @@ class ClassDetailController extends GetxController {
   final PostRepository _postRepository = PostRepository();
   final ClassFeedRepository _classFeedRepository = ClassFeedRepository();
   final ScrollController scrollController = ScrollController();
-
+  // เพิ่ม fields เหล่านี้ใน ClassDetailController
+  DateTime? _lastFetchTime;
+  int? _lastKnownPostCount;
+  static const _refreshThresholdSeconds = 30; // โหลดใหม่ถ้าผ่านไป 30 วิ
   List<int> get effectiveSectionIds {
     return [if (sectionId.value != null) sectionId.value!];
   }
@@ -107,48 +114,71 @@ class ClassDetailController extends GetxController {
   }
 
   void initializeWithArgs(Map<String, dynamic> args) {
-    final newSectionId = args['sectionId'] as int?;
+  final newSectionId = args['sectionId'] as int?;
 
-    AppLogger.info('📝 [ClassDetail] initializeWithArgs called');
-    AppLogger.info('📝 [ClassDetail] newSectionId: $newSectionId');
-    AppLogger.info('📝 [ClassDetail] current sectionId: ${sectionId.value}');
-    AppLogger.info(
-      '📝 [ClassDetail] subjectName from args: ${args['subjectName']}',
-    );
-    AppLogger.info(
-      '📝 [ClassDetail] className from args: ${args['className']}',
-    );
-
-    if (sectionId.value != null && sectionId.value != newSectionId) {
-      selectedFilter.value = ClassPostFilter.all;
-      AppLogger.info('📝 [ClassDetail] Filter reset to ALL for new section');
-    }
-
-    if (sectionId.value == newSectionId && posts.isNotEmpty) {
-      AppLogger.info(
-        '📝 [ClassDetail] Same section with data, skipping refetch',
-      );
-      return;
-    }
-
-    if (newSectionId != null) {
-      // Set values immediately
-      sectionId.value = newSectionId;
-      subjectNameTh.value = args['subjectName'] as String? ?? '';
-      effectiveClassName.value = args['className'] as String? ?? '';
-
-      AppLogger.info('📝 [ClassDetail] Values set:');
-      AppLogger.info('  - sectionId: ${sectionId.value}');
-      AppLogger.info('  - subjectNameTh: ${subjectNameTh.value}');
-      AppLogger.info('  - effectiveClassName: ${effectiveClassName.value}');
-
-      // Fetch additional data
-      fetchClassDetailFromFeed();
-      fetchPosts();
-    } else {
-      AppLogger.info('❌ [ClassDetail] newSectionId is null!');
-    }
+  if (newSectionId == null) {
+    AppLogger.error('sectionId is null', screen: 'ClassDetailScreen');
+    return;
   }
+
+  final isNewSection = sectionId.value != newSectionId;
+
+  if (isNewSection) {
+    // ✅ เปลี่ยน section — reset ทุกอย่าง
+    selectedFilter.value = ClassPostFilter.all;
+    _lastFetchTime = null;
+    _lastKnownPostCount = null;
+    posts.clear();
+    hasMore.value = true;
+    _offset = 0;
+    AppLogger.info('🔄 New section → reset & reload', screen: 'ClassDetailScreen');
+  }
+
+  sectionId.value = newSectionId;
+  subjectNameTh.value = args['subjectName'] as String? ?? '';
+  effectiveClassName.value = args['className'] as String? ?? '';
+
+  fetchClassDetailFromFeed();
+
+  // ✅ โหลดโพสต์เสมอ ไม่ว่าจะ section ใหม่หรือเดิม
+  // แต่ใช้ refreshIfNeeded() เพื่อไม่โหลดซ้ำถ้าข้อมูลยังใหม่
+  if (isNewSection) {
+    fetchPosts();
+  } else {
+    refreshIfNeeded();
+  }
+}
+
+  /// เรียกเมื่อกลับมาที่หน้านี้จากหน้าอื่น (เช่น หลังโพสต์)
+Future<void> refreshIfNeeded() async {
+  if (sectionId.value == null) return;
+
+  // ✅ ถ้าไม่มีโพสต์เลย — โหลดเสมอ
+  if (posts.isEmpty) {
+    AppLogger.info('🔄 No posts — fetching', screen: 'ClassDetailScreen');
+    await fetchPosts();
+    return;
+  }
+
+  final lastFetch = _lastFetchTime;
+  if (lastFetch == null) {
+    AppLogger.info('🔄 Never loaded — fetching', screen: 'ClassDetailScreen');
+    await fetchPosts();
+    return;
+  }
+
+  final secondsSinceFetch = DateTime.now().difference(lastFetch).inSeconds;
+
+  if (secondsSinceFetch >= _refreshThresholdSeconds) {
+    AppLogger.info('🔄 Data stale (${secondsSinceFetch}s) — refreshing', screen: 'ClassDetailScreen');
+    await fetchPosts();
+    return;
+  }
+
+  AppLogger.info('✅ Data fresh (${secondsSinceFetch}s ago) — skip', screen: 'ClassDetailScreen');
+}
+
+
 
   void fetchClassDetailFromFeed() {
     try {
@@ -289,92 +319,99 @@ class ClassDetailController extends GetxController {
     }
   }
 
-  Future<void> fetchPosts({
-    bool loadMore = false,
-    bool keepScroll = false,
-  }) async {
-    if (loadMore && !hasMore.value) {
-      AppLogger.info('⚠️ [ClassDetail] No more posts to load');
-      return;
-    }
-
-    if (loadMore && isLoadingMore.value) {
-      AppLogger.info('⚠️ [ClassDetail] Already loading more');
-      return;
-    }
-
-    double? savedOffset;
-
-    if (keepScroll && scrollController.hasClients) {
-      savedOffset = scrollController.offset;
-    }
-
-    try {
-      if (loadMore) {
-        isLoadingMore.value = true;
-        await Future.delayed(const Duration(milliseconds: 300));
-      } else {
-        isLoading.value = true;
-        _offset = 0;
-        posts.clear();
-        hasMore.value = true;
-      }
-
-      if (sectionId.value == null) {
-        throw Exception('sectionId is null');
-      }
-
-      AppLogger.info(
-        '📝 [ClassDetail] Fetching posts: offset=$_offset, limit=$_limit',
-      );
-
-      final result = await _postRepository.getPostInClass(
-        sectionId: sectionId.value!,
-        filterType: selectedFilter.value.apiValue,
-        offset: _offset,
-        limit: _limit,
-      );
-
-      AppLogger.info(
-        '📝 [ClassDetail] Got ${result.length} posts (hasMore: $hasMore)',
-      );
-      AppLogger.info('📝 [ClassDetail] Current total: ${posts.length} posts');
-
-      if (result.length < _limit) {
-        hasMore.value = false;
-        AppLogger.info('✅ [ClassDetail] No more posts to load');
-      }
-
-      if (loadMore) {
-        posts.addAll(result);
-        AppLogger.info(
-          '📝 [ClassDetail] Added ${result.length} posts, new total: ${posts.length}',
-        );
-      } else {
-        posts.assignAll(result);
-        AppLogger.info('📝 [ClassDetail] Replaced with ${result.length} posts');
-      }
-
-      _offset += result.length;
-      AppLogger.info('📝 [ClassDetail] New offset: $_offset');
-    } catch (e) {
-      Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดโพสต์ได้');
-      AppLogger.info('❌ [ClassDetail] Error: $e');
-    } finally {
-      isLoading.value = false;
-      isLoadingMore.value = false;
-
-      if (savedOffset != null && scrollController.hasClients) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final offset = savedOffset!;
-          final max = scrollController.position.maxScrollExtent;
-
-          scrollController.jumpTo(offset > max ? max : offset);
-        });
-      }
-    }
+Future<void> fetchPosts({bool loadMore = false, bool keepScroll = false}) async {
+  if (loadMore && !hasMore.value) {
+    AppLogger.info('⚠️ [ClassDetail] No more posts to load');
+    return;
   }
 
+  if (loadMore && isLoadingMore.value) {
+    AppLogger.info('⚠️ [ClassDetail] Already loading more');
+    return;
+  }
+
+  // ป้องกันโหลดซ้ำขณะที่กำลังโหลดอยู่
+  if (!loadMore && isLoading.value) {
+    AppLogger.info('⚠️ [ClassDetail] Already loading');
+    return;
+  }
+
+  double? savedOffset;
+  if (keepScroll && scrollController.hasClients) {
+    savedOffset = scrollController.offset;
+  }
+
+  try {
+    if (loadMore) {
+      isLoadingMore.value = true;
+    } else {
+      // ✅ reset สำหรับ fresh load
+      isLoading.value = true;
+      _offset = 0;
+      posts.clear();
+      hasMore.value = true;
+    }
+
+    if (sectionId.value == null) {
+      throw Exception('sectionId is null');
+    }
+
+    AppLogger.info(
+      '🔄 Fetching posts — sectionId: ${sectionId.value}, offset: $_offset, loadMore: $loadMore',
+      screen: 'ClassDetailScreen',
+    );
+
+    final result = await _postRepository.getPostInClass(
+      sectionId: sectionId.value!,
+      filterType: selectedFilter.value.apiValue,
+      offset: _offset,
+      limit: _limit,
+    );
+
+    // ✅ บันทึกเวลาที่โหลดสำเร็จ (เฉพาะ fresh load)
+    if (!loadMore) {
+      _lastFetchTime = DateTime.now();
+      _lastKnownPostCount = result.length;
+    }
+
+    if (result.length < _limit) {
+      hasMore.value = false;
+      AppLogger.info('✅ [ClassDetail] No more posts to load');
+    }
+
+    if (loadMore) {
+      posts.addAll(result);
+      AppLogger.info(
+        '📝 [ClassDetail] Added ${result.length} posts, total: ${posts.length}',
+      );
+    } else {
+      posts.assignAll(result);
+      if (result.isEmpty) {
+        AppLogger.dataNotFound('Posts', screen: 'ClassDetailScreen');
+      } else {
+        AppLogger.dataFound('Posts', screen: 'ClassDetailScreen', count: result.length);
+      }
+    }
+
+    _offset += result.length;
+    AppLogger.info('📝 [ClassDetail] New offset: $_offset');
+
+  } catch (e) {
+    AppLogger.error('fetchPosts failed: $e', screen: 'ClassDetailScreen');
+    Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดโพสต์ได้');
+  } finally {
+    isLoading.value = false;
+    isLoadingMore.value = false;
+
+    if (savedOffset != null && scrollController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final offset = savedOffset!;
+        final max = scrollController.position.maxScrollExtent;
+        scrollController.jumpTo(offset > max ? max : offset);
+      });
+    }
+  }
+}
   void changeFilter(ClassPostFilter filter) {
     selectedFilter.value = filter;
     fetchPosts();
@@ -382,10 +419,27 @@ class ClassDetailController extends GetxController {
 
   void togglePostSelection(int postId) {
     if (selectedPostIdsForAI.contains(postId)) {
+      // Deselect
       selectedPostIdsForAI.remove(postId);
     } else {
-      selectedPostIdsForAI.add(postId);
+      // Check if can select more (respects maxAISelectCount limit)
+      if (selectedPostIdsForAI.length < maxAISelectCount) {
+        selectedPostIdsForAI.add(postId);
+      }
+      // If already at max, do nothing (UI should prevent this)
     }
+  }
+
+  /// Check if a post can be selected for AI
+  /// Returns true if the post is already selected OR there's room for more selections
+  bool canSelectForAI(int postId) {
+    return selectedPostIdsForAI.contains(postId) || 
+           selectedPostIdsForAI.length < maxAISelectCount;
+  }
+
+  /// Clear all AI selections (useful when returning from AI flow)
+  void clearAISelections() {
+    selectedPostIdsForAI.clear();
   }
 
   Future<void> generateAISummary() async {
