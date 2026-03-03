@@ -46,107 +46,45 @@ class CommunityPendingController extends GetxController {
       isLoading.value = false;
     }
   }
+
   Future<void> approve(int userId) async {
-  try {
-    await _repo.approve(communityId, userId);
+    try {
+      await _repo.approve(communityId, userId);
 
-    // ✅ ลบออกจาก list ทันที
-    pendingMembers.removeWhere((e) => e.userSysId == userId);
+      pendingMembers.removeWhere((e) => e.userSysId == userId);
 
-    // ❗ ไม่ต้อง refresh ก็ได้ เพราะ removeWhere กระตุ้น .obs อยู่แล้ว
-    // pendingMembers.refresh();  ← ลบได้
+      //uadate in community detail page
+      if (Get.isRegistered<CommunityDetailController>()) {
+        final detailController = Get.find<CommunityDetailController>();
+        final community = detailController.community.value;
 
-    // ✅ อัปเดตหน้า detail
-    if (Get.isRegistered<CommunityDetailController>()) {
-      final detailController = Get.find<CommunityDetailController>();
-      final community = detailController.community.value;
-
-      if (community != null) {
-        detailController.community.value =
-            community.copyWith(memberCount: community.memberCount + 1);
+        if (community != null) {
+          detailController.community.value = community.copyWith(
+            memberCount: community.memberCount + 1,
+          );
+        }
       }
-    }
 
-    // ✅ อัปเดตหน้ารวม community
-    if (Get.isRegistered<CommunityController>()) {
-      final commuController = Get.find<CommunityController>();
+      // update in communitypage
+      if (Get.isRegistered<CommunityController>()) {
+        final commuController = Get.find<CommunityController>();
 
-      final index = commuController.communities
-          .indexWhere((c) => c.communityId == communityId);
+        final index = commuController.communities.indexWhere(
+          (c) => c.communityId == communityId,
+        );
 
-      if (index != -1) {
-        final old = commuController.communities[index];
+        if (index != -1) {
+          final old = commuController.communities[index];
 
-        commuController.communities[index] =
-            old.copyWith(memberCount: old.memberCount + 1);
+          commuController.communities[index] = old.copyWith(
+            memberCount: old.memberCount + 1,
+          );
+        }
       }
+    } catch (e) {
+      AppLogger.info("[community]ERROR APPROVE: $e");
     }
-
-  } catch (e) {
-    AppLogger.info("[community]ERROR APPROVE: $e");
   }
-}
-//   Future<void> approve(int userId) async {
-//   try {
-//     await _repo.approve(communityId, userId);
-
-//     pendingMembers.removeWhere((e) => e.userSysId == userId);
-//     pendingMembers.refresh();
-
-//     if (Get.isRegistered<CommunityDetailController>()) {
-//       final detailController = Get.find<CommunityDetailController>();
-
-//       if (detailController.community.value != null) {
-//         final old = detailController.community.value!;
-//         detailController.community.value =
-//             old.copyWith(memberCount: old.memberCount + 1);
-//       }
-//     }
-
-//     if (Get.isRegistered<CommunityController>()) {
-//       final commuController = Get.find<CommunityController>();
-
-//       final index = commuController.communities.indexWhere(
-//         (c) => c.communityId == communityId,
-//       );
-
-//       if (index != -1) {
-//         final old = commuController.communities[index];
-
-//         commuController.communities[index] =
-//             old.copyWith(memberCount: old.memberCount + 1);
-
-//         commuController.communities.refresh();
-//       }
-//     }
-
-//   } catch (e) {
-//     print("ERROR APPROVE: $e");
-//   }
-// }
-
-  // Future<void> approve(int userId) async {
-  //   try {
-  //     await _repo.approve(communityId, userId);
-
-  //     final index = pendingMembers.indexWhere((e) => e.userSysId == userId);
-
-  //     if (index != -1) {
-  //       final old = pendingMembers[index];
-
-  //       pendingMembers[index] = CommunityMemberModel(
-  //         userSysId: old.userSysId,
-  //         firstName: old.firstName,
-  //         lastName: old.lastName,
-  //         profilePic: old.profilePic,
-  //         status: 'active',
-  //       );
-  //     }
-  //   } catch (e) {
-  //     print("ERROR APPROVE: $e");
-  //   }
-  // }
-
 
   Future<void> reject(int userId) async {
     try {
