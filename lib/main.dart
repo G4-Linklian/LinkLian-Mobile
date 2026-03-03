@@ -47,7 +47,10 @@ void main() async {
     BookmarkController(Get.find<BookmarkRepository>()),
     permanent: true,
   );
-  Get.put<AssignmentRepository>(AssignmentRepository(), permanent: true);
+  Get.put<AssignmentRepository>(
+    AssignmentRepository(apiClient: Get.find<ApiClient>()),
+    permanent: true,
+  );
 
   runApp(const MyApp());
 }

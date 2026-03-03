@@ -1,5 +1,5 @@
 import 'package:LinkLian/features/community/controllers/community_controller.dart';
-import 'package:LinkLian/features/assignment/controllers/class_assignment_controller.dart';
+import 'package:LinkLian/features/assignment/presentation/controllers/class_assignment_controller.dart';
 import 'package:get/get.dart';
 
 class NavigationController extends GetxController {

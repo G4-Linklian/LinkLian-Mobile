@@ -8,7 +8,6 @@ import '../../shared/repositories/post_repository.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../../core/services/api_client.dart';
 import '../controllers/class_feed_controller.dart';
-import '../../../data/model/post_model.dart';
 
 enum CreatePostSource { 
   classFeed,        

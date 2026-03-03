@@ -3,7 +3,8 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/linklian-icon.dart';
-import '../../../../features/assignment/controllers/assignment_submission_controller.dart';
+import '../controllers/assignment_submission_controller.dart';
+import '../../data/models/group_model.dart';
 import '../../../../core/utils/logger.dart';
 
 class SubmissionBottomSheet extends StatelessWidget {
@@ -228,28 +229,22 @@ class _GroupTab extends StatelessWidget {
   }
 
   // ===== UI แสดงกลุ่ม (หลังสร้างเสร็จ) =====
-  Widget _buildGroupDisplay(Map<String, dynamic> group) {
-    final members = group['members'] as List<dynamic>? ?? [];
-    appLog.info('👥 Group members = $members');
+  Widget _buildGroupDisplay(GroupModel group) {
+    appLog.info('👥 Group members = ${group.members}');
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ===== ชื่อกลุ่ม + ปุ่ม Edit =====
           Row(
             children: [
               Expanded(
                 child: Text(
-                  group['group_name'] ?? 'ไม่มีชื่อกลุ่ม',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  group.groupName,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
-              //  Edit
               IconButton(
                 onPressed: controller.startEditingGroup,
                 icon: const Icon(LinkLianIcon.pencil, size: 20),
@@ -260,22 +255,12 @@ class _GroupTab extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
-          // ===== Label สมาชิก =====
           const Text(
             'สมาชิกในกลุ่ม',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.black,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.black),
           ),
-
           const SizedBox(height: 8),
-
-          // ===== รายชื่อสมาชิก =====
           Container(
             decoration: BoxDecoration(
               color: AppColors.primaryPalette[200],
@@ -285,37 +270,20 @@ class _GroupTab extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: EdgeInsets.zero,
-              itemCount: members.length,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                thickness: 1,
-                color: Colors.grey[300],
-                indent: 72,
-              ),
+              itemCount: group.members.length,
+              separatorBuilder: (_, __) => Divider(height: 1, thickness: 1, color: Colors.grey[300], indent: 72),
               itemBuilder: (_, index) {
-                final member = members[index];
-
-                final firstName = member['first_name'] ?? '';
-                final lastName = member['last_name'] ?? '';
-                final profilePic = member['profile_pic'] as String?;
-                final name = '$firstName $lastName';
-
+                final member = group.members[index];
                 return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
-                      _buildAvatar(profilePic, firstName, lastName),
+                      _buildAvatar(member.profilePic, member.firstName, member.lastName),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
+                          member.fullName,
+                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
                         ),
                       ),
                     ],
@@ -324,7 +292,6 @@ class _GroupTab extends StatelessWidget {
               },
             ),
           ),
-
           const SizedBox(height: 80),
         ],
       ),
@@ -1112,112 +1079,56 @@ class _TeacherGroupTab extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // ===== Group List =====
             ...controller.allGroups.map((group) {
-              final groupName = group['group_name'] ?? 'ไม่มีชื่อกลุ่ม';
-              final members = group['members'] as List<dynamic>? ?? [];
+              final members = group.members;
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: AppColors.primaryPalette[300]!,
-                    width: 1,
-                  ),
+                  side: BorderSide(color: AppColors.primaryPalette[300]!, width: 1),
                 ),
                 child: ExpansionTile(
-                  tilePadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  childrenPadding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    bottom: 12,
-                  ),
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
                   title: Row(
                     children: [
-                      Icon(
-                        Icons.group,
-                        color: AppColors.primaryPalette[600],
-                        size: 20,
-                      ),
+                      Icon(Icons.group, color: AppColors.primaryPalette[600], size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          groupName,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.black,
-                          ),
+                          group.groupName,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.black),
                         ),
                       ),
                     ],
                   ),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4, left: 32),
-                    child: Text(
-                      '${members.length} คน',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
-                    ),
+                    child: Text('${members.length} คน', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                   ),
                   children: [
                     const Divider(height: 1),
                     const SizedBox(height: 12),
-
-                    // ===== Member List =====
                     ...members.asMap().entries.map((entry) {
                       final index = entry.key;
                       final member = entry.value;
-
-                      final code = member['code'] ?? '-';
-                      final firstName = member['first_name'] ?? '';
-                      final lastName = member['last_name'] ?? '';
-                      final profilePic = member['profile_pic'] as String?;
-
                       return Container(
-                        margin: EdgeInsets.only(
-                          bottom: index < members.length - 1 ? 8 : 0,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
+                        margin: EdgeInsets.only(bottom: index < members.length - 1 ? 8 : 0),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: AppColors.primaryPalette[50],
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
                           children: [
-                            _buildAvatar(profilePic, firstName, lastName),
+                            _buildAvatar(member.profilePic, member.firstName, member.lastName),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '$firstName $lastName',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.black,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'รหัส: $code',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
+                              child: Text(
+                                member.fullName,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.black),
                               ),
                             ),
                           ],

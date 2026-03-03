@@ -17,7 +17,7 @@ import '../controllers/class_detail_controller.dart';
 import '../widgets/class_selector.dart';
 import '../widgets/attachment_file.dart';
 import '../widgets/attachment_picture.dart';
-import '../../assignment/controllers/class_assignment_controller.dart';
+import '../../assignment/presentation/controllers/class_assignment_controller.dart';
 import '../../layout/controllers/navigation_controller.dart';
 import '../../../config/app_routes.dart';
 
