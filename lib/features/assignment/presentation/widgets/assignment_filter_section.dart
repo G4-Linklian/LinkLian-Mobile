@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/colors.dart';
-import '../../../core/constants/sizes.dart';
+import '../../../../core/constants/colors.dart';
+import '../../../../core/constants/sizes.dart';
 import '../controllers/class_assignment_controller.dart';
 import 'assignment_filter_dropdown.dart';
 

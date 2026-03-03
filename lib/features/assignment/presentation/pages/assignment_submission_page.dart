@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/colors.dart';
-import '../../../core/constants/sizes.dart';
-import '../../../core/constants/linklian-icon.dart';
+import '../../../../core/constants/colors.dart';
+import '../../../../core/constants/sizes.dart';
+import '../../../../core/constants/linklian-icon.dart';
 
-import '../controllers/assignment_submission_controller.dart';
-import '../../classes/widgets/card_post.dart';
+import '../../../../features/assignment/controllers/assignment_submission_controller.dart';
+import '../../../classes/widgets/card_post.dart';
 import '../widgets/submission_bottomsheet.dart';
 
 

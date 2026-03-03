@@ -4,7 +4,7 @@ import '../../../core/constants/colors.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/constants/linklian-icon.dart';
 import '../../../core/services/api_client.dart';
-import '../../../data/model/post_model.dart';
+import '../../shared/models/post_model.dart';
 import '../widgets/card_post.dart';
 import '../../classes/controllers/search_post_controller.dart';
 

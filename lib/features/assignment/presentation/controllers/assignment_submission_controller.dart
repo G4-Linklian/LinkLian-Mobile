@@ -1,14 +1,14 @@
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../../data/repository/assignment_repository.dart';
-import '../../../data/model/post_model.dart';
-import '../../../data/model/submission_model.dart';
-import '../../../core/utils/logger.dart';
-import '../../../data/model/assignment_submission_info.dart';
-import '../../../core/utils/dialog_helper.dart';
+import '../../data/repositories/assignment_repository.dart';
+import '../../../shared/models/post_model.dart';
+import '../../data/models/submission_model.dart';
+import '../../../../core/utils/logger.dart';
+import '../../data/models/assignment_submission_info.dart';
+import '../../../../core/utils/dialog_helper.dart';
 import 'package:flutter/material.dart';
-import '../../../core/constants/colors.dart';
-import '../../auth/controller/auth_controller.dart';
+import '../../../../core/constants/colors.dart';
+import '../../../auth/controller/auth_controller.dart';
 
 class AssignmentSubmissionController extends GetxController {
   final AssignmentRepository repo = Get.find();

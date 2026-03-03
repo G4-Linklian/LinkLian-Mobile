@@ -10,14 +10,14 @@ import 'routes/app_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/services/local_storage.dart';
 import 'features/auth/controller/auth_controller.dart';
-import 'data/repository/class_feed_repository.dart';
+import 'features/shared/repositories/class_feed_repository.dart';
 import 'data/repository/semester_repository.dart';
 import 'features/login/pages/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'data/repository/bookmark_repository.dart';
 import 'features/profile/controllers/bookmark_controller.dart';
 import 'features/layout/controllers/navigation_controller.dart';
-import 'data/repository/assignment_repository.dart';
+import 'features/assignment/data/repositories/assignment_repository.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {

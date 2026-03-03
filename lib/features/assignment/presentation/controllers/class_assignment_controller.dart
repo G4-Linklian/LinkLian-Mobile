@@ -1,9 +1,9 @@
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:get/get.dart';
-import '../../../data/repository/assignment_repository.dart';
-import '../../../data/repository/class_feed_repository.dart';
-import '../../../data/model/assignment_model.dart';
-import '../../layout/controllers/navigation_controller.dart';
+import '../../data/repositories/assignment_repository.dart';
+import '../../../shared/repositories/class_feed_repository.dart';
+import '../../data/models/assignment_model.dart';
+import '../../../layout/controllers/navigation_controller.dart';
 
 class ClassAssignmentController extends GetxController {
   final AssignmentRepository _assignmentRepository =

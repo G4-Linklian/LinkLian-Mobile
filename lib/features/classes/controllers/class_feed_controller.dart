@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '/data/model/class_feed_model.dart';
 import '/data/model/semester_model.dart';
-import '/data/repository/class_feed_repository.dart';
+import '/features/shared/repositories/class_feed_repository.dart';
 import '/data/repository/semester_repository.dart';
 import '../../auth/controller/auth_controller.dart';
 

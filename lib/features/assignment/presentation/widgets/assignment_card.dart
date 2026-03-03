@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../data/model/assignment_model.dart';
-import '../../../core/constants/linklian-bg.dart';
-import '../../../core/constants/colors.dart';
-import '../../../core/constants/linklian-icon.dart';
+import '../../data/models/assignment_model.dart';
+import '../../../../core/constants/linklian-bg.dart';
+import '../../../../core/constants/colors.dart';
+import '../../../../core/constants/linklian-icon.dart';
 
 class AssignmentCard extends StatelessWidget {
   final AssignmentModel assignment;

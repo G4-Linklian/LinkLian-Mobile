@@ -22,7 +22,6 @@ class PostModel {
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
-  // ===== user info =====
   @JsonKey(name: 'user_sys_id', fromJson: _intFromJson)
   final int? userSysId;
 
@@ -65,7 +64,6 @@ class PostModel {
     this.sectionId,
   });
 
-  // ===== Json helpers =====
   static int _intFromJson(dynamic v) {
     if (v is int) return v;
     if (v is String) return int.tryParse(v) ?? 0;
@@ -80,9 +78,7 @@ class PostModel {
   }
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
-    // Handle user object (NestJS format) or flat fields (old format)
     final user = json['user'] as Map<String, dynamic>?;
-
     return PostModel(
       postId: _parseInt(json['post_id']),
       postContentId: _parseInt(json['post_content_id']),
@@ -92,7 +88,7 @@ class PostModel {
       isAnonymous: json['is_anonymous'] ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : DateTime.now(), // Support both nested user object and flat fields
+          : DateTime.now(),
       userSysId: user != null
           ? _parseIntNullable(user['user_sys_id'])
           : _parseIntNullable(json['user_sys_id']),
@@ -106,8 +102,8 @@ class PostModel {
           : null,
       maxScore: json['max_score'] != null
           ? (json['max_score'] is double
-                ? json['max_score']
-                : double.tryParse(json['max_score'].toString()))
+              ? json['max_score']
+              : double.tryParse(json['max_score'].toString()))
           : null,
       isGroup: json['is_group'] as bool?,
       sectionId: _parseIntNullable(json['section_id']),
@@ -132,7 +128,6 @@ class PostModel {
     if (attachments == null) return null;
     if (attachments is! List) return null;
     if (attachments.isEmpty) return [];
-
     return attachments
         .where((a) => a != null && a is Map<String, dynamic>)
         .map((a) => PostAttachmentModel.fromJson(a as Map<String, dynamic>))
@@ -203,12 +198,7 @@ class PostAttachmentModel {
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{'file_url': fileUrl, 'file_type': fileType};
-
-    // Always include original_name (even if null, backend will handle it)
-    if (originalName != null) {
-      map['original_name'] = originalName;
-    }
-
+    if (originalName != null) map['original_name'] = originalName;
     return map;
   }
 }

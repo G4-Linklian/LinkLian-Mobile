@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../core/constants/colors.dart';
-import '../../../core/constants/sizes.dart';
-import '../../../core/constants/linklian-icon.dart';
-import '../../../config/app_routes.dart';
+import '../../../../core/constants/colors.dart';
+import '../../../../core/constants/sizes.dart';
+import '../../../../core/constants/linklian-icon.dart';
+import '../../../../config/app_routes.dart';
 import '../controllers/search_assignment_controller.dart';
 import '../widgets/assignment_card.dart';
 

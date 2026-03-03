@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../core/constants/sizes.dart';
-import '../../../core/constants/colors.dart';
-import '../../classes/controllers/class_feed_controller.dart';
-import '../../classes/widgets/class_card.dart';
-import '../../classes/widgets/semester_selector.dart';
-import '../../../config/app_routes.dart';
-import '../../layout/controllers/navigation_controller.dart';
+import '../../../../core/constants/sizes.dart';
+import '../../../../core/constants/colors.dart';
+import '../../../classes/controllers/class_feed_controller.dart';
+import '../../../classes/widgets/class_card.dart';
+import '../../../classes/widgets/semester_selector.dart';
+import '../../../../config/app_routes.dart';
+import '../../../layout/controllers/navigation_controller.dart';
 
 class AssignmentPage extends StatefulWidget {
   const AssignmentPage({super.key});

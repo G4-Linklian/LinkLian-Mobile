@@ -1,10 +1,10 @@
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:get/get.dart';
 import '../controllers/class_detail_filter.dart';
-import '../../../data/repository/post_repository.dart';
-import '../../../data/repository/class_feed_repository.dart';
+import '../../shared/repositories/post_repository.dart';
+import '../../shared/repositories/class_feed_repository.dart';
 import '../controllers/class_feed_controller.dart';
-import '../../../data/model/post_model.dart';
+import '../../shared/models/post_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/animation.dart';
 import '../../../core/utils/dialog_helper.dart';

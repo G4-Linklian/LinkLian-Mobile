@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:flutter/material.dart';
-import '../../core/constants/colors.dart';
+import '../../../../core/constants/colors.dart';
 
 part 'assignment_model.g.dart';
 

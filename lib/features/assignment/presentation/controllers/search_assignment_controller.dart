@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
-import '../../../data/model/assignment_model.dart';
-import '../../../data/repository/assignment_repository.dart';
+import '../../data/models/assignment_model.dart';
+import '../../data/repositories/assignment_repository.dart';
 
 class SearchAssignmentController extends GetxController {
   final AssignmentRepository _assignmentRepository = Get.find<AssignmentRepository>();

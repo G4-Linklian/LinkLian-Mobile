@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
-import '../../../data/model/post_model.dart';
-import '../../../data/repository/post_repository.dart';
+import '../../shared/models/post_model.dart';
+import '../../shared/repositories/post_repository.dart';
 
 class SearchPostController extends GetxController {
   final PostRepository _postRepository = PostRepository();

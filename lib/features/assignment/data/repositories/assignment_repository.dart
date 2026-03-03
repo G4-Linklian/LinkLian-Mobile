@@ -1,6 +1,6 @@
-import '../../core/services/api_client.dart';
-import '../../core/utils/logger.dart';
-import '../model/assignment_model.dart';
+import '../../../../core/services/api_client.dart';
+import '../../../../core/utils/logger.dart';
+import '../models/assignment_model.dart';
 import 'package:get/get.dart' hide Response;
 import 'package:dio/dio.dart' as dio;
 

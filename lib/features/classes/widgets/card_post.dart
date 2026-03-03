@@ -12,7 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
-import '../../../data/model/post_model.dart';
+import '../../shared/models/post_model.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/sizes.dart';
 import 'package:intl/intl.dart';
@@ -21,7 +21,7 @@ import '../../../config/app_routes.dart';
 import '../../classes/controllers/create_post_controller.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../../core/utils/post_permission.dart';
-import '../../../data/repository/post_repository.dart';
+import '../../shared/repositories/post_repository.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../profile/controllers/bookmark_controller.dart';
 

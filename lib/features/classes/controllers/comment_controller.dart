@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../auth/controller/auth_controller.dart';
 import '../../../data/model/comment_model.dart';
-import '../../../data/model/post_model.dart';
+import '../../shared/models/post_model.dart';
 import '../../../data/repository/comment_repository.dart';
 import '../../../core/utils/dialog_helper.dart';
 

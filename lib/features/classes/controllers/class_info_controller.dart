@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import '../../../data/repository/class_feed_repository.dart';
+import '../../shared/repositories/class_feed_repository.dart';
 
 class ClassInfoController extends GetxController {
   final int sectionId;

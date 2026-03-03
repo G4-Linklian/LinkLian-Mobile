@@ -16,7 +16,7 @@ import 'package:LinkLian/features/profile/bindings/profile_binding.dart';
 import 'package:LinkLian/main.dart';
 import 'package:get/get.dart';
 import '../config/app_routes.dart';
-import '../features/assignment/pages/assignment_page.dart';
+import '../features/assignment/presentation/pages/assignment_page.dart';
 import '../features/community/pages/community_page.dart';
 import '../features/profile/pages/profile_page.dart';
 import '../features/layout/pages/layout.dart';
@@ -26,18 +26,18 @@ import '../features/classes/pages/class_detail_page.dart';
 import '../features/classes/bindings/class_detail_binding.dart';
 import '../features/classes/pages/create_post_class_page.dart';
 import '../features/classes/controllers/create_post_controller.dart';
-import '../data/repository/post_repository.dart';
+import '../features/shared/repositories/post_repository.dart';
 import '../features/classes/pages/comment_page.dart';
 import '../features/classes/bindings/comment_binding.dart';
 import '../features/profile/bindings/bookmark_binding.dart';
 import '../features/classes/pages/search_post_page.dart';
-import '../features/assignment/pages/class_assignment_page.dart';
+import '../features/assignment/presentation/pages/class_assignment_page.dart';
 import '../features/assignment/bindings/class_assignment_binding.dart';
-import '../features/assignment/pages/assignment_submission_page.dart';
+import '../features/assignment/presentation/pages/assignment_submission_page.dart';
 import '../features/assignment/bindings/assignment_submission_binding.dart';
 import '../features/classes/controllers/search_post_controller.dart';
-import '../features/assignment/pages/search_assignment_page.dart';
-import '../features/assignment/controllers/search_assignment_controller.dart';
+import '../features/assignment/presentation/pages/search_assignment_page.dart';
+import '../features/assignment/presentation/controllers/search_assignment_controller.dart';
 
 class AppRouter {
   static final routes = [
