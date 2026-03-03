@@ -88,7 +88,7 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
       body: RefreshIndicator(
         color: AppColors.primaryPalette[500],
         onRefresh: () async {
-          AppLogger.info('🔄 Pull to refresh', screen: 'ClassDetailScreen');
+          appLog.info('🔄 Pull to refresh', actionPage: 'ClassDetailScreen');
           await controller.fetchPosts();
         },
         child: CustomScrollView(

@@ -22,7 +22,7 @@ class ClassDetailController extends GetxController {
   final hasMore = true.obs;
   final RxList<PostModel> posts = <PostModel>[].obs;
   final RxSet<int> selectedPostIdsForAI = <int>{}.obs;
-  
+
   // Maximum posts that can be selected for AI summary
   // Currently 1, but can be increased in future for multi-select flow
   static const int maxAISelectCount = 1;
@@ -77,13 +77,13 @@ class ClassDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    AppLogger.info('📝 [ClassDetail] onInit called');
+    appLog.info('📝 [ClassDetail] onInit called');
   }
 
   @override
   void onReady() {
     super.onReady();
-    AppLogger.info('📝 [ClassDetail] onReady called');
+    appLog.info('📝 [ClassDetail] onReady called');
 
     // Try to initialize from NavigationController if not already initialized
     if (sectionId.value == null) {
@@ -91,106 +91,116 @@ class ClassDetailController extends GetxController {
         final navController = Get.find<NavigationController>();
         final args = navController.classDetailArgs.value;
 
-        AppLogger.info(
+        appLog.info(
           '📝 [ClassDetail] onReady - args from NavigationController: $args',
         );
 
         if (args != null) {
-          AppLogger.info(
+          appLog.info(
             '📝 [ClassDetail] Initializing from NavigationController in onReady',
           );
           initializeWithArgs(args);
         } else {
-          AppLogger.info('⚠️ [ClassDetail] No args available in onReady');
+          appLog.info('⚠️ [ClassDetail] No args available in onReady');
         }
       } catch (e) {
-        AppLogger.info('❌ [ClassDetail] Error in onReady: $e');
+        appLog.info('❌ [ClassDetail] Error in onReady: $e');
       }
     } else {
-      AppLogger.info(
+      appLog.info(
         '📝 [ClassDetail] Already initialized with sectionId: ${sectionId.value}',
       );
     }
   }
 
   void initializeWithArgs(Map<String, dynamic> args) {
-  final newSectionId = args['sectionId'] as int?;
+    final newSectionId = args['sectionId'] as int?;
 
-  if (newSectionId == null) {
-    AppLogger.error('sectionId is null', screen: 'ClassDetailScreen');
-    return;
+    if (newSectionId == null) {
+      appLog.error('sectionId is null', actionPage: 'ClassDetailScreen');
+      return;
+    }
+
+    final isNewSection = sectionId.value != newSectionId;
+
+    if (isNewSection) {
+      // ✅ เปลี่ยน section — reset ทุกอย่าง
+      selectedFilter.value = ClassPostFilter.all;
+      _lastFetchTime = null;
+      _lastKnownPostCount = null;
+      posts.clear();
+      hasMore.value = true;
+      _offset = 0;
+      appLog.info(
+        '🔄 New section → reset & reload',
+        actionPage: 'ClassDetailScreen',
+      );
+    }
+
+    sectionId.value = newSectionId;
+    subjectNameTh.value = args['subjectName'] as String? ?? '';
+    effectiveClassName.value = args['className'] as String? ?? '';
+
+    fetchClassDetailFromFeed();
+
+    // ✅ โหลดโพสต์เสมอ ไม่ว่าจะ section ใหม่หรือเดิม
+    // แต่ใช้ refreshIfNeeded() เพื่อไม่โหลดซ้ำถ้าข้อมูลยังใหม่
+    if (isNewSection) {
+      fetchPosts();
+    } else {
+      refreshIfNeeded();
+    }
   }
-
-  final isNewSection = sectionId.value != newSectionId;
-
-  if (isNewSection) {
-    // ✅ เปลี่ยน section — reset ทุกอย่าง
-    selectedFilter.value = ClassPostFilter.all;
-    _lastFetchTime = null;
-    _lastKnownPostCount = null;
-    posts.clear();
-    hasMore.value = true;
-    _offset = 0;
-    AppLogger.info('🔄 New section → reset & reload', screen: 'ClassDetailScreen');
-  }
-
-  sectionId.value = newSectionId;
-  subjectNameTh.value = args['subjectName'] as String? ?? '';
-  effectiveClassName.value = args['className'] as String? ?? '';
-
-  fetchClassDetailFromFeed();
-
-  // ✅ โหลดโพสต์เสมอ ไม่ว่าจะ section ใหม่หรือเดิม
-  // แต่ใช้ refreshIfNeeded() เพื่อไม่โหลดซ้ำถ้าข้อมูลยังใหม่
-  if (isNewSection) {
-    fetchPosts();
-  } else {
-    refreshIfNeeded();
-  }
-}
 
   /// เรียกเมื่อกลับมาที่หน้านี้จากหน้าอื่น (เช่น หลังโพสต์)
-Future<void> refreshIfNeeded() async {
-  if (sectionId.value == null) return;
+  Future<void> refreshIfNeeded() async {
+    if (sectionId.value == null) return;
 
-  // ✅ ถ้าไม่มีโพสต์เลย — โหลดเสมอ
-  if (posts.isEmpty) {
-    AppLogger.info('🔄 No posts — fetching', screen: 'ClassDetailScreen');
-    await fetchPosts();
-    return;
+    // ✅ ถ้าไม่มีโพสต์เลย — โหลดเสมอ
+    if (posts.isEmpty) {
+      appLog.info('🔄 No posts — fetching', actionPage: 'ClassDetailScreen');
+      await fetchPosts();
+      return;
+    }
+
+    final lastFetch = _lastFetchTime;
+    if (lastFetch == null) {
+      appLog.info(
+        '🔄 Never loaded — fetching',
+        actionPage: 'ClassDetailScreen',
+      );
+      await fetchPosts();
+      return;
+    }
+
+    final secondsSinceFetch = DateTime.now().difference(lastFetch).inSeconds;
+
+    if (secondsSinceFetch >= _refreshThresholdSeconds) {
+      appLog.info(
+        '🔄 Data stale (${secondsSinceFetch}s) — refreshing',
+        actionPage: 'ClassDetailScreen',
+      );
+      await fetchPosts();
+      return;
+    }
+
+    appLog.info(
+      '✅ Data fresh (${secondsSinceFetch}s ago) — skip',
+      actionPage: 'ClassDetailScreen',
+    );
   }
-
-  final lastFetch = _lastFetchTime;
-  if (lastFetch == null) {
-    AppLogger.info('🔄 Never loaded — fetching', screen: 'ClassDetailScreen');
-    await fetchPosts();
-    return;
-  }
-
-  final secondsSinceFetch = DateTime.now().difference(lastFetch).inSeconds;
-
-  if (secondsSinceFetch >= _refreshThresholdSeconds) {
-    AppLogger.info('🔄 Data stale (${secondsSinceFetch}s) — refreshing', screen: 'ClassDetailScreen');
-    await fetchPosts();
-    return;
-  }
-
-  AppLogger.info('✅ Data fresh (${secondsSinceFetch}s ago) — skip', screen: 'ClassDetailScreen');
-}
-
-
 
   void fetchClassDetailFromFeed() {
     try {
-      AppLogger.info('📝 [ClassDetail] fetchClassDetailFromFeed called');
+      appLog.info('📝 [ClassDetail] fetchClassDetailFromFeed called');
 
       if (sectionId.value == null) {
-        AppLogger.info('⚠️ [ClassDetail] sectionId is null, skipping fetch');
+        appLog.info('⚠️ [ClassDetail] sectionId is null, skipping fetch');
         return;
       }
 
       if (!Get.isRegistered<ClassFeedController>()) {
-        AppLogger.info(
+        appLog.info(
           '⚠️ [ClassDetail] ClassFeedController not registered, using fallback',
         );
         _fetchClassDetailFallback();
@@ -204,34 +214,34 @@ Future<void> refreshIfNeeded() async {
       );
 
       if (classDetail != null) {
-        AppLogger.info('✅ [ClassDetail] Found class detail in feed controller');
+        appLog.info('✅ [ClassDetail] Found class detail in feed controller');
         subjectNameTh.value = classDetail.subjectNameTh;
         effectiveClassName.value = classDetail.effectiveClassName;
 
-        AppLogger.info('  - Updated subjectNameTh: ${subjectNameTh.value}');
-        AppLogger.info(
+        appLog.info('  - Updated subjectNameTh: ${subjectNameTh.value}');
+        appLog.info(
           '  - Updated effectiveClassName: ${effectiveClassName.value}',
         );
 
         _fetchTeacherName();
       } else {
-        AppLogger.info(
+        appLog.info(
           '⚠️ [ClassDetail] Class detail not found in feed, using fallback',
         );
         _fetchClassDetailFallback();
       }
     } catch (e) {
-      AppLogger.info('❌ [ClassDetail] Error in fetchClassDetailFromFeed: $e');
+      appLog.info('❌ [ClassDetail] Error in fetchClassDetailFromFeed: $e');
       _fetchClassDetailFallback();
     }
   }
 
   Future<void> _fetchTeacherName() async {
     try {
-      AppLogger.info('📝 [ClassDetail] _fetchTeacherName called');
+      appLog.info('📝 [ClassDetail] _fetchTeacherName called');
 
       if (sectionId.value == null) {
-        AppLogger.info(
+        appLog.info(
           '⚠️ [ClassDetail] sectionId is null, skipping teacher fetch',
         );
         return;
@@ -244,15 +254,13 @@ Future<void> refreshIfNeeded() async {
       if (result != null && result.isNotEmpty) {
         final teacherDisplayName = result[0]['display_name'] ?? 'ไม่ระบุ';
         teacherName.value = teacherDisplayName;
-        AppLogger.info(
-          '✅ [ClassDetail] Teacher name set: ${teacherName.value}',
-        );
+        appLog.info('✅ [ClassDetail] Teacher name set: ${teacherName.value}');
       } else {
         teacherName.value = 'ไม่พบผู้สอนหลัก';
-        AppLogger.info('⚠️ [ClassDetail] No teacher found');
+        appLog.info('⚠️ [ClassDetail] No teacher found');
       }
     } catch (e) {
-      AppLogger.info('❌ [ClassDetail] Error fetching teacher name: $e');
+      appLog.info('❌ [ClassDetail] Error fetching teacher name: $e');
       teacherName.value = 'ไม่พบผู้สอนหลัก';
     }
   }
@@ -285,10 +293,10 @@ Future<void> refreshIfNeeded() async {
 
   Future<void> _fetchClassDetailFallback() async {
     try {
-      AppLogger.info('📝 [ClassDetail] _fetchClassDetailFallback called');
+      appLog.info('📝 [ClassDetail] _fetchClassDetailFallback called');
 
       if (sectionId.value == null) {
-        AppLogger.info('⚠️ [ClassDetail] sectionId is null in fallback');
+        appLog.info('⚠️ [ClassDetail] sectionId is null in fallback');
         return;
       }
 
@@ -302,16 +310,16 @@ Future<void> refreshIfNeeded() async {
         subjectNameTh.value = classDetail.subjectNameTh;
         effectiveClassName.value = classDetail.effectiveClassName;
 
-        AppLogger.info('✅ [ClassDetail] Fallback success:');
-        AppLogger.info('  - subjectNameTh: ${subjectNameTh.value}');
-        AppLogger.info('  - effectiveClassName: ${effectiveClassName.value}');
+        appLog.info('✅ [ClassDetail] Fallback success:');
+        appLog.info('  - subjectNameTh: ${subjectNameTh.value}');
+        appLog.info('  - effectiveClassName: ${effectiveClassName.value}');
       } else {
         subjectNameTh.value = 'ไม่ระบุ';
         effectiveClassName.value = 'ไม่ระบุ';
-        AppLogger.info('⚠️ [ClassDetail] Fallback returned null');
+        appLog.info('⚠️ [ClassDetail] Fallback returned null');
       }
     } catch (e) {
-      AppLogger.info('❌ [ClassDetail] Fallback error: $e');
+      appLog.info('❌ [ClassDetail] Fallback error: $e');
       subjectNameTh.value = 'ไม่ระบุ';
       effectiveClassName.value = 'ไม่ระบุ';
     } finally {
@@ -319,99 +327,105 @@ Future<void> refreshIfNeeded() async {
     }
   }
 
-Future<void> fetchPosts({bool loadMore = false, bool keepScroll = false}) async {
-  if (loadMore && !hasMore.value) {
-    AppLogger.info('⚠️ [ClassDetail] No more posts to load');
-    return;
-  }
-
-  if (loadMore && isLoadingMore.value) {
-    AppLogger.info('⚠️ [ClassDetail] Already loading more');
-    return;
-  }
-
-  // ป้องกันโหลดซ้ำขณะที่กำลังโหลดอยู่
-  if (!loadMore && isLoading.value) {
-    AppLogger.info('⚠️ [ClassDetail] Already loading');
-    return;
-  }
-
-  double? savedOffset;
-  if (keepScroll && scrollController.hasClients) {
-    savedOffset = scrollController.offset;
-  }
-
-  try {
-    if (loadMore) {
-      isLoadingMore.value = true;
-    } else {
-      // ✅ reset สำหรับ fresh load
-      isLoading.value = true;
-      _offset = 0;
-      posts.clear();
-      hasMore.value = true;
+  Future<void> fetchPosts({
+    bool loadMore = false,
+    bool keepScroll = false,
+  }) async {
+    if (loadMore && !hasMore.value) {
+      appLog.info('⚠️ [ClassDetail] No more posts to load');
+      return;
     }
 
-    if (sectionId.value == null) {
-      throw Exception('sectionId is null');
+    if (loadMore && isLoadingMore.value) {
+      appLog.info('⚠️ [ClassDetail] Already loading more');
+      return;
     }
 
-    AppLogger.info(
-      '🔄 Fetching posts — sectionId: ${sectionId.value}, offset: $_offset, loadMore: $loadMore',
-      screen: 'ClassDetailScreen',
-    );
-
-    final result = await _postRepository.getPostInClass(
-      sectionId: sectionId.value!,
-      filterType: selectedFilter.value.apiValue,
-      offset: _offset,
-      limit: _limit,
-    );
-
-    // ✅ บันทึกเวลาที่โหลดสำเร็จ (เฉพาะ fresh load)
-    if (!loadMore) {
-      _lastFetchTime = DateTime.now();
-      _lastKnownPostCount = result.length;
+    // ป้องกันโหลดซ้ำขณะที่กำลังโหลดอยู่
+    if (!loadMore && isLoading.value) {
+      appLog.info('⚠️ [ClassDetail] Already loading');
+      return;
     }
 
-    if (result.length < _limit) {
-      hasMore.value = false;
-      AppLogger.info('✅ [ClassDetail] No more posts to load');
+    double? savedOffset;
+    if (keepScroll && scrollController.hasClients) {
+      savedOffset = scrollController.offset;
     }
 
-    if (loadMore) {
-      posts.addAll(result);
-      AppLogger.info(
-        '📝 [ClassDetail] Added ${result.length} posts, total: ${posts.length}',
-      );
-    } else {
-      posts.assignAll(result);
-      if (result.isEmpty) {
-        AppLogger.dataNotFound('Posts', screen: 'ClassDetailScreen');
+    try {
+      if (loadMore) {
+        isLoadingMore.value = true;
       } else {
-        AppLogger.dataFound('Posts', screen: 'ClassDetailScreen', count: result.length);
+        // ✅ reset สำหรับ fresh load
+        isLoading.value = true;
+        _offset = 0;
+        posts.clear();
+        hasMore.value = true;
+      }
+
+      if (sectionId.value == null) {
+        throw Exception('sectionId is null');
+      }
+
+      appLog.info(
+        '🔄 Fetching posts — sectionId: ${sectionId.value}, offset: $_offset, loadMore: $loadMore',
+        actionPage: 'ClassDetailScreen',
+      );
+
+      final result = await _postRepository.getPostInClass(
+        sectionId: sectionId.value!,
+        filterType: selectedFilter.value.apiValue,
+        offset: _offset,
+        limit: _limit,
+      );
+
+      // ✅ บันทึกเวลาที่โหลดสำเร็จ (เฉพาะ fresh load)
+      if (!loadMore) {
+        _lastFetchTime = DateTime.now();
+        _lastKnownPostCount = result.length;
+      }
+
+      if (result.length < _limit) {
+        hasMore.value = false;
+        appLog.info('✅ [ClassDetail] No more posts to load');
+      }
+
+      if (loadMore) {
+        posts.addAll(result);
+        appLog.info(
+          '📝 [ClassDetail] Added ${result.length} posts, total: ${posts.length}',
+        );
+      } else {
+        posts.assignAll(result);
+        if (result.isEmpty) {
+          appLog.error('Posts', actionPage: 'ClassDetailScreen');
+        } else {
+          appLog.info(
+            'Posts loaded: ${result.length}',
+            actionPage: 'ClassDetailScreen',
+          );
+        }
+      }
+
+      _offset += result.length;
+      appLog.info('📝 [ClassDetail] New offset: $_offset');
+    } catch (e) {
+      appLog.error('fetchPosts failed: $e', actionPage: 'ClassDetailScreen');
+      Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดโพสต์ได้');
+    } finally {
+      isLoading.value = false;
+      isLoadingMore.value = false;
+
+      if (savedOffset != null && scrollController.hasClients) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final offset = savedOffset!;
+          final max = scrollController.position.maxScrollExtent;
+          scrollController.jumpTo(offset > max ? max : offset);
+        });
       }
     }
-
-    _offset += result.length;
-    AppLogger.info('📝 [ClassDetail] New offset: $_offset');
-
-  } catch (e) {
-    AppLogger.error('fetchPosts failed: $e', screen: 'ClassDetailScreen');
-    Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดโพสต์ได้');
-  } finally {
-    isLoading.value = false;
-    isLoadingMore.value = false;
-
-    if (savedOffset != null && scrollController.hasClients) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final offset = savedOffset!;
-        final max = scrollController.position.maxScrollExtent;
-        scrollController.jumpTo(offset > max ? max : offset);
-      });
-    }
   }
-}
+
   void changeFilter(ClassPostFilter filter) {
     selectedFilter.value = filter;
     fetchPosts();
@@ -433,8 +447,8 @@ Future<void> fetchPosts({bool loadMore = false, bool keepScroll = false}) async 
   /// Check if a post can be selected for AI
   /// Returns true if the post is already selected OR there's room for more selections
   bool canSelectForAI(int postId) {
-    return selectedPostIdsForAI.contains(postId) || 
-           selectedPostIdsForAI.length < maxAISelectCount;
+    return selectedPostIdsForAI.contains(postId) ||
+        selectedPostIdsForAI.length < maxAISelectCount;
   }
 
   /// Clear all AI selections (useful when returning from AI flow)

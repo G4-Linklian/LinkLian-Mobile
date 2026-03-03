@@ -74,16 +74,16 @@ void reinitialise(Map<String, dynamic> args) {
 
   // เปรียบเทียบ sectionId ก่อน — ถ้าเป็น section เดิมและโหลดแล้ว ข้ามได้
   if (newSectionId == sectionId && _hasLoadedOnce && !_isCurrentlyLoading) {
-    AppLogger.info(
+    appLog.info(
       '⏭️ Same sectionId ($newSectionId) already loaded — skip',
-      screen: 'ClassAssignmentScreen',
+      actionPage: 'ClassAssignmentScreen',
     );
     return;
   }
 
-  AppLogger.info(
+  appLog.info(
     '🔄 Reinitialise → sectionId: $newSectionId (was: $sectionId)',
-    screen: 'ClassAssignmentScreen',
+    actionPage: 'ClassAssignmentScreen',
   );
 
   sectionId = newSectionId;
@@ -103,7 +103,7 @@ void reinitialise(Map<String, dynamic> args) {
   filteredAssignments.clear();
   errorMessage.value = '';
 
-  AppLogger.screenEnter('ClassAssignmentScreen ($newSectionId)');
+  appLog.screenEnter('ClassAssignmentScreen ($newSectionId)');
 
   _fetchTeacherName();
   fetchAssignments();
@@ -117,12 +117,12 @@ void reinitialise(Map<String, dynamic> args) {
 
       if (result != null && result.isNotEmpty) {
         teacherName.value = result[0]['display_name'] ?? 'ไม่ระบุ';
-        AppLogger.info('👨‍🏫 Teacher name set: ${teacherName.value}');
+        appLog.info('👨‍🏫 Teacher name set: ${teacherName.value}');
       } else {
         teacherName.value = 'ไม่พบผู้สอนหลัก';
       }
     } catch (e) {
-      AppLogger.info('❌ Error fetching teacher name: $e');
+      appLog.info('❌ Error fetching teacher name: $e');
       teacherName.value = 'ไม่พบผู้สอนหลัก';
     }
   }
@@ -154,18 +154,18 @@ void applyFilter(String filter) {
     filteredAssignments.assignAll(sorted);
   }
 
-  AppLogger.info(
+  appLog.info(
     '🔍 Filter: $filter → ${filteredAssignments.length} items',
-    screen: 'ClassAssignmentScreen',
+    actionPage: 'ClassAssignmentScreen',
   );
 }
 
   Future<void> fetchAssignments() async {
-    AppLogger.info(
+    appLog.info(
         '🔍 fetchAssignments called - hasLoaded: $_hasLoadedOnce, isLoading: $_isCurrentlyLoading');
 
     if (_hasLoadedOnce || _isCurrentlyLoading) {
-      AppLogger.info('⚠️ Skipped - already loaded or loading');
+      appLog.info('⚠️ Skipped - already loaded or loading');
       return;
     }
 
@@ -185,7 +185,7 @@ void applyFilter(String filter) {
         limit: _limit,
       );
 
-      AppLogger.info('📦 Fetched ${result.length} assignments');
+      appLog.info('📦 Fetched ${result.length} assignments');
 
       assignments.clear();
       filteredAssignments.clear();
@@ -195,7 +195,7 @@ void applyFilter(String filter) {
 
       applyFilter(currentFilter.value);
     } catch (e) {
-      AppLogger.info('❌ Error: $e');
+      appLog.info('❌ Error: $e');
       errorMessage.value = 'ไม่สามารถโหลดข้อมูลได้';
       _hasLoadedOnce = false;
     } finally {
@@ -217,7 +217,7 @@ Future<void> loadMoreAssignments() async {
       limit: _limit,
     );
 
-    AppLogger.info('📦 Load more: got ${result.length} assignments');
+    appLog.info('📦 Load more: got ${result.length} assignments');
 
     if (result.isEmpty) {
       _hasMoreData = false;
@@ -235,7 +235,7 @@ Future<void> loadMoreAssignments() async {
       }
     }
   } catch (e) {
-    AppLogger.error('loadMoreAssignments failed: $e', screen: 'ClassAssignmentScreen');
+    appLog.error('loadMoreAssignments failed: $e', actionPage: 'ClassAssignmentScreen');
   } finally {
     isLoadingMore.value = false;
   }

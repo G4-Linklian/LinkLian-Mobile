@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../../data/repository/assignment_repository.dart';
 import '../../../data/model/post_model.dart';
 import '../../../data/model/submission_model.dart';
@@ -7,7 +8,7 @@ import '../../../data/model/assignment_submission_info.dart';
 import '../../../core/utils/dialog_helper.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
-import '../../auth/controller/auth_controller.dart'; // ✅ เพิ่ม import
+import '../../auth/controller/auth_controller.dart';
 
 class AssignmentSubmissionController extends GetxController {
   final AssignmentRepository repo = Get.find();
@@ -42,6 +43,11 @@ class AssignmentSubmissionController extends GetxController {
 
   final isEditingGroup = false.obs;
 
+  // ===== submission (ส่งงาน) =====
+  final uploadedFiles = <Map<String, dynamic>>[].obs;
+  final existingSubmission = Rxn<Map<String, dynamic>>();
+  final isSubmittingWork = false.obs;
+
   // ===== original state for edit =====
   final originalGroupName = ''.obs;
   final originalMemberIds = <int>[].obs;
@@ -67,7 +73,10 @@ Future<void> fetchAssignmentPost(int postId) async {
       isLoading.value = true;
       _resetAllState();
 
-      final result = await repo.getPostAssignment(postId: postId);
+      final result = await repo.getPostAssignment(
+        postId: postId,
+        role: authController.roleName.value,
+      );
       if (result == null) return;
 
       final postJson = result['post'];
@@ -82,7 +91,19 @@ Future<void> fetchAssignmentPost(int postId) async {
           ? SubmissionModel.fromJson(submissionJson)
           : null;
 
-      AppLogger.info('✅ isGroup = ${assignmentInfo.value!.isGroup}');
+      // ===== Set existingSubmission for submission tab =====
+      if (submissionJson != null) {
+        existingSubmission.value = Map<String, dynamic>.from(submissionJson);
+        appLog.info('✅ existingSubmission loaded: submission_id=${existingSubmission.value?['submission_id']}');
+        
+        // ===== Load existing submission files =====
+        final submissionId = _parseUserId(submissionJson['submission_id']);
+        if (submissionId != null) {
+          await _loadExistingSubmissionFiles(submissionId);
+        }
+      }
+
+      appLog.info('✅ isGroup = ${assignmentInfo.value!.isGroup}');
 
       if (assignmentInfo.value!.isGroup) {
         // ✅ Teacher: ดึงกลุ่มทั้งหมด
@@ -94,10 +115,16 @@ Future<void> fetchAssignmentPost(int postId) async {
 
           if (group.value == null && currentUserId != null) {
             selectedStudentIds.add(currentUserId!);
-            AppLogger.info('✅ Auto-selected current user: $currentUserId');
+            appLog.info('✅ Auto-selected current user: $currentUserId');
           }
 
           await fetchStudentsInSection();
+        }
+      } else {
+        // ===== งานเดี่ยว: ดึง group ของตัวเอง (solo group) =====
+        if (!isTeacher) {
+          await fetchGroup();
+          appLog.info('� Individual assignment: group=${group.value != null}');
         }
       }
     } finally {
@@ -107,7 +134,7 @@ Future<void> fetchAssignmentPost(int postId) async {
 // ✅ เพิ่ม: Fetch all groups สำหรับ Teacher
   Future<void> fetchAllGroups() async {
     final assignmentId = assignmentInfo.value?.assignmentId;
-    AppLogger.info('🔍 fetchAllGroups assignmentId = $assignmentId');
+    appLog.info('🔍 fetchAllGroups assignmentId = $assignmentId');
 
     if (assignmentId == null) return;
 
@@ -116,7 +143,7 @@ Future<void> fetchAssignmentPost(int postId) async {
 
       final result = await repo.getAllGroups(assignmentId: assignmentId);
       
-      AppLogger.info('📦 Fetched ${result.length} groups');
+      appLog.info('📦 Fetched ${result.length} groups');
       
       allGroups.assignAll(result);
     } finally {
@@ -153,20 +180,22 @@ void _resetAllState() {
   isStudentLoading.value = false;
   isSubmittingGroup.value = false;
   
-  isLoadingGroups.value = false; // ✅ เพิ่ม
+  isLoadingGroups.value = false;
 
-
-
+  // Reset submission state
+  uploadedFiles.clear();
+  existingSubmission.value = null;
+  isSubmittingWork.value = false;
 }
 
 Future<void> fetchGroup() async {
   final assignmentId = assignmentInfo.value?.assignmentId;
-  AppLogger.info('🔍 fetchGroup assignmentId = $assignmentId');
+  appLog.info('🔍 fetchGroup assignmentId = $assignmentId');
 
     if (assignmentId == null) return;
 
     final result = await repo.getGroup(assignmentId: assignmentId);
-    AppLogger.info('🔍 getGroup result = $result');
+    appLog.info('🔍 getGroup result = $result');
 
     group.value = result;
   }
@@ -224,7 +253,7 @@ void _applyStudentFilter() {
   // ✅ ตรวจสอบว่าตัวเองยังอยู่ใน selected หรือไม่
   ensureCurrentUserIsSelected();
 
-  AppLogger.info('🔍 filteredStudents = ${filteredStudents.length}');
+  appLog.info('🔍 filteredStudents = ${filteredStudents.length}');
 }
 
 // ================= SELECT =================
@@ -239,7 +268,7 @@ void toggleStudent(int userId) {
 
   selectedStudentIds.refresh();
 
-  AppLogger.info('✅ Selected IDs: $selectedStudentIds');
+  appLog.info('✅ Selected IDs: $selectedStudentIds');
 }
 
 // ✅ ช่วยตรวจสอบว่า selectedStudentIds มีตัวเองอยู่เสมอ
@@ -247,7 +276,7 @@ void ensureCurrentUserIsSelected() {
   if (currentUserId != null && !selectedStudentIds.contains(currentUserId)) {
     selectedStudentIds.insert(0, currentUserId!); // เพิ่มไว้ตำแหน่งแรก
     selectedStudentIds.refresh();
-    AppLogger.info('🔒 Auto-added current user to selection');
+    appLog.info('🔒 Auto-added current user to selection');
   }
 }
 
@@ -360,7 +389,7 @@ void ensureCurrentUserIsSelected() {
 
   Future<void> submitGroup() async {
     if (!canSubmitGroup) {
-      AppLogger.info('❌ Cannot submit - validation failed');
+      appLog.info('❌ Cannot submit - validation failed');
       return;
     }
 
@@ -393,11 +422,11 @@ void ensureCurrentUserIsSelected() {
         }
 
         if (groupId == null) {
-          AppLogger.info('❌ Invalid group_id: $rawGroupId');
+          appLog.info('❌ Invalid group_id: $rawGroupId');
           throw Exception('Invalid group_id format');
         }
 
-        AppLogger.info('📤 Updating group: groupId=$groupId, assignmentId=$assignmentId');
+        appLog.info('📤 Updating group: groupId=$groupId, assignmentId=$assignmentId');
 
         result = await repo.updateGroup(
           assignmentId: assignmentId,
@@ -406,9 +435,9 @@ void ensureCurrentUserIsSelected() {
           memberIds: selectedStudentIds.toList(),
         );
 
-        AppLogger.info('📥 Update result: $result');
+        appLog.info('📥 Update result: $result');
       } else {
-        AppLogger.info('📤 Creating group: assignmentId=$assignmentId');
+        appLog.info('📤 Creating group: assignmentId=$assignmentId');
         
         result = await repo.createGroup(
           assignmentId: assignmentId,
@@ -416,11 +445,11 @@ void ensureCurrentUserIsSelected() {
           memberIds: selectedStudentIds.toList(),
         );
 
-        AppLogger.info('📥 Create result: $result');
+        appLog.info('📥 Create result: $result');
       }
 
       if (result != null && result['success'] == true) {
-        AppLogger.info('✅ Success! Showing notification');
+        appLog.info('✅ Success! Showing notification');
         
         DialogHelper.showNotification(
           title: 'สำเร็จ!',
@@ -438,7 +467,7 @@ void ensureCurrentUserIsSelected() {
         originalGroupName.value = '';
         originalMemberIds.clear();
       } else {
-        AppLogger.info('❌ Result is null or success=false');
+        appLog.info('❌ Result is null or success=false');
         
         DialogHelper.showNotification(
           title: 'ไม่สำเร็จ',
@@ -447,7 +476,7 @@ void ensureCurrentUserIsSelected() {
         );
       }
     } catch (e, stackTrace) {
-      AppLogger.info('❌ submitGroup error: $e\n$stackTrace');
+      appLog.info('❌ submitGroup error: $e\n$stackTrace');
 
       String errorMessage = 'ไม่สามารถบันทึกกลุ่มได้';
       
@@ -509,4 +538,262 @@ void ensureCurrentUserIsSelected() {
   }
 
   bool get showGroupTab => assignmentInfo.value?.isGroup == true;
+
+  // ================= LOAD EXISTING SUBMISSION FILES =================
+
+  /// Load files from an existing submission into uploadedFiles list
+  Future<void> _loadExistingSubmissionFiles(int submissionId) async {
+    try {
+      final result = await repo.getSubmission(submissionId: submissionId);
+      if (result == null) return;
+
+      final attachments = result['attachments'] as List<dynamic>? ?? [];
+
+      if (attachments.isNotEmpty) {
+        uploadedFiles.assignAll(
+          attachments.map((a) => <String, dynamic>{
+            'original_name': a['original_name'] ?? 'unknown',
+            'file_type': a['file_type'] ?? '',
+            'file_url': a['file_url'] ?? '',
+            'file_size': 0,
+            'is_uploading': false,
+          }).toList(),
+        );
+        appLog.info('✅ Loaded ${attachments.length} existing files');
+      }
+    } catch (e) {
+      appLog.info('⚠️ Error loading existing submission files: $e');
+    }
+  }
+
+  // ================= SUBMISSION (ส่งงาน) =================
+
+  /// Pick files from device and upload to blob storage
+  Future<void> pickFiles() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.any,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      for (final file in result.files) {
+        if (file.path == null) continue;
+
+        final fileName = file.name;
+        final fileType = fileName.contains('.')
+            ? fileName.split('.').last.toLowerCase()
+            : '';
+        final fileSize = file.size;
+
+        // Add to list with uploading state
+        final fileEntry = <String, dynamic>{
+          'original_name': fileName,
+          'file_type': fileType,
+          'file_size': fileSize,
+          'file_url': '',
+          'is_uploading': true,
+          'local_path': file.path,
+        };
+
+        uploadedFiles.add(fileEntry);
+        final index = uploadedFiles.length - 1;
+
+        appLog.info('📤 Uploading file: $fileName ($fileSize bytes)');
+
+        // Upload to blob storage
+        try {
+          final uploadResult = await repo.uploadSubmissionFile(
+            filePath: file.path!,
+            fileName: fileName,
+          );
+
+          if (uploadResult != null && uploadResult['file_url'] != null) {
+            uploadedFiles[index] = {
+              ...fileEntry,
+              'file_url': uploadResult['file_url'],
+              'is_uploading': false,
+            };
+            uploadedFiles.refresh();
+
+            appLog.info('✅ Uploaded: $fileName → ${uploadResult['file_url']}');
+          } else {
+            // Upload failed — remove from list
+            uploadedFiles.removeAt(index);
+            DialogHelper.showNotification(
+              title: 'อัพโหลดไม่สำเร็จ',
+              message: 'ไม่สามารถอัพโหลดไฟล์ $fileName ได้',
+              type: NotificationType.error,
+            );
+          }
+        } catch (e) {
+          appLog.info('❌ Upload error for $fileName: $e');
+          if (index < uploadedFiles.length) {
+            uploadedFiles.removeAt(index);
+          }
+        }
+      }
+    } catch (e) {
+      appLog.info('❌ FilePicker error: $e');
+    }
+  }
+
+  /// Remove a file from the list and delete its blob
+  Future<void> removeFile(int index) async {
+    if (index < 0 || index >= uploadedFiles.length) return;
+
+    final file = uploadedFiles[index];
+    final fileUrl = file['file_url'] as String? ?? '';
+    final fileName = file['original_name'] ?? 'unknown';
+
+    appLog.info('🗑️ Removing file: $fileName');
+
+    // Remove from UI immediately
+    uploadedFiles.removeAt(index);
+
+    // Delete blob in background
+    if (fileUrl.isNotEmpty) {
+      try {
+        final deleted = await repo.deleteBlob(fileUrl: fileUrl);
+        if (deleted) {
+          appLog.info('✅ Blob deleted: $fileUrl');
+        } else {
+          appLog.info('⚠️ Blob delete returned false: $fileUrl');
+        }
+      } catch (e) {
+        appLog.info('⚠️ Blob delete error (non-critical): $e');
+      }
+    }
+  }
+
+  /// Submit work (create or update submission)
+  Future<void> submitWork() async {
+    if (uploadedFiles.isEmpty) return;
+
+    // Check all files are uploaded
+    final hasUploading = uploadedFiles.any((f) => f['is_uploading'] == true);
+    if (hasUploading) {
+      DialogHelper.showNotification(
+        title: 'กรุณารอสักครู่',
+        message: 'ไฟล์บางไฟล์ยังอัพโหลดไม่เสร็จ',
+        type: NotificationType.warning,
+      );
+      return;
+    }
+
+    // Get group_id (optional for individual assignments)
+    final groupId = _parseUserId(group.value?['group_id']);
+    final assignmentId = assignmentInfo.value?.assignmentId;
+    final isGroupAssignment = assignmentInfo.value?.isGroup == true;
+
+    if (assignmentId == null) {
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่พบข้อมูล assignment',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    if (isGroupAssignment && groupId == null) {
+      DialogHelper.showNotification(
+        title: 'ยังไม่มีกลุ่ม',
+        message: 'กรุณาสร้างกลุ่มก่อนส่งงาน',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    try {
+      isSubmittingWork.value = true;
+
+      final files = uploadedFiles
+          .where((f) => (f['file_url'] as String?)?.isNotEmpty == true)
+          .map((f) => {
+                'file_url': f['file_url'] as String,
+                'original_name': f['original_name'] as String,
+                'file_type': f['file_type'] as String,
+              })
+          .toList();
+
+      Map<String, dynamic>? result;
+
+      if (existingSubmission.value != null) {
+        // Update existing submission
+        final submissionId =
+            _parseUserId(existingSubmission.value!['submission_id']);
+
+        if (submissionId == null) {
+          throw Exception('Invalid submission_id');
+        }
+
+        appLog.info('📤 Updating submission: $submissionId');
+
+        result = await repo.updateSubmission(
+          submissionId: submissionId,
+          assignmentId: assignmentId,
+          groupId: groupId,
+          files: files,
+        );
+      } else {
+        // Create new submission
+        appLog.info(
+            '📤 Creating submission: assignmentId=$assignmentId, groupId=$groupId');
+
+        result = await repo.createSubmission(
+          assignmentId: assignmentId,
+          groupId: groupId,
+          files: files,
+        );
+      }
+
+      if (result != null && result['success'] == true) {
+        existingSubmission.value = result['data'] as Map<String, dynamic>?;
+
+        // Refresh group data (backend may have auto-created solo group)
+        if (group.value == null) {
+          await fetchGroup();
+        }
+
+        DialogHelper.showNotification(
+          title: 'สำเร็จ!',
+          message: 'ส่งงานเรียบร้อยแล้ว',
+          type: NotificationType.success,
+        );
+
+        appLog.info('✅ Submission successful');
+      } else {
+        DialogHelper.showNotification(
+          title: 'ส่งงานไม่สำเร็จ',
+          message: result?['message'] ?? 'ไม่สามารถส่งงานได้',
+          type: NotificationType.error,
+        );
+      }
+    } catch (e) {
+      appLog.info('❌ submitWork error: $e');
+
+      String errorMessage = 'ไม่สามารถส่งงานได้';
+      
+      // Extract backend error message from DioException
+      final errorString = e.toString();
+      if (errorString.contains('already exists')) {
+        errorMessage = 'คุณส่งงานนี้แล้ว กรุณาลองใหม่อีกครั้ง';
+      } else if (errorString.contains('not a member')) {
+        errorMessage = 'คุณไม่ได้เป็นสมาชิกของกลุ่มนี้';
+      } else if (errorString.contains('not found')) {
+        errorMessage = 'ไม่พบข้อมูล assignment หรือ submission';
+      } else if (errorString.contains('due date')) {
+        errorMessage = 'เลยกำหนดส่งงานแล้ว ไม่สามารถส่งได้';
+      }
+
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: errorMessage,
+        type: NotificationType.error,
+      );
+    } finally {
+      isSubmittingWork.value = false;
+    }
+  }
 }

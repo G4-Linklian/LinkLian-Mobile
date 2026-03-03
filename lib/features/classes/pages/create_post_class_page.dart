@@ -1122,10 +1122,10 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
           if (Get.isSnackbarOpen == true) Get.closeAllSnackbars();
           if (Get.isDialogOpen == true) Get.back();
 
-          AppLogger.info('📍 Starting redirect...');
-          AppLogger.info('📍 Source: ${controller.source}');
-          AppLogger.info('📍 Mode: ${controller.mode.value}');
-          AppLogger.info(
+          appLog.info('📍 Starting redirect...');
+          appLog.info('📍 Source: ${controller.source}');
+          appLog.info('📍 Mode: ${controller.mode.value}');
+          appLog.info(
             '📍 Selected sections: ${controller.selectedSectionIds}',
           );
 
@@ -1133,7 +1133,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
 
           // EDIT MODE
           if (controller.mode.value == CreatePostMode.edit) {
-            AppLogger.info('📍 Edit mode: Going back');
+            appLog.info('📍 Edit mode: Going back');
             Navigator.of(context).pop({
               'success': true,
               'edited': true,
@@ -1157,7 +1157,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
 
           // FROM CLASS ASSIGNMENT PAGE
           if (controller.source == CreatePostSource.classAssignment) {
-            AppLogger.info('📍 From classAssignment: pop + refresh');
+            appLog.info('📍 From classAssignment: pop + refresh');
             Navigator.of(context).pop({'success': true, 'refresh': true});
             await Future.delayed(const Duration(milliseconds: 200));
             if (Get.isRegistered<ClassAssignmentController>()) {
@@ -1168,7 +1168,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
 
           // FROM CLASS DETAIL PAGE
           if (controller.source == CreatePostSource.classDetail) {
-            AppLogger.info('📍 From classDetail: pop + refresh');
+            appLog.info('📍 From classDetail: pop + refresh');
             Navigator.of(context).pop({'success': true, 'refresh': true});
             await Future.delayed(const Duration(milliseconds: 200));
             if (Get.isRegistered<ClassDetailController>()) {
@@ -1190,7 +1190,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
             final subjectName = found?.subjectNameTh ?? '';
             final className = found?.effectiveClassName ?? '';
 
-            AppLogger.info(
+            appLog.info(
               '📍 classFeed single class → Close then ClassDetail',
             );
 
@@ -1217,7 +1217,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
             final subjectName = found?.subjectNameTh ?? '';
             final className = found?.effectiveClassName ?? '';
 
-            AppLogger.info('📍 assignmentFeed single class → ClassAssignment');
+            appLog.info('📍 assignmentFeed single class → ClassAssignment');
 
             Get.back();
             await Future.delayed(const Duration(milliseconds: 300));
@@ -1236,7 +1236,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
           }
 
           // MULTIPLE CLASSES or ALL → back to feed + refresh
-          AppLogger.info('📍 Multiple/all classes: back to feed');
+          appLog.info('📍 Multiple/all classes: back to feed');
           Get.until((route) {
             return route.settings.name != '/create-post' &&
                 route.settings.name != '/CreatePostClassPage';
@@ -1246,7 +1246,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
             Get.find<ClassFeedController>().refreshFeed();
           }
         } on DioException catch (e) {
-          AppLogger.info('❌ DioException: ${e.message}');
+          appLog.info('❌ DioException: ${e.message}');
           DialogHelper.hideLoading();
           final responseData = e.response?.data;
           String errorMsg = 'ระบบขัดข้อง กรุณาลองใหม่';
@@ -1262,7 +1262,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
             type: NotificationType.error,
           );
         } catch (e, stack) {
-          AppLogger.info('❌ Error: $e\n$stack');
+          appLog.info('❌ Error: $e\n$stack');
           DialogHelper.hideLoading();
           DialogHelper.showNotification(
             title: 'เกิดข้อผิดพลาด',

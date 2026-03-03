@@ -253,14 +253,22 @@ class AssignmentCard extends StatelessWidget {
   }
 
   Widget _pill(String text, Color color) {
-    final textColor = color == AppColors.warningPalette[500]
-        ? AppColors.primaryPalette[800]!
-        : AppColors.white;
-    
+    final isSubmitted = text == 'ส่งแล้ว';
+    final isWarning = color == AppColors.warningPalette[500];
+
+    final bgColor = isSubmitted
+        ? AppColors.successPalette[500]!
+        : color;
+    final textColor = isSubmitted
+        ? AppColors.successPalette[900]!
+        : isWarning
+            ? AppColors.primaryPalette[800]!
+            : AppColors.white;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: color,
+        color: bgColor,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

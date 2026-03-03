@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/linklian-icon.dart';
 import '../../../features/assignment/controllers/assignment_submission_controller.dart';
@@ -13,15 +14,15 @@ class SubmissionBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.18,
+      initialChildSize: 0.55,
       minChildSize: 0.18,
-      maxChildSize: 0.85,
+      maxChildSize: 0.90,
 
       builder: (context, scrollController) {
-        AppLogger.info(
+        appLog.info(
           '🔍 BottomSheet build | showGroupTab=${controller.showGroupTab}',
         );
-        AppLogger.info(
+        appLog.info(
           '🔍 isGroup=${controller.assignmentInfo.value?.isGroup}',
         );
 
@@ -72,10 +73,12 @@ Obx(() {
             ? _TeacherGroupTab(controller: controller)
             : _GroupTab(controller: controller);
       case 1:
-        return const Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: Text('ส่งงาน')),
-        );
+        return controller.isTeacher
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('ส่งงาน (ครู)')),
+              )
+            : _StudentSubmissionTab(controller: controller);
       case 2:
         return const Padding(
           padding: EdgeInsets.all(24),
@@ -88,10 +91,12 @@ Obx(() {
     // งานเดี่ยว: มี 2 แท็บ (ส่งงาน, คะแนน)
     switch (controller.currentTab.value) {
       case 0:
-        return const Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: Text('ส่งงาน')),
-        );
+        return controller.isTeacher
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('ส่งงาน (ครู)')),
+              )
+            : _StudentSubmissionTab(controller: controller);
       case 1:
         return const Padding(
           padding: EdgeInsets.all(24),
@@ -115,7 +120,7 @@ Obx(() {
         final selected = controller.currentTab.value == index;
         // Debug log
         if (selected) {
-          AppLogger.info('📍 Active tab: $text (index=$index)');
+          appLog.info('📍 Active tab: $text (index=$index)');
         }
         return GestureDetector(
           onTap: () => controller.currentTab.value = index,
@@ -165,7 +170,7 @@ class _GroupTab extends StatelessWidget {
         radius: 24,
         backgroundImage: NetworkImage(profilePic),
         onBackgroundImageError: (exception, stackTrace) {
-          AppLogger.info('⚠️ Failed to load profile pic: $profilePic');
+          appLog.info('⚠️ Failed to load profile pic: $profilePic');
         },
       );
     }
@@ -189,7 +194,7 @@ class _GroupTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppLogger.info(
+    appLog.info(
       '🧩 GroupTab build | '
       'group=${controller.group.value != null} | '
       'students=${controller.students.length} | '
@@ -225,7 +230,7 @@ class _GroupTab extends StatelessWidget {
   // ===== UI แสดงกลุ่ม (หลังสร้างเสร็จ) =====
   Widget _buildGroupDisplay(Map<String, dynamic> group) {
     final members = group['members'] as List<dynamic>? ?? [];
-    AppLogger.info('👥 Group members = $members');
+    appLog.info('👥 Group members = $members');
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -555,7 +560,7 @@ class _GroupTab extends StatelessWidget {
 
                   return InkWell(
                     onTap: () {
-                      AppLogger.info('👆 Tapped on user: $userId ($name)');
+                      appLog.info('👆 Tapped on user: $userId ($name)');
                       controller.toggleStudent(userId);
                     },
                     child: Container(
@@ -670,18 +675,358 @@ class _GroupTab extends StatelessWidget {
 }
 
 
+// ===== Student Submission Tab =====
+class _StudentSubmissionTab extends StatelessWidget {
+  final AssignmentSubmissionController controller;
+
+  const _StudentSubmissionTab({required this.controller});
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  String _formatDueDate(DateTime date) {
+    final buddhistYear = date.year + 543;
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final yearShort = (buddhistYear % 100).toString().padLeft(2, '0');
+    final time = DateFormat('HH:mm').format(date);
+    return '$day/$month/$yearShort $time น.';
+  }
+
+  IconData _fileIcon(String fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'xls':
+      case 'xlsx':
+        return Icons.table_chart;
+      case 'ppt':
+      case 'pptx':
+        return Icons.slideshow;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return Icons.image;
+      case 'zip':
+      case 'rar':
+        return Icons.folder_zip;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final hasSubmission = controller.existingSubmission.value != null;
+      final isSubmitting = controller.isSubmittingWork.value;
+
+      // ===== แสดงเวลาที่ส่งงาน =====
+      final submittedAt = controller.existingSubmission.value?['submitted_at'];
+      DateTime? submittedDate;
+      if (submittedAt != null) {
+        submittedDate = submittedAt is DateTime
+            ? submittedAt
+            : DateTime.tryParse(submittedAt.toString());
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ===== Header: งานของคุณ + เวลาที่ส่ง =====
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'งานของคุณ',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryPalette[800],
+                  ),
+                ),
+                if (submittedDate != null)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, size: 14, color: Colors.green[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        'ส่งแล้ว ${_formatDueDate(submittedDate)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // ===== File list =====
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: controller.uploadedFiles.isEmpty
+                ? Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryPalette[100],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primaryPalette[300]!,
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.cloud_upload_outlined,
+                          size: 48,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'ยังไม่มีไฟล์ที่แนบ',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'กดปุ่ม "เพิ่มไฟล์" เพื่อแนบไฟล์',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    children: controller.uploadedFiles.asMap().entries.map((entry) {
+                      final file = entry.value;
+                      final originalName = file['original_name'] ?? 'unknown';
+                      final fileType = file['file_type'] ?? '';
+                      final fileSize = file['file_size'] as int? ?? 0;
+                      final isUploading = file['is_uploading'] == true;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primaryPalette[300]!,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // File icon
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryPalette[100],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                _fileIcon(fileType),
+                                color: AppColors.primaryPalette[600],
+                                size: 24,
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            // File name + size
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    originalName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    fileSize > 0
+                                        ? _formatFileSize(fileSize)
+                                        : fileType.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Uploading indicator or remove button
+                            if (isUploading)
+                              const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            else
+                              GestureDetector(
+                                onTap: () => controller.removeFile(entry.key),
+                                child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.dangerPalette[100],
+                                  ),
+                                  child: Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: AppColors.dangerPalette[500],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ===== Bottom: เพิ่มไฟล์ + ส่งงาน =====
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                // เพิ่มไฟล์ button
+                Flexible(
+                  child: OutlinedButton.icon(
+                    onPressed: isSubmitting ? null : () => controller.pickFiles(),
+                    icon: Icon(
+                      Icons.add,
+                      size: 18,
+                      color: isSubmitting
+                          ? Colors.grey[400]
+                          : AppColors.primaryPalette[600],
+                    ),
+                    label: Text(
+                      'เพิ่มไฟล์',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isSubmitting
+                            ? Colors.grey[400]
+                            : AppColors.primaryPalette[600],
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: isSubmitting
+                            ? Colors.grey[300]!
+                            : AppColors.primaryPalette[600]!,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // ส่งงาน button
+                Flexible(
+                  child: ElevatedButton(
+                    onPressed: (isSubmitting || controller.uploadedFiles.isEmpty)
+                        ? null
+                        : () => controller.submitWork(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: controller.uploadedFiles.isEmpty
+                          ? Colors.grey[300]
+                          : AppColors.primaryPalette[600],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 10,
+                      ),
+                      elevation: 0,
+                    ),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            hasSubmission ? 'ส่งงานอีกครั้ง' : 'ส่งงาน',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: controller.uploadedFiles.isEmpty
+                                  ? Colors.grey[600]
+                                  : Colors.white,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+
+
 // ===== Teacher Group Tab (Accordion View) =====
 class _TeacherGroupTab extends StatelessWidget {
   final AssignmentSubmissionController controller;
 
   const _TeacherGroupTab({required this.controller});
-
-  int? _parseUserId(dynamic value) {
-    if (value == null) return null;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value);
-    return null;
-  }
 
   Widget _buildAvatar(String? profilePic, String firstName, String lastName) {
     if (profilePic != null && profilePic.isNotEmpty) {
@@ -689,7 +1034,7 @@ class _TeacherGroupTab extends StatelessWidget {
         radius: 20,
         backgroundImage: NetworkImage(profilePic),
         onBackgroundImageError: (exception, stackTrace) {
-          AppLogger.info('⚠️ Failed to load profile pic: $profilePic');
+          appLog.info('⚠️ Failed to load profile pic: $profilePic');
         },
       );
     }

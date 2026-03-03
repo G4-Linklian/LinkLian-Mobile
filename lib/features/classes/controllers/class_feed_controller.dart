@@ -85,12 +85,12 @@ class ClassFeedController extends GetxController {
   /// FETCH SEMESTER
   Future<void> fetchSemesters() async {
     try {
-      AppLogger.info('📅 [ClassFeed] Fetching semesters for instId: ${auth.instId.value}');
+      appLog.info('📅 [ClassFeed] Fetching semesters for instId: ${auth.instId.value}');
       final result = await semesterRepository.getSemesters(
         instId: auth.instId.value!,
       );
 
-      AppLogger.info('📅 [ClassFeed] Got ${result.length} semesters');
+      appLog.info('📅 [ClassFeed] Got ${result.length} semesters');
       
       semesters.assignAll(result);
 

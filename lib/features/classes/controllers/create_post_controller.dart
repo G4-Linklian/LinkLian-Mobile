@@ -148,29 +148,29 @@ class CreatePostController extends GetxController {
     source = CreatePostSource.classFeed;
 
     if (args == null) {
-      AppLogger.info('📝 No arguments, using default source: classFeed');
+      appLog.info('📝 No arguments, using default source: classFeed');
       return;
     }
 
     if (args != null) {
       if (args['postType'] != null) {
         postType.value = args['postType'] as String;
-        AppLogger.info('📝 Post type from args: ${postType.value}');
+        appLog.info('📝 Post type from args: ${postType.value}');
       }
 
       if (args['lockPostType'] == true) {
         isPostTypeLocked.value = true;
-        AppLogger.info('📝 Post type locked');
+        appLog.info('📝 Post type locked');
       }
     }
     // Override source if provided in arguments
     if (args['source'] != null) {
       source = args['source'] as CreatePostSource;
-      AppLogger.info('📝 Source from args: $source');
+      appLog.info('📝 Source from args: $source');
     }
 
     fromSectionId = args['sectionId'] as int?;
-    AppLogger.info('📝 fromSectionId: $fromSectionId');
+    appLog.info('📝 fromSectionId: $fromSectionId');
 
     // CREATE MODE
     final presetIds = args['presetSectionIds'];
@@ -178,13 +178,13 @@ class CreatePostController extends GetxController {
       final validIds = presetIds.whereType<int>().toList();
       if (validIds.isNotEmpty) {
         selectedSectionIds.assignAll(validIds);
-        AppLogger.info('📝 Preset section IDs: $validIds');
+        appLog.info('📝 Preset section IDs: $validIds');
       }
     }
 
     if (args['lockSection'] == true) {
       isSectionLocked.value = true;
-      AppLogger.info('📝 Section locked');
+      appLog.info('📝 Section locked');
     }
 
     // EDIT MODE
@@ -239,7 +239,7 @@ class CreatePostController extends GetxController {
         isSectionLocked.value = true;
       }
 
-      AppLogger.info('📝 Edit mode initialized');
+      appLog.info('📝 Edit mode initialized');
     }
   }
 
@@ -300,7 +300,7 @@ class CreatePostController extends GetxController {
   /// FETCH FILE SIZES FROM BLOB (for edit mode)
   Future<void> _fetchFileSizesFromBlob() async {
     try {
-      AppLogger.info('📏 Fetching file sizes from blob...');
+      appLog.info('📏 Fetching file sizes from blob...');
 
       for (int i = 0; i < attachments.length; i++) {
         final attachment = attachments[i];
@@ -320,28 +320,28 @@ class CreatePostController extends GetxController {
 
               attachments[i] = {...attachment, 'file_size': fileSize};
 
-              AppLogger.info(
+              appLog.info(
                 '📏 File size fetched: ${attachment['file_name']} = $fileSize bytes',
               );
             }
           }
         } catch (e) {
-          AppLogger.info(
+          appLog.info(
             '⚠️ Failed to fetch size for: ${attachment['file_name']}',
           );
         }
       }
 
-      AppLogger.info('✅ File sizes fetched successfully');
+      appLog.info('✅ File sizes fetched successfully');
     } catch (e) {
-      AppLogger.info('❌ Error fetching file sizes: $e');
+      appLog.info('❌ Error fetching file sizes: $e');
     }
   }
 
   Future<Map<String, dynamic>> submitPost() async {
     try {
       isLoading.value = true;
-      AppLogger.info('📝 Submitting post... mode=${mode.value}');
+      appLog.info('📝 Submitting post... mode=${mode.value}');
 
       Map<String, dynamic> result;
       if (mode.value == CreatePostMode.edit) {
@@ -350,10 +350,10 @@ class CreatePostController extends GetxController {
         result = await _createPost();
       }
 
-      AppLogger.info('✅ Submit result: $result');
+      appLog.info('✅ Submit result: $result');
       return result;
     } catch (e) {
-      AppLogger.info('❌ Submit error: $e');
+      appLog.info('❌ Submit error: $e');
       rethrow;
     } finally {
       isLoading.value = false;
