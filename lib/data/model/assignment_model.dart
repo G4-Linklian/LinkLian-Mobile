@@ -65,6 +65,9 @@ class AssignmentModel {
   @JsonKey(name: 'submitted_groups', fromJson: _intFromJson)
   final int submittedGroups;
 
+  @JsonKey(name: 'created_at', fromJson: _dateTimeFromJson)
+final DateTime? createdAt;
+
   @JsonKey(fromJson: _educatorsFromJson)
   final List<Map<String, dynamic>>? educators;
 
@@ -76,6 +79,7 @@ class AssignmentModel {
     required this.subjectNameEn,
     required this.assignmentType,
     required this.isGroup,
+    this.createdAt,
     this.dueDate,
     this.totalStudents = 0,
     this.submittedCount = 0,
@@ -120,14 +124,14 @@ class AssignmentModel {
     final hasSubmitted = submittedAt != null;
     if (hasSubmitted) {
       if (isPastDue && submittedAt!.isAfter(dueDate!)) {
-        return AppColors.assignmentLateSubmitted;
+        return AppColors.primaryPalette[500]!;
       }
-      return AppColors.assignmentSubmitted;
+      return AppColors.successPalette[500]!;
     } else {
       if (isPastDue) {
-        return AppColors.assignmentOverdue;
+        return AppColors.dangerPalette[500]!;
       }
-      return AppColors.assignmentNotSubmitted;
+      return AppColors.warningPalette[500]!;
     }
   }
 

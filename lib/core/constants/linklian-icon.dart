@@ -106,7 +106,7 @@ class LinkLianIcon {
   static const IconData semester = TablerIcons.calendar;
   static const IconData attach = TablerIcons.file;
   static const IconData identifiedUser = TablerIcons.user;
-  
+  static const IconData search = TablerIcons.search;
   //post
   static const IconData post = TablerIcons.pencil;
   static const IconData photo = TablerIcons.photo;
