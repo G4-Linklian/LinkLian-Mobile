@@ -1,3 +1,5 @@
+import 'package:LinkLian/data/model/community_post_model.dart';
+
 import '../../core/services/api_client.dart';
 
 class CommunityBookmarkRepository {
@@ -15,10 +17,14 @@ class CommunityBookmarkRepository {
   }
 
   /// GET MY BOOKMARKS
-  Future<List<dynamic>> getMyBookmarks() async {
-    final response = await _apiClient.get<Map<String, dynamic>>('/community/bookmark');
+  Future<List<CommunityPostModel>> getMyBookmarks() async {
+    final response = await _apiClient.get<Map<String, dynamic>>(
+      '/community/bookmark',
+    );
 
-    return response.data?['data'] ?? [];
+    final data = response.data?['data'] ?? [];
+
+    return (data as List).map((e) => CommunityPostModel.fromJson(e)).toList();
   }
 
   Future<bool> checkBookmark(int postId) async {

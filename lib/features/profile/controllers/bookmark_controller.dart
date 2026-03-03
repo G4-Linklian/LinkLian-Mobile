@@ -1,3 +1,6 @@
+import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/data/model/community_post_model.dart';
+import 'package:LinkLian/data/repository/community_bookmark_repository.dart';
 import 'package:get/get.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../../data/model/bookmark_model.dart';
@@ -11,10 +14,13 @@ enum SortType { all, newest, oldest }
 class BookmarkController extends GetxController {
   final BookmarkRepository repo;
   BookmarkController(this.repo);
+  final communityBookmarks = <CommunityPostModel>[].obs;
 
-  // เก็บ bookmark ทั้งหมด (แสดงใน BookmarkSwitcher)
+  final CommunityBookmarkRepository communityRepo =
+      CommunityBookmarkRepository();
+
   final bookmarks = <BookmarkModel>[].obs;
-
+  final isToggling = false.obs;
   final bookmarkedPostIds = <int>{}.obs;
 
   final loading = false.obs;
@@ -27,7 +33,6 @@ class BookmarkController extends GetxController {
 
     final auth = Get.find<AuthController>();
 
-    // ตรวจสอบเมื่อ userId เปลี่ยน
     ever<int?>(auth.userId, (userId) {
       if (userId != null) {
         _fetchBookmarks(userId);
@@ -37,39 +42,26 @@ class BookmarkController extends GetxController {
       }
     });
 
-    // โหลด bookmark ครั้งแรก
     if (auth.userId.value != null) {
       _fetchBookmarks(auth.userId.value!);
     }
   }
 
-  /// ดึงข้อมูล bookmark จาก backend
+
   Future<void> _fetchBookmarks(int userId) async {
     try {
       loading.value = true;
 
-      String? sortOrder;
-      if (sortType.value == SortType.newest) {
-        sortOrder = 'desc';
-      } else if (sortType.value == SortType.oldest) {
-        sortOrder = 'asc';
-      }
-
-      final result = await repo.getBookmarks(
-        userId: userId,
-        sortOrder: sortOrder,
-      );
+      final result = await repo.getBookmarks(userId: userId);
 
       bookmarks.assignAll(result);
+      sortPostBookmarks();
 
       /// Update bookmarkedPostIds
       bookmarkedPostIds
         ..clear()
         ..addAll(result.map((b) => b.postId));
-
-      print('✅ Loaded ${result.length} bookmarks');
     } catch (e) {
-      print('❌ Error fetching bookmarks: $e');
       DialogHelper.showNotification(
         title: 'เกิดข้อผิดพลาด',
         message: 'ไม่สามารถโหลดบุ๊กมาร์กได้',
@@ -80,14 +72,10 @@ class BookmarkController extends GetxController {
     }
   }
 
-  /// ใช้ใน CardPost - ตรวจสอบว่า post ถูก bookmark หรือไม่
   bool isBookmarked(int postId) {
     return bookmarkedPostIds.contains(postId);
   }
 
-  /// Toggle bookmark (ใช้ใน CardPost)
-  /// ถ้า bookmark อยู่ → ลบ
-  /// ถ้าไม่ bookmark → สร้างใหม่
   Future<void> toggleBookmark({
     required int postId,
     required int postContentId,
@@ -107,7 +95,6 @@ class BookmarkController extends GetxController {
     final wasBookmarked = isBookmarked(postId);
 
     try {
-      // Optimistic update - อัปเดต UI ก่อน
       if (wasBookmarked) {
         bookmarkedPostIds.remove(postId);
         bookmarks.removeWhere((b) => b.postId == postId);
@@ -115,30 +102,23 @@ class BookmarkController extends GetxController {
         bookmarkedPostIds.add(postId);
       }
 
-      // เรียก API
       final result = await repo.createBookmark(userId: userId, postId: postId);
 
-      // ตรวจสอบ response
       if (result['success'] != true) {
         throw Exception(result['message'] ?? 'Unknown error');
       }
 
-      final action = result['data']['action']; // 'created' หรือ 'removed'
+      final action = result['data']['action']; 
 
       if (action == 'created') {
-        // สร้าง bookmark สำเร็จ
-        print('✅ Bookmark created for post $postId');
         DialogHelper.showNotification(
           title: 'สำเร็จ',
           message: 'บันทึกโพสต์เรียบร้อยแล้ว',
           type: NotificationType.success,
         );
 
-        // Refresh bookmark list เพื่อได้ข้อมูลทั้งหมด
         await _fetchBookmarks(userId);
       } else if (action == 'removed') {
-        // ลบ bookmark สำเร็จ
-        print('✅ Bookmark removed for post $postId');
         DialogHelper.showNotification(
           title: 'สำเร็จ',
           message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
@@ -146,7 +126,6 @@ class BookmarkController extends GetxController {
         );
       }
     } catch (e) {
-      print('❌ Error toggling bookmark: $e');
 
       if (wasBookmarked) {
         bookmarkedPostIds.add(postId);
@@ -162,7 +141,6 @@ class BookmarkController extends GetxController {
     }
   }
 
-  /// ลบ bookmark จาก BookmarkSwitcher
   Future<void> removeBookmark(int postId) async {
     final auth = Get.find<AuthController>();
     final userId = auth.userId.value;
@@ -174,17 +152,14 @@ class BookmarkController extends GetxController {
       bookmarks.removeWhere((b) => b.postId == postId);
       bookmarkedPostIds.remove(postId);
 
-      // เรียก API
       await repo.deleteBookmark(userId: userId, postId: postId);
 
-      print('✅ Bookmark removed for post $postId');
       DialogHelper.showNotification(
         title: 'สำเร็จ',
         message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
         type: NotificationType.success,
       );
     } catch (e) {
-      print('❌ Error removing bookmark: $e');
 
       // Rollback
       await _fetchBookmarks(userId);
@@ -197,19 +172,115 @@ class BookmarkController extends GetxController {
     }
   }
 
-  /// เปลี่ยนการเรียงลำดับ
+  Future<void> loadCommunityBookmarks() async {
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
+
+    if (userId == null) return;
+
+    try {
+      loading.value = true;
+
+      final result = await communityRepo.getMyBookmarks();
+
+      communityBookmarks.assignAll(result);
+      sortCommunityBookmarks();
+
+      AppLogger.info("[Bookmark]Loaded ${result.length} community bookmarks");
+    } catch (e) {
+      AppLogger.info("[Bookmark]Error loading community bookmarks: $e");
+    } finally {
+      loading.value = false;
+    }
+  }
+  Future<void> toggleCommunityBookmark(int postId) async {
+  if (isToggling.value) return; 
+
+  try {
+    isToggling.value = true;
+
+    final result =
+        await communityRepo.toggleBookmark(postId: postId);
+
+    final action = result['action'];
+
+    if (action == 'created') {
+      DialogHelper.showNotification(
+        title: 'สำเร็จ',
+        message: 'บันทึกโพสต์เรียบร้อยแล้ว',
+        type: NotificationType.success,
+      );
+    } else if (action == 'removed') {
+      DialogHelper.showNotification(
+        title: 'สำเร็จ',
+        message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
+        type: NotificationType.success,
+      );
+    }
+
+    await loadCommunityBookmarks();
+
+  } catch (e) {
+    DialogHelper.showNotification(
+      title: 'เกิดข้อผิดพลาด',
+      message: 'ไม่สามารถทำรายการได้',
+      type: NotificationType.error,
+    );
+  } finally {
+    isToggling.value = false;
+  }
+}
+
   void changeSort(SortType value) {
     sortType.value = value;
 
-    final auth = Get.find<AuthController>();
-    if (auth.userId.value != null) {
-      _fetchBookmarks(auth.userId.value!);
+    if (type.value == BookmarkType.post) {
+      sortPostBookmarks();
+    } else {
+      sortCommunityBookmarks();
     }
   }
 
-  /// เปลี่ยนประเภท bookmark
   void changeType(BookmarkType value) {
     type.value = value;
+
+    final auth = Get.find<AuthController>();
+
+    if (auth.userId.value == null) return;
+
+    if (value == BookmarkType.post) {
+      _fetchBookmarks(auth.userId.value!);
+    } else {
+      loadCommunityBookmarks();
+    }
+  }
+
+  void sortCommunityBookmarks() {
+    if (sortType.value == SortType.all) {
+      return;
+    }
+
+    final sorted = [...communityBookmarks];
+
+    if (sortType.value == SortType.newest) {
+      sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    } else if (sortType.value == SortType.oldest) {
+      sorted.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    }
+
+    communityBookmarks.assignAll(sorted);
+  }
+
+  void sortPostBookmarks() {
+    final sorted = [...bookmarks];
+
+    if (sortType.value == SortType.newest) {
+      sorted.sort((a, b) => b.savedAt.compareTo(a.savedAt));
+    } else if (sortType.value == SortType.oldest) {
+      sorted.sort((a, b) => a.savedAt.compareTo(b.savedAt));
+    }
+
+    bookmarks.assignAll(sorted);
   }
 
   @override

@@ -20,6 +20,10 @@ CommunityModel _$CommunityModelFromJson(Map<String, dynamic> json) =>
       membershipStatus: json['membership_status'] as String,
       rules: CommunityModel._ruleFromJson(json['rules']),
       currentUserId: CommunityModel._intFromJson(json['current_user_id']),
+      createdAt: json['created_at'] as String?,
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
+      profilePic: json['profile_pic'] as String?,
     );
 
 Map<String, dynamic> _$CommunityModelToJson(CommunityModel instance) =>
@@ -36,4 +40,8 @@ Map<String, dynamic> _$CommunityModelToJson(CommunityModel instance) =>
       'membership_status': instance.membershipStatus,
       'rules': instance.rules,
       'current_user_id': instance.currentUserId,
+      'created_at': instance.createdAt,
+      'first_name': instance.firstName,
+      'last_name': instance.lastName,
+      'profile_pic': instance.profilePic,
     };

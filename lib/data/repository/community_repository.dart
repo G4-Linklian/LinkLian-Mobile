@@ -1,7 +1,6 @@
 import 'dart:io';
 import '../../core/services/api_client.dart';
 import '../model/community_model.dart';
-import '../model/community_post_model.dart';
 
 class CommunityRepository {
   final ApiClient _apiClient = ApiClient();

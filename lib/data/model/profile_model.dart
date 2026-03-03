@@ -1,6 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'education_model.dart';
-import 'teaching_schedule_model.dart';
 
 part 'profile_model.g.dart';
 
@@ -92,8 +91,8 @@ class ProfileModel {
   }
 
   String get fullName {
-    if ((firstName ?? '').isEmpty) return lastName ?? '';
-    if ((lastName ?? '').isEmpty) return firstName ?? '';
+    if (firstName.isEmpty) return lastName;
+    if (lastName.isEmpty) return firstName;
     return '$firstName $lastName';
   }
 
@@ -106,8 +105,6 @@ class ProfileModel {
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) =>
       _$ProfileModelFromJson(json);
-
-  get teachingSchedule => null;
 
   Map<String, dynamic> toJson() => _$ProfileModelToJson(this);
 }

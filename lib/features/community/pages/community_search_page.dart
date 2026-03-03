@@ -84,7 +84,6 @@ class _CommunitySearchPageState extends State<CommunitySearchPage> {
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('❌ Community search error: $e');
       setState(() {
         _error = 'ไม่สามารถค้นหาได้';
         _isLoading = false;
