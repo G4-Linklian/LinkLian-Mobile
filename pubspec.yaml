@@ -39,6 +39,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   get: ^4.6.5
   intl: ^0.20.2
+  palette_generator: ^0.3.3
   
   # HTTP and API
   dio: ^5.4.0
@@ -77,6 +78,7 @@ dev_dependencies:
   json_serializable: ^6.7.1
   flutter_launcher_icons: ^0.13.1
   analyzer: ^5.13.0  
+  logger: ^2.4.0
 
 flutter_icons:
   android: true

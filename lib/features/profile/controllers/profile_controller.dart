@@ -8,6 +8,9 @@ import '../../auth/controller/auth_controller.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../data/model/teaching_schedule_model.dart';
+import 'package:flutter/foundation.dart';
+import '../../layout/controllers/navigation_controller.dart';
+import '../../../config/app_routes.dart';
 
 class ProfileController extends GetxController {
   final ProfileRepository repo;
@@ -158,17 +161,19 @@ class ProfileController extends GetxController {
       _log('📥 Loading teaching schedule for user: $userId');
 
       final schedules = await scheduleRepo.getByEducator(userId);
-      
+
       _log('✅ Got ${schedules.length} schedules from repository');
-      
+
       teachingSchedules.assignAll(schedules);
 
       _log('✅ Teaching schedule loaded: ${teachingSchedules.length} items');
-      
+
       // Debug: Print all schedules
       for (var i = 0; i < teachingSchedules.length; i++) {
         final s = teachingSchedules[i];
-        _log('  [$i] ${s.subjectName} - Day ${s.dayOfWeek} ${s.startTime}-${s.endTime}');
+        _log(
+          '  [$i] ${s.subjectName} - Day ${s.dayOfWeek} ${s.startTime}-${s.endTime}',
+        );
       }
     } catch (e) {
       AppLogger.info('[Profile]Failed to load teaching schedule: $e');
@@ -176,6 +181,20 @@ class ProfileController extends GetxController {
     } finally {
       loadingSchedule.value = false;
     }
+  }
+
+  Future<void> logout() async {
+    final nav = Get.find<NavigationController>();
+
+    nav.selectedIndex.value = 1;
+    nav.hideClassDetail();
+    nav.hideCommunityDetail();
+    nav.hideClassAssignment();
+
+    final auth = Get.find<AuthController>();
+    await auth.logout();
+
+    Get.offAllNamed(AppRoutes.login);
   }
 
   Future<void> updateProfile({
