@@ -1,4 +1,5 @@
 import 'package:LinkLian/features/community/widgets/community_card_comment.dart';
+import 'package:LinkLian/features/community/widgets/community_card_post.dart';
 import 'package:LinkLian/features/community/widgets/community_comment_inputbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -83,7 +84,7 @@ class CommunityCommentPage extends StatelessWidget {
               horizontal: AppSizes.md,
               vertical: AppSizes.sm,
             ),
-            child: controller.postCardWidget,
+            child: Obx(() => CardPostCommunity(post: controller.post.value!)),
           );
         }
 

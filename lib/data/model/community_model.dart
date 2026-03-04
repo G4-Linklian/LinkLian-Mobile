@@ -25,6 +25,7 @@ class CommunityModel {
 
   @JsonKey(fromJson: _tagsFromJson)
   final List<String> tags;
+  
   @JsonKey(name: 'is_owner')
   final bool? isOwner;
 
@@ -33,19 +34,21 @@ class CommunityModel {
 
   @JsonKey(fromJson: _ruleFromJson)
   final List<String> rules;
+
   @JsonKey(name: 'current_user_id', fromJson: _intFromJson)
   final int? currentUserId;
+
   @JsonKey(name: 'created_at')
-final String? createdAt;
+  final String? createdAt;
 
-@JsonKey(name: 'first_name')
-final String? firstName;
+  @JsonKey(name: 'first_name')
+  final String? firstName;
 
-@JsonKey(name: 'last_name')
-final String? lastName;
+  @JsonKey(name: 'last_name')
+  final String? lastName;
 
-@JsonKey(name: 'profile_pic')
-final String? profilePic;
+  @JsonKey(name: 'profile_pic')
+  final String? profilePic;
 
   const CommunityModel({
     required this.communityId,
@@ -61,9 +64,9 @@ final String? profilePic;
     required this.rules,
     this.currentUserId,
     this.createdAt,
-this.firstName,
-this.lastName,
-this.profilePic,
+    this.firstName,
+    this.lastName,
+    this.profilePic,
   });
 
   CommunityModel copyWith({

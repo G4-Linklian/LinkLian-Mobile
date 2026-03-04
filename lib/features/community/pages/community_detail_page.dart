@@ -11,6 +11,7 @@ import '../../../core/constants/sizes.dart';
 import '../../../config/app_routes.dart';
 import '../controllers/community_detail_controller.dart';
 import '../../../data/model/community_model.dart';
+import 'dart:ui';
 
 class CommunityDetailPage extends StatefulWidget {
   const CommunityDetailPage({super.key});
@@ -21,6 +22,7 @@ class CommunityDetailPage extends StatefulWidget {
 
 class _CommunityDetailPageState extends State<CommunityDetailPage> {
   late CommunityDetailController controller;
+  double _collapseProgress = 0.0;
   bool _showCollapsedBar = false;
 
   @override
@@ -28,15 +30,41 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
     super.initState();
     controller = Get.find<CommunityDetailController>();
     controller.scrollController.addListener(_onScroll);
+    ever(controller.community, (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _collapseProgress = 0.0;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (controller.scrollController.hasClients) {
+          controller.scrollController.jumpTo(0);
+        }
+      });
+    });
   }
 
   void _onScroll() {
-    final shouldShow = controller.scrollController.offset > 50;
-    if (_showCollapsedBar != shouldShow) {
+    final offset = controller.scrollController.offset;
+
+    const collapseStart = 0.0;
+    const collapseEnd = 120.0;
+
+    double progress = (offset - collapseStart) / (collapseEnd - collapseStart);
+    progress = progress.clamp(0.0, 1.0);
+
+    final shouldShowCollapsed = offset > 80;
+
+    if (_showCollapsedBar != shouldShowCollapsed) {
       setState(() {
-        _showCollapsedBar = shouldShow;
+        _showCollapsedBar = shouldShowCollapsed;
       });
     }
+
+    setState(() {
+      _collapseProgress = Curves.easeInOut.transform(progress);
+    });
   }
 
   @override
@@ -72,7 +100,9 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
               slivers: [
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: bannerHeight + statusBarHeight,
+                    height:
+                        bannerHeight +
+                        statusBarHeight * (1 - _collapseProgress),
                     child: Opacity(opacity: 0.6),
                   ),
                 ),
@@ -84,27 +114,19 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
 
                 if (controller.shouldShowFilter && !_showCollapsedBar)
                   SliverToBoxAdapter(
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 150),
-                      opacity: _showCollapsedBar ? 0.0 : 1.0,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        height: _showCollapsedBar ? 0 : null,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          CommunityFilterDropdown(
+                            selected: controller.selectedFilter.value,
+                            onChanged: controller.changeFilter,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              CommunityFilterDropdown(
-                                selected: controller.selectedFilter.value,
-                                onChanged: controller.changeFilter,
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -168,7 +190,9 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
               child: Column(
                 children: [
                   Container(
-                    height: bannerHeight + statusBarHeight,
+                    height:
+                        bannerHeight +
+                        statusBarHeight * (1 - _collapseProgress),
                     decoration: const BoxDecoration(color: Colors.white),
                     child: Stack(
                       children: [
@@ -220,88 +244,167 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             child: Row(
                               children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.withValues(alpha: 0.6),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: IconButton(
-                                    icon: Icon(
-                                      LinkLianIcon.back,
-                                      color: AppColors.white,
+                                GestureDetector(
+                                  onTap: () {
+                                    Get.find<NavigationController>()
+                                        .hideCommunityDetail();
+                                  },
+                                  child: ClipOval(
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 10,
+                                        sigmaY: 10,
+                                      ),
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryPalette[800]!
+                                              .withValues(alpha: 0.2),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.1,
+                                            ),
+                                            width: 0.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.2,
+                                              ),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          LinkLianIcon.back,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
+                                      ),
                                     ),
-                                    onPressed: () {
-                                      Get.find<NavigationController>()
-                                          .hideCommunityDetail();
-                                    },
                                   ),
                                 ),
                                 const Spacer(),
 
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.withValues(alpha: 0.6),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: IconButton(
-                                    icon: Icon(
-                                      Icons.search,
-                                      color: AppColors.white,
-                                      size: 30,
+                                GestureDetector(
+                                  onTap: controller.canInteract()
+                                      ? () {
+                                          Get.toNamed(
+                                            AppRoutes.communitySearch,
+                                            arguments: {
+                                              'communityId':
+                                                  controller.communityId,
+                                              'communityName':
+                                                  community.communityName,
+                                            },
+                                          );
+                                        }
+                                      : null,
+                                  child: ClipOval(
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 10,
+                                        sigmaY: 10,
+                                      ),
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryPalette[800]!
+                                              .withValues(alpha: 0.2),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.1,
+                                            ),
+                                            width: 0.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.2,
+                                              ),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.search,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
+                                      ),
                                     ),
-                                    onPressed: controller.canInteract()
-                                        ? () {
-                                            Get.toNamed(
-                                              AppRoutes.communitySearch,
-                                              arguments: {
-                                                'communityId':
-                                                    controller.communityId,
-                                                'communityName':
-                                                    community.communityName,
-                                              },
-                                            );
-                                          }
-                                        : null,
                                   ),
                                 ),
 
                                 const SizedBox(width: 8),
 
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.withValues(alpha: 0.6),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: IconButton(
-                                    icon: Icon(
-                                      LinkLianIcon.add,
-                                      color: AppColors.white,
-                                      size: 30,
-                                    ),
+                                GestureDetector(
+                                  onTap: controller.canInteract()
+                                      ? () async {
+                                          final result = await Get.toNamed(
+                                            AppRoutes.createPostCommunity,
+                                            arguments: {
+                                              'community_id':
+                                                  controller.communityId,
+                                              'userId': controller
+                                                  .currentUserId
+                                                  .value,
+                                            },
+                                          );
 
-                                    onPressed: controller.canInteract()
-                                        ? () async {
-                                            final result = await Get.toNamed(
-                                              AppRoutes.createPostCommunity,
-                                              arguments: {
-                                                'community_id':
-                                                    controller.communityId,
-                                                'userId': controller
-                                                    .currentUserId
-                                                    .value,
-                                              },
+                                          if (result != null) {
+                                            await controller.loadDetail();
+                                            DialogHelper.showNotification(
+                                              title: 'โพสต์สำเร็จ',
+                                              message:
+                                                  'ระบบได้บันทึกโพสต์ของคุณเรียบร้อยแล้ว',
+                                              type: NotificationType.success,
                                             );
-                                            if (result != null) {
-                                              await controller.loadDetail();
-                                              DialogHelper.showNotification(
-                                                title: 'โพสต์สำเร็จ',
-                                                message:
-                                                    'ระบบได้บันทึกโพสต์ของคุณเรียบร้อยแล้ว',
-                                                type: NotificationType.success,
-                                              );
-                                            }
                                           }
-                                        : null,
+                                        }
+                                      : null,
+                                  child: ClipOval(
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 10,
+                                        sigmaY: 10,
+                                      ),
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryPalette[800]!
+                                              .withValues(alpha: 0.2),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.1,
+                                            ),
+                                            width: 0.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.2,
+                                              ),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          LinkLianIcon.add,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -314,10 +417,10 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
 
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    height: _showCollapsedBar ? 150 : 0,
+                    height: 150 * _collapseProgress,
                     child: AnimatedOpacity(
                       duration: const Duration(milliseconds: 200),
-                      opacity: _showCollapsedBar ? 1.0 : 0.0,
+                      opacity: _collapseProgress,
                       child: SingleChildScrollView(
                         physics: const NeverScrollableScrollPhysics(),
                         child: Column(
@@ -424,11 +527,7 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                   begin: 0.0,
                                   end: _showCollapsedBar ? 1.0 : 0.0,
                                 ),
-                                curve: const Interval(
-                                  0.3,
-                                  1.0,
-                                  curve: Curves.easeInOut,
-                                ),
+                                curve: Curves.easeInOut,
                                 builder: (context, value, child) {
                                   return SizedBox(
                                     height: 60 * value,

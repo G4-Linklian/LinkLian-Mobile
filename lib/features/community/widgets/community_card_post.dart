@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/data/repository/community_bookmark_repository.dart';
+import 'package:LinkLian/features/community/controllers/community_comment_controller.dart';
 import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
 import 'package:LinkLian/features/profile/controllers/bookmark_controller.dart';
 import 'package:flutter/material.dart';
@@ -100,7 +101,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       arguments: {
         'postCommuId': widget.post.postId,
         'communityId': widget.post.communityId,
-        'postCardWidget': widget,
+        'post': widget.post,
         'userSysId': Get.find<AuthController>().userId.value,
       },
     );
@@ -783,28 +784,6 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     );
   }
 
-  // void _onEditPost() async {
-  //   final result = await Get.toNamed(
-  //     AppRoutes.createPostCommunity,
-  //     arguments: {
-  //       'isEdit': true,
-  //       'post': widget.post,
-  //       'community_id': widget.post.communityId,
-  //     },
-  //   );
-
-  //   if (result == true) {
-  //     final controller = Get.find<CommunityDetailController>();
-
-  //     await controller.loadDetail();
-
-  //     DialogHelper.showNotification(
-  //       title: 'แก้ไขสำเร็จ',
-  //       message: 'โพสต์ถูกอัปเดตแล้ว',
-  //       type: NotificationType.success,
-  //     );
-  //   }
-  // }
   void _onEditPost() async {
     final result = await Get.toNamed(
       AppRoutes.createPostCommunity,
@@ -816,9 +795,13 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     );
 
     if (result is CommunityPostModel) {
-      final controller = Get.find<CommunityDetailController>();
+      if (Get.isRegistered<CommunityDetailController>()) {
+        Get.find<CommunityDetailController>().updatePostInList(result);
+      }
 
-      controller.updatePostInList(result);
+      if (Get.isRegistered<CommunityCommentController>()) {
+        Get.find<CommunityCommentController>().post.value = result;
+      }
 
       DialogHelper.showNotification(
         title: 'แก้ไขสำเร็จ',
@@ -857,9 +840,13 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
     try {
       await CommunityPostRepository().deletePost(postId: widget.post.postId);
-
-      final controller = Get.find<CommunityDetailController>();
-      controller.removePost(widget.post.postId);
+      if (Get.isRegistered<CommunityDetailController>()) {
+        final controller = Get.find<CommunityDetailController>();
+        controller.removePost(widget.post.postId);
+      }
+      if (Get.currentRoute == AppRoutes.communityComment) {
+        Get.back(result: true);
+      }
 
       DialogHelper.showNotification(
         title: 'ลบโพสต์สำเร็จ',
@@ -1434,7 +1421,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
             ),
             child: Row(
               children: [
-                // Preview Image (Compact)
+                // Preview Image
                 Container(
                   width: 90,
                   height: 90,
@@ -1520,14 +1507,13 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
             ),
           ),
 
-          // Navigation + Counter (Outside border, แสดงเฉพาะเมื่อมีหลายลิงก์)
+          // Navigation and Counter
           if (widget.hasMultiple)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Left Arrow
                   SizedBox(
                     width: 28,
                     height: 28,
@@ -1567,7 +1553,6 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
 
                   const SizedBox(width: 8),
 
-                  // Right Arrow
                   SizedBox(
                     width: 28,
                     height: 28,

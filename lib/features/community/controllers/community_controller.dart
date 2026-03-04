@@ -4,6 +4,8 @@ import 'package:LinkLian/data/model/community_model.dart';
 import 'package:LinkLian/data/model/community_post_model.dart';
 import 'package:LinkLian/data/repository/community_repository.dart';
 
+enum JoinFilter { joined, notJoined }
+
 class CommunityController extends GetxController {
   final CommunityRepository _repo;
   CommunityController(this._repo);
@@ -16,6 +18,8 @@ class CommunityController extends GetxController {
   final searchKeyword = "".obs;
 
   final isFirstLoad = true.obs;
+
+  final joinFilter = JoinFilter.joined.obs;
 
   @override
   void onInit() {
@@ -48,8 +52,17 @@ class CommunityController extends GetxController {
         keyword: cleanKeyword == "" ? null : cleanKeyword,
       );
 
-      communities.assignAll(result);
-      isFirstLoad.value = false;
+      if (cleanKeyword != null && cleanKeyword.isNotEmpty) {
+        if (joinFilter.value == JoinFilter.joined) {
+          communities.assignAll(
+            result.where((c) => c.isMember || c.isPending).toList(),
+          );
+        } else {
+          communities.assignAll(result.where((c) => c.isNone).toList());
+        }
+      } else {
+        communities.assignAll(result);
+      }
     } catch (e) {
       Get.snackbar(
         'ข้อผิดพลาด',
@@ -66,6 +79,7 @@ class CommunityController extends GetxController {
   void resetSearch() {
     searchController.clear();
     searchKeyword.value = "";
+    joinFilter.value = JoinFilter.joined;
     loadCommunities();
   }
 }

@@ -5,6 +5,7 @@ import 'package:LinkLian/data/repository/community_post_repository.dart';
 import 'package:LinkLian/data/repository/community_repository.dart';
 import 'package:LinkLian/data/repository/profile_repository.dart';
 import 'package:LinkLian/data/repository/teaching_schedule_repository.dart';
+import 'package:LinkLian/features/community/controllers/community_controller.dart';
 import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
 import 'package:LinkLian/features/community/pages/community_detail_page.dart';
 import 'package:LinkLian/features/profile/controllers/profile_controller.dart';
@@ -154,6 +155,12 @@ class _MainPageState extends State<MainPage> {
           Get.find<CommunityPostRepository>(),
           Get.find<CommunityMemberRepository>(),
         ),
+        permanent: true,
+      );
+    }
+    if (!Get.isRegistered<CommunityController>()) {
+      Get.put(
+        CommunityController(Get.find<CommunityRepository>()),
         permanent: true,
       );
     }

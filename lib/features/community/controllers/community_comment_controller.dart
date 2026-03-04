@@ -1,3 +1,4 @@
+import 'package:LinkLian/data/model/community_post_model.dart';
 import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -11,7 +12,7 @@ class CommunityCommentController extends GetxController {
 
   // ===== POST =====
   late final int postCommuId;
-  late final Widget postCardWidget;
+  final Rx<CommunityPostModel?> post = Rx<CommunityPostModel?>(null);
 
   // ===== USER =====
   late final int userSysId;
@@ -44,13 +45,18 @@ class CommunityCommentController extends GetxController {
     final args = Get.arguments;
 
     postCommuId = args['postCommuId'];
-    postCardWidget = args['postCardWidget'];
+    post.value = args['post'];
     userSysId = args['userSysId'];
 
     final int communityId = args['communityId'];
 
-    final detailController = Get.find<CommunityDetailController>();
+    if (Get.isRegistered<CommunityDetailController>()) {
+  final detailController = Get.find<CommunityDetailController>();
+
+  if (detailController.communityId != communityId) {
     detailController.initFromOutside(communityId);
+  }
+}
 
     loadComments();
   }

@@ -100,5 +100,9 @@ class NavigationController extends GetxController {
     if (Get.isRegistered<ClassAssignmentController>()) {
       Get.delete<ClassAssignmentController>(force: true);
     }
+
+    if (Get.isRegistered<CommunityController>()) {
+      Get.delete<CommunityController>(force: true);
+    }
   }
 }
