@@ -1,9 +1,7 @@
+import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import '../../../core/constants/colors.dart';
-import '../../../core/constants/sizes.dart';
 
 class CommunityFilterDropdown extends StatelessWidget {
   final CommunityPostFilter selected;

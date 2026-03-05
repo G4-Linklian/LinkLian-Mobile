@@ -1,3 +1,4 @@
+import 'package:LinkLian/data/repository/post_repository.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -13,7 +14,8 @@ class CommentController extends GetxController {
 
   // ===== post / user =====
   late final int postId;
-  late final PostModel post;
+  // late final PostModel post;
+  PostModel? post;
   late final int userSysId;
 
   // ===== input =====
@@ -38,7 +40,10 @@ class CommentController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _init();
+  }
 
+  Future<void> _init() async {
     final auth = Get.find<AuthController>();
     if (auth.userId.value == null) {
       DialogHelper.showErrorDialog(description: 'ไม่พบข้อมูลผู้ใช้');
@@ -46,11 +51,17 @@ class CommentController extends GetxController {
     }
 
     userSysId = auth.userId.value!;
+
     final args = Get.arguments;
-    post = args['post'] as PostModel;
     postId = args['postId'];
 
-    loadComments();
+    if (args['post'] != null) {
+      post = args['post'] as PostModel;
+    } else {
+      await _loadPostFromServer(postId);
+    }
+
+    await loadComments();
   }
 
   @override
@@ -105,70 +116,76 @@ class CommentController extends GetxController {
     rootComments.clear();
     flatComments.clear();
     visibleChildrenCount.clear();
-    
+
     await loadComments();
   }
 
-  // FLATTEN COMMENTS 
+  Future<void> _loadPostFromServer(int id) async {
+    try {
+      final repo = PostRepository();
+      final result = await repo.getPostDetail(id);
 
-void _rebuildFlatList() {
-  final List<CommentModel> flat = [];
+      post = result;
+    } catch (e, stack) {
+      debugPrint('POST DETAIL ERROR: $e');
+      debugPrintStack(stackTrace: stack);
 
-  for (final root in rootComments) {
-    _appendComment(
-      comment: root,
-      flat: flat,
-    );
-  }
-
-  flatComments.assignAll(flat);
-}
-
-void _appendComment({
-  required CommentModel comment,
-  required List<CommentModel> flat,
-}) {
-  flat.add(comment);
-
-  final visible = visibleChildrenCount[comment.commentId] ?? 0;
-  if (visible <= 0) return;
-
-  for (int i = 0;
-      i < visible && i < comment.children.length;
-      i++) {
-    _appendComment(
-      comment: comment.children[i],
-      flat: flat,
-    );
-  }
-}
-
-void _expandThreadForParent(int parentId) {
-  for (final root in rootComments) {
-    if (_expandRecursive(root, parentId)) {
-      break;
+      DialogHelper.showErrorDialog(description: 'โหลดโพสต์ล้มเหลว');
     }
   }
 
-  _rebuildFlatList();
-}
+  // FLATTEN COMMENTS
 
-bool _expandRecursive(CommentModel comment, int targetId) {
-  if (comment.commentId == targetId) {
-    visibleChildrenCount[targetId] = comment.childrenCount;
-    return true;
+  void _rebuildFlatList() {
+    final List<CommentModel> flat = [];
+
+    for (final root in rootComments) {
+      _appendComment(comment: root, flat: flat);
+    }
+
+    flatComments.assignAll(flat);
   }
 
-  for (final child in comment.children) {
-    if (_expandRecursive(child, targetId)) {
-      visibleChildrenCount[comment.commentId] =
-          (visibleChildrenCount[comment.commentId] ?? 0) + 1;
+  void _appendComment({
+    required CommentModel comment,
+    required List<CommentModel> flat,
+  }) {
+    flat.add(comment);
+
+    final visible = visibleChildrenCount[comment.commentId] ?? 0;
+    if (visible <= 0) return;
+
+    for (int i = 0; i < visible && i < comment.children.length; i++) {
+      _appendComment(comment: comment.children[i], flat: flat);
+    }
+  }
+
+  void _expandThreadForParent(int parentId) {
+    for (final root in rootComments) {
+      if (_expandRecursive(root, parentId)) {
+        break;
+      }
+    }
+
+    _rebuildFlatList();
+  }
+
+  bool _expandRecursive(CommentModel comment, int targetId) {
+    if (comment.commentId == targetId) {
+      visibleChildrenCount[targetId] = comment.childrenCount;
       return true;
     }
-  }
 
-  return false;
-}
+    for (final child in comment.children) {
+      if (_expandRecursive(child, targetId)) {
+        visibleChildrenCount[comment.commentId] =
+            (visibleChildrenCount[comment.commentId] ?? 0) + 1;
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   // TOGGLE / LOAD MORE REPLIES
 
@@ -239,7 +256,8 @@ bool _expandRecursive(CommentModel comment, int targetId) {
       for (final comment in res.comments) {
         rootComments.add(comment);
         // Restore previous visibility or default to 0 (collapsed)
-        visibleChildrenCount[comment.commentId] = oldVisibility[comment.commentId] ?? 0;
+        visibleChildrenCount[comment.commentId] =
+            oldVisibility[comment.commentId] ?? 0;
         _restoreChildrenVisibility(comment, oldVisibility);
       }
 
@@ -250,9 +268,13 @@ bool _expandRecursive(CommentModel comment, int targetId) {
   }
 
   /// Recursively restore children visibility from old state
-  void _restoreChildrenVisibility(CommentModel comment, Map<int, int> oldVisibility) {
+  void _restoreChildrenVisibility(
+    CommentModel comment,
+    Map<int, int> oldVisibility,
+  ) {
     for (final child in comment.children) {
-      visibleChildrenCount[child.commentId] = oldVisibility[child.commentId] ?? 0;
+      visibleChildrenCount[child.commentId] =
+          oldVisibility[child.commentId] ?? 0;
       _restoreChildrenVisibility(child, oldVisibility);
     }
   }

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:LinkLian/features/classes/presentation/widgets/attachment_file.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:dio/dio.dart';
 
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/linklian-icon.dart';
@@ -191,10 +190,11 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
   Widget build(BuildContext context) {
     final controller = Get.find<CreatePostCommunityController>();
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
         await _handleClose(controller);
-        return false;
       },
       child: Scaffold(
         backgroundColor: AppColors.white,
@@ -245,7 +245,7 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
             Expanded(
               child: Column(
                 children: [
-                  // CONTENT INPUT 
+                  // CONTENT INPUT
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -286,7 +286,7 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
                               decoration: InputDecoration(
                                 hintText: "พูดคุยกับชุมชนของคุณได้เลย!",
                                 hintStyle: TextStyle(
-                                  color: Colors.grey.withOpacity(0.5),
+                                  color: Colors.grey.withValues(alpha: 0.5),
                                   fontSize: 16,
                                 ),
                                 border: InputBorder.none,
@@ -390,7 +390,6 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
                       },
                     ),
 
-
                     IconButton(
                       icon: const Icon(
                         LinkLianIcon.photo,
@@ -399,7 +398,6 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
                       ),
                       onPressed: () => _showImagePickerOptions(controller),
                     ),
-
 
                     IconButton(
                       icon: const Icon(

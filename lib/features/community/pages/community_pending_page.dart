@@ -173,6 +173,9 @@ void _showRejectDialog(BuildContext context, int userId) {
         TextButton(
           onPressed: () async {
             await controller.reject(userId);
+
+            if (!context.mounted) return;
+
             Navigator.pop(context);
           },
           child: const Text("ลบ", style: TextStyle(color: Colors.red)),

@@ -1,0 +1,86 @@
+name: LINKLIAN-MOBILE CI
+
+on:
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - "**"
+
+concurrency:
+  group: ci-mobile-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  secret-scan:
+    name: Secret Scan (gitleaks)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Gitleaks (SARIF)
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            zricethezav/gitleaks:latest \
+            detect \
+              --source=/repo \
+              --redact \
+              --verbose \
+              --report-format=sarif \
+              --report-path=/repo/gitleaks.sarif \
+              --exit-code 1
+
+      - name: Upload Gitleaks SARIF
+        if: ${{ always() && hashFiles('gitleaks.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: gitleaks.sarif
+
+  mobile-ci:
+    name: Mobile CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [secret-scan]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter doctor -v
+      - run: flutter pub get
+
+      # - name: Format check (non-blocking)
+      #   continue-on-error: true
+      #   run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze (non-blocking)
+        continue-on-error: true
+        run: flutter analyze
+
+      # - name: Run tests (non-blocking)
+      #   continue-on-error: true
+      #   run: flutter test --coverage
+
+      - name: Upload coverage (non-blocking)
+        uses: codecov/codecov-action@v3
+        continue-on-error: true
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella

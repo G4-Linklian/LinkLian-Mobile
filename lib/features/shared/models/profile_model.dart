@@ -98,8 +98,8 @@ final String? userStatus;
   }
 
   String get fullName {
-    if ((firstName ?? '').isEmpty) return lastName ?? '';
-    if ((lastName ?? '').isEmpty) return firstName ?? '';
+    if (firstName.isEmpty) return lastName;
+    if (lastName.isEmpty) return firstName;
     return '$firstName $lastName';
   }
 
@@ -112,8 +112,6 @@ final String? userStatus;
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) =>
       _$ProfileModelFromJson(json);
-
-  get teachingSchedule => null;
 
   Map<String, dynamic> toJson() => _$ProfileModelToJson(this);
 }

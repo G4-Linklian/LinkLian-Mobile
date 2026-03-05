@@ -210,6 +210,7 @@ class ApiClient {
 extension MultipartApi on ApiClient {
   Future<Response<dynamic>> uploadMultipart(
     String path, {
+    String method = 'POST', 
     required List<File> files,
     required String fieldName,
     Map<String, dynamic>? fields,
@@ -252,10 +253,17 @@ extension MultipartApi on ApiClient {
     }
 
     final options = Options(
+      method: method,
       contentType: 'multipart/form-data',
       extra: {'requiresAuth': requiresAuth},
     );
 
-    return _dio.post(path, data: formData, options: options);
+    AppLogger.info('📤 Upload multipart → $path');
+
+    return _dio.request(
+      path,
+      data: formData,
+      options: options,
+    );
   }
 }

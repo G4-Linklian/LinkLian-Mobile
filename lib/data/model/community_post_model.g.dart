@@ -9,6 +9,7 @@ part of 'community_post_model.dart';
 CommunityPostModel _$CommunityPostModelFromJson(Map<String, dynamic> json) =>
     CommunityPostModel(
       postId: CommunityPostModel._intFromJson(json['post_commu_id']),
+      communityId: CommunityPostModel._intFromJson(json['community_id']),
       userId: CommunityPostModel._intFromJson(json['user_sys_id']),
       content: json['content'] as String,
       createdAt: CommunityPostModel._dateFromJson(json['created_at']),
@@ -28,4 +29,5 @@ Map<String, dynamic> _$CommunityPostModelToJson(CommunityPostModel instance) =>
       'last_name': instance.lastName,
       'profile_pic': instance.profilePic,
       'attachments': instance.attachments.map((e) => e.toJson()).toList(),
+      'community_id': instance.communityId,
     };
