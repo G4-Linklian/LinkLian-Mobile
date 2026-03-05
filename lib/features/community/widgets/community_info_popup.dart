@@ -1,11 +1,8 @@
 import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/colors.dart';
-import '../../../core/services/api_client.dart';
+import 'package:get/get.dart';
 
 class CommunityInfoPopup extends StatefulWidget {
   final int communityId;
@@ -17,49 +14,18 @@ class CommunityInfoPopup extends StatefulWidget {
 }
 
 class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
-  final ApiClient _apiClient = ApiClient();
   late final CommunityDetailController _detailController;
-
-  bool _isLoading = true;
-  String? _error;
-  Map<String, dynamic>? _community;
 
   @override
   void initState() {
     super.initState();
     _detailController = Get.find<CommunityDetailController>();
-    _fetchCommunityInfo();
   }
 
-  Future<void> _fetchCommunityInfo() async {
-    try {
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        '/community/detail/${widget.communityId}',
-      );
-      final root = response.data ?? {};
-
-      if (root['success'] != true) {
-        throw Exception(root['message']);
-      }
-
-      setState(() {
-        _community = root['data'];
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = "ไม่สามารถโหลดข้อมูลได้";
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-
         return DraggableScrollableSheet(
           initialChildSize: 0.5,
           minChildSize: 0.5,
@@ -87,15 +53,11 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
                   ),
 
                   Expanded(
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _error != null
-                        ? Center(child: Text(_error!))
-                        : SingleChildScrollView(
-                            controller: scrollController,
-                            padding: const EdgeInsets.all(24),
-                            child: _buildContent(),
-                          ),
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(24),
+                      child: Obx(() => _buildContent()),
+                    ),
                   ),
                 ],
               ),
@@ -107,24 +69,27 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
   }
 
   Widget _buildContent() {
-    final data = _community ?? {};
+    final community = _detailController.community.value;
 
-    final name = data['community_name'] ?? '';
-    final description = data['description'] ?? '';
-    final rules = List<String>.from(data['rule'] ?? []);
-    final isPrivate = data['is_private'] ?? false;
-
-    final createdRaw = data['created_at'];
+    if (community == null) {
+      return const SizedBox();
+    }
+    final name = community.communityName;
+    final description = community.description ?? '';
+    final isPrivate = community.isPrivate;
+    final rules = community.rules ?? [];
+    final createdRaw = community.createdAt;
+    final firstName = community.firstName ?? '';
+    final lastName = community.lastName ?? '';
+    final creatorName = "$firstName $lastName".trim();
+    final creatorPic = community.profilePic;
+    final isOwner = community.isOwner;
     String createdFormatted = '';
-    if (createdRaw != null) {
+
+    if (createdRaw != null && createdRaw.isNotEmpty) {
       final date = DateTime.parse(createdRaw);
       createdFormatted = DateFormat('d MMMM yyyy', 'th_TH').format(date);
     }
-
-    final firstName = data['first_name'] ?? '';
-    final lastName = data['last_name'] ?? '';
-    final creatorName = "$firstName $lastName".trim();
-    final creatorPic = data['profile_pic'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +137,7 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
                     const Icon(Icons.group, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      "${data['member_count'] ?? 0} สมาชิก",
+                      "${community.memberCount} สมาชิก",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -184,7 +149,7 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
 
             if (isPrivate) ...[
               Row(
@@ -203,7 +168,7 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
             ],
 
             Row(
@@ -216,7 +181,7 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
                 Text(
                   "สร้างเมื่อ $createdFormatted",
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: AppColors.primaryPalette[700],
                   ),
@@ -239,26 +204,47 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
           ),
           const SizedBox(height: 16),
 
-          ...rules.asMap().entries.map(
-            (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "${entry.key + 1}. ",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      entry.value,
-                      style: const TextStyle(fontSize: 16, height: 1.4),
-                    ),
-                  ),
-                ],
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 100),
+            child: ScrollbarTheme(
+              data: ScrollbarThemeData(
+                thumbColor: WidgetStateProperty.all(
+                  AppColors.primaryPalette[400],
+                ),
+                radius: const Radius.circular(30),
+                thickness: WidgetStateProperty.all(6),
+              ),
+              child: Scrollbar(
+                thumbVisibility: true,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: rules.length,
+                  itemBuilder: (context, index) {
+                    final rule = rules[index];
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${index + 1}. ",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              rule,
+                              style: const TextStyle(fontSize: 16, height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -279,7 +265,7 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
               ),
             ),
 
-            if (data['is_private'] == true && data['is_owner'] == true)
+            if (community.isPrivate && isOwner == true)
               ElevatedButton(
                 onPressed: () {
                   Get.toNamed(

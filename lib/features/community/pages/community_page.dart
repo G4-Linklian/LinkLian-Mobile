@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
 import 'package:LinkLian/features/layout/controllers/navigation_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -276,6 +278,132 @@ class _CommuPageState extends State<CommuPage> {
     );
   }
 
+  // Widget _buildCommunityCard(CommunityModel community) {
+  //   return GestureDetector(
+  //     behavior: HitTestBehavior.opaque,
+  //     onTap: () {
+  //       final navController = Get.find<NavigationController>();
+  //       navController.showCommunityDetail({
+  //         'communityId': community.communityId,
+  //       });
+  //     },
+  //     child: Container(
+  //       margin: const EdgeInsets.only(bottom: 12),
+  //       height: 200,
+  //       decoration: BoxDecoration(
+  //         borderRadius: BorderRadius.circular(20),
+  //         boxShadow: [
+  //           BoxShadow(
+  //             color: Colors.black.withValues(alpha: 0.2),
+  //             blurRadius: 10,
+  //             spreadRadius: 2,
+  //             offset: const Offset(0, 0),
+  //           ),
+  //         ],
+  //         image: DecorationImage(
+  //           image: NetworkImage(community.imageBanner),
+  //           fit: BoxFit.cover,
+  //           onError: (error, stackTrace) {},
+  //         ),
+  //       ),
+  //       child: Container(
+  //         decoration: BoxDecoration(
+  //           borderRadius: BorderRadius.circular(18),
+  //           gradient: LinearGradient(
+  //             begin: Alignment.bottomCenter,
+  //             end: Alignment.topCenter,
+  //             stops: const [0.0, 0.35, 1.0],
+  //             colors: [
+  //               AppColors.primaryPalette[300]!.withValues(alpha: 0.5),
+  //               AppColors.primaryPalette[300]!.withValues(alpha: 0.4),
+  //               const Color.fromARGB(0, 254, 254, 254),
+  //             ],
+  //           ),
+  //         ),
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             const Spacer(),
+
+  //             Container(
+  //               width: double.infinity,
+  //               padding: const EdgeInsets.all(12),
+  //               decoration: BoxDecoration(
+  //                 color: AppColors.primaryPalette[100],
+  //                 borderRadius: const BorderRadius.only(
+  //                   bottomLeft: Radius.circular(20),
+  //                   bottomRight: Radius.circular(20),
+  //                 ),
+  //               ),
+  //               child: Row(
+  //                 children: [
+  //                   Expanded(
+  //                     child: Column(
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       children: [
+  //                         Text(
+  //                           community.communityName,
+  //                           style: const TextStyle(
+  //                             fontSize: 20,
+  //                             fontWeight: FontWeight.w800,
+  //                             color: Colors.black,
+  //                           ),
+  //                           maxLines: 1,
+  //                           overflow: TextOverflow.ellipsis,
+  //                         ),
+  //                         const SizedBox(height: 4),
+  //                         Text(
+  //                           "สมาชิก ${community.memberCount} คน",
+  //                           style: TextStyle(
+  //                             fontSize: 13,
+  //                             color: Colors.black.withValues(alpha: 0.7),
+  //                             fontWeight: FontWeight.w600,
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+
+  //                   const SizedBox(width: 12),
+
+  //                   Container(
+  //                     padding: const EdgeInsets.symmetric(
+  //                       horizontal: 12,
+  //                       vertical: 6,
+  //                     ),
+  //                     decoration: BoxDecoration(
+  //                       color: AppColors.white,
+  //                       borderRadius: BorderRadius.circular(20),
+
+  //                       boxShadow: [
+  //                         BoxShadow(
+  //                           color: AppColors.black.withValues(alpha: 0.1),
+  //                           blurRadius: 3,
+  //                           offset: const Offset(0, 2),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                     child: Text(
+  //                       community.isPrivate ? "กลุ่มส่วนตัว" : "กลุ่มสาธารณะ",
+  //                       style: TextStyle(
+  //                         color: community.isPrivate
+  //                             ? AppColors.dangerPalette[500]
+  //                             : AppColors.successPalette[700],
+  //                         fontSize: 12,
+  //                         fontWeight: FontWeight.bold,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildCommunityCard(CommunityModel community) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -304,99 +432,216 @@ class _CommuPageState extends State<CommuPage> {
             onError: (error, stackTrace) {},
           ),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              stops: const [0.0, 0.35, 1.0],
-              colors: [
-                AppColors.primaryPalette[300]!.withValues(alpha: 0.5),
-                AppColors.primaryPalette[300]!.withValues(alpha: 0.4),
-                const Color.fromARGB(0, 254, 254, 254),
-              ],
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Spacer(),
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryPalette[100],
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
-                  ),
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  stops: const [0.0, 0.35, 1.0],
+                  colors: [
+                    AppColors.primaryPalette[300]!.withValues(alpha: 0.5),
+                    AppColors.primaryPalette[300]!.withValues(alpha: 0.4),
+                    const Color.fromARGB(0, 254, 254, 254),
+                  ],
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            community.communityName,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Spacer(),
+
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryPalette[100],
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                community.communityName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "สมาชิก ${community.memberCount} คน",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "สมาชิก ${community.memberCount} คน",
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.black.withValues(alpha: 0.1),
+                                blurRadius: 3,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            community.status == 'inactive'
+                                ? "ชุมชนถูกปิด"
+                                : community.isPrivate
+                                ? "กลุ่มส่วนตัว"
+                                : "กลุ่มสาธารณะ",
                             style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.black.withValues(alpha: 0.7),
-                              fontWeight: FontWeight.w600,
+                              color: community.status == 'inactive'
+                                  ? Colors.grey
+                                  : community.isPrivate
+                                  ? AppColors.dangerPalette[500]
+                                  : AppColors.successPalette[700],
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            if (community.isOwner == true)
+              Positioned(
+                top: 1,
+                right: 4,
+                child: PopupMenuButton<String>(
+                  icon: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryPalette[500]!.withValues(
+                        alpha: 0.5,
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        width: 0.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.more_horiz,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      final detailController =
+                          Get.find<CommunityDetailController>();
+
+                      detailController.initFromOutside(community.communityId);
+
+                      final result = await Get.toNamed(
+                        AppRoutes.createCommunity,
+                        arguments: {
+                          'isEdit': true,
+                          'community': detailController.community.value,
+                        },
+                      );
+
+                      if (result == true) {
+                        controller.loadCommunities();
+                      }
+                    }
+
+                    if (value == 'delete') {
+                      final confirm = await Get.dialog<bool>(
+                        AlertDialog(
+                          title: const Text("ลบชุมชน"),
+                          content: const Text("คุณต้องการลบชุมชนนี้หรือไม่"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Get.back(result: false),
+                              child: const Text("ยกเลิก"),
+                            ),
+                            TextButton(
+                              onPressed: () => Get.back(result: true),
+                              child: Text(
+                                'ลบ',
+                                style: TextStyle(
+                                  color: AppColors.dangerPalette[500],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        controller.deleteCommunity(community.communityId);
+                      }
+                    }
+                  },
+
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: ListTile(
+                        leading: Icon(Icons.edit),
+                        title: Text('แก้ไขชุมชน'),
                       ),
                     ),
 
-                    const SizedBox(width: 12),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(20),
-
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.black.withValues(alpha: 0.1),
-                            blurRadius: 3,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        community.isPrivate ? "กลุ่มส่วนตัว" : "กลุ่มสาธารณะ",
-                        style: TextStyle(
-                          color: community.isPrivate
-                              ? AppColors.dangerPalette[500]
-                              : AppColors.successPalette[700],
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.delete,
+                          color: AppColors.dangerPalette[500],
+                        ),
+                        title: Text(
+                          'ลบชุมชน',
+                          style: TextStyle(color: AppColors.dangerPalette[700]),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

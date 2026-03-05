@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:json_annotation/json_annotation.dart';
 
 part 'community_model.g.dart';
@@ -105,13 +107,24 @@ class CommunityModel {
     return 0;
   }
 
-  static List<String> _ruleFromJson(dynamic value) {
-    if (value == null) return [];
-    if (value is List) {
-      return value.map((e) => e.toString()).toList();
-    }
-    return [];
+ static List<String> _ruleFromJson(dynamic value) {
+  if (value == null) return [];
+
+  if (value is List) {
+    return value.map((e) => e.toString()).toList();
   }
+
+  if (value is String) {
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toList();
+      }
+    } catch (_) {}
+  }
+
+  return [];
+}
 
   static List<String> _tagsFromJson(dynamic value) {
     if (value == null) return [];

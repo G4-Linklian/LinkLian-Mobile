@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:LinkLian/data/model/community_model.dart';
 import 'package:LinkLian/features/community/controllers/community_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -29,7 +30,11 @@ class CreateCommunityController extends GetxController {
   final isSearchingTags = false.obs;
 
   final selectedImage = Rxn<File>();
+   final bannerUrl = RxnString();
   final ImagePicker _picker = ImagePicker();
+
+  final isEditMode = false.obs;
+  int? communityId;
 
   @override
   void onClose() {
@@ -39,6 +44,22 @@ class CreateCommunityController extends GetxController {
     tagInputController.dispose();
     super.onClose();
   }
+  @override
+void onInit() {
+  super.onInit();
+
+  final args = Get.arguments;
+
+  // if (args != null && args['isEdit'] == true) {
+  //   setCommunityForEdit(args['community']);
+  // }
+  if (args is Map && args['isEdit'] == true) {
+  final community = args['community'];
+  if (community is CommunityModel) {
+    setCommunityForEdit(community);
+  }
+}
+}
 
   Future<void> pickImage() async {
     final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
@@ -93,36 +114,85 @@ class CreateCommunityController extends GetxController {
     selectedTags.remove(tag);
   }
 
-  Future<void> createCommunity() async {
-    if (nameController.text.trim().isEmpty) {
-      Get.snackbar("ผิดพลาด", "กรุณากรอกชื่อชุมชน");
-      return;
+  Future<void> submitCommunity() async {
+
+  if (nameController.text.trim().isEmpty) {
+    Get.snackbar("ผิดพลาด", "กรุณากรอกชื่อชุมชน");
+    return;
+  }
+
+  try {
+
+    isLoading.value = true;
+
+    if (isEditMode.value) {
+
+      await _repo.updateCommunity(
+        communityId: communityId!,
+        name: nameController.text.trim(),
+        description: descriptionController.text.trim(),
+        isPrivate: isPrivate.value,
+        rules: rules,
+        tags: selectedTags,
+        imagePath: selectedImage.value?.path,
+      );
+
+    } else {
+
+      await _repo.createCommunity(
+        name: nameController.text.trim(),
+        description: descriptionController.text.trim(),
+        rules: rules,
+        isPrivate: isPrivate.value,
+        tags: selectedTags,
+        imagePath: selectedImage.value?.path,
+      );
+
     }
-
-
-   try {
-    isLoading.value = true; 
-
-    await _repo.createCommunity(
-      name: nameController.text.trim(),
-      description: descriptionController.text.trim(),
-      rules: rules,
-      isPrivate: isPrivate.value,
-      tags: selectedTags,
-      imagePath: selectedImage.value?.path,
-    );
 
     final communityController = Get.find<CommunityController>();
     await communityController.loadCommunities();
 
-    resetForm();
+    // resetForm();
+    if (!isEditMode.value) {
+  resetForm();
+}
 
-    Get.back();
-    Get.snackbar("สำเร็จ", "สร้างชุมชนเรียบร้อยแล้ว");
+    // Get.back();
+
   } finally {
-    isLoading.value = false; 
+    isLoading.value = false;
   }
 }
+  // Future<void> createCommunity() async {
+  //   if (nameController.text.trim().isEmpty) {
+  //     Get.snackbar("ผิดพลาด", "กรุณากรอกชื่อชุมชน");
+  //     return;
+  //   }
+
+  //   try {
+  //     isLoading.value = true;
+
+  //     await _repo.createCommunity(
+  //       name: nameController.text.trim(),
+  //       description: descriptionController.text.trim(),
+  //       rules: rules,
+  //       isPrivate: isPrivate.value,
+  //       tags: selectedTags,
+  //       imagePath: selectedImage.value?.path,
+  //     );
+
+  //     final communityController = Get.find<CommunityController>();
+  //     await communityController.loadCommunities();
+
+  //     resetForm();
+
+  //     Get.back();
+  //     Get.snackbar("สำเร็จ", "สร้างชุมชนเรียบร้อยแล้ว");
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
 
   void resetForm() {
     nameController.clear();
@@ -134,4 +204,25 @@ class CreateCommunityController extends GetxController {
     selectedImage.value = null;
     isPrivate.value = false;
   }
+
+
+  void setCommunityForEdit(CommunityModel community) {
+  isEditMode.value = true;
+
+  communityId = community.communityId;
+
+  nameController.text = community.communityName;
+  descriptionController.text = community.description ?? '';
+
+  rules.clear();
+  rules.addAll(community.rules);
+
+  selectedTags.clear();
+  selectedTags.addAll(community.tags);
+
+  isPrivate.value = community.isPrivate;
+  bannerUrl.value = community.imageBanner;
+
+  update(); 
+}
 }

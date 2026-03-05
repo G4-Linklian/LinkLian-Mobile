@@ -146,7 +146,9 @@ class AppRouter {
       name: AppRoutes.searchAssignment,
       page: () => const SearchAssignmentPage(),
       binding: BindingsBuilder(() {
-        Get.lazyPut<SearchAssignmentController>(() => SearchAssignmentController());
+        Get.lazyPut<SearchAssignmentController>(
+          () => SearchAssignmentController(),
+        );
       }),
       transition: Transition.rightToLeft,
     ),

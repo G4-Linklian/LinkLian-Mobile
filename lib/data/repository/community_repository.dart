@@ -1,6 +1,7 @@
 import 'dart:io';
 import '../../core/services/api_client.dart';
 import '../model/community_model.dart';
+import 'dart:convert';
 
 class CommunityRepository {
   final ApiClient _apiClient = ApiClient();
@@ -61,14 +62,56 @@ class CommunityRepository {
         'name': name,
         'description': description,
         'is_private': isPrivate.toString(),
-        for (int i = 0; i < rules.length; i++) 'rules[$i]': rules[i],
-        for (int i = 0; i < tags.length; i++) 'tags[$i]': tags[i],
+        'rules': jsonEncode(rules),
+        'tags': jsonEncode(tags),
       },
     );
     final root = response.data ?? {};
 
     if (root['success'] != true) {
       throw Exception(root['message'] ?? 'Create failed');
+    }
+  }
+
+  Future<void> updateCommunity({
+    required int communityId,
+    required String name,
+    required String description,
+    required bool isPrivate,
+    required List<String> rules,
+    required List<String> tags,
+    String? imagePath,
+  }) async {
+    final response = await _apiClient.uploadMultipart(
+      '/community/$communityId',
+      method: 'PUT',
+      files: imagePath != null ? [File(imagePath)] : [],
+      fieldName: 'image',
+      fields: {
+        'name': name,
+        'description': description,
+        'is_private': isPrivate.toString(),
+        'rules': jsonEncode(rules),
+        'tags': jsonEncode(tags),
+      },
+    );
+
+    final root = response.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Update failed');
+    }
+  }
+
+  Future<void> deleteCommunity(int communityId) async {
+    final res = await _apiClient.delete<Map<String, dynamic>>(
+      '/community/$communityId/hard',
+    );
+
+    final root = res.data ?? {};
+
+    if (root['success'] != true) {
+      throw Exception(root['message'] ?? 'Delete community failed');
     }
   }
 

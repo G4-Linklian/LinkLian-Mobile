@@ -125,11 +125,13 @@ class CreateCommunityPage extends StatelessWidget {
           backgroundColor: AppColors.white,
           elevation: 0,
           leading: const SizedBox(),
-          title: const Text(
-            "สร้างชุมชน ",
-            style: TextStyle(
-              color: AppColors.black,
-              fontWeight: FontWeight.w600,
+          title: Obx(
+            () => Text(
+              controller.isEditMode.value ? "แก้ไขชุมชน" : "สร้างชุมชน",
+              style: TextStyle(
+                color: AppColors.black,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           centerTitle: true,
@@ -236,7 +238,6 @@ class CreateCommunityPage extends StatelessWidget {
                       ),
                     ),
 
-                    // const SizedBox(height: 6),
                     Row(
                       children: [
                         Icon(
@@ -270,6 +271,7 @@ class CreateCommunityPage extends StatelessWidget {
                               width: 1,
                             ),
                           ),
+
                           child: controller.selectedImage.value != null
                               ? Stack(
                                   children: [
@@ -282,27 +284,79 @@ class CreateCommunityPage extends StatelessWidget {
                                         fit: BoxFit.cover,
                                       ),
                                     ),
+
                                     Positioned(
                                       top: 8,
                                       right: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.white,
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.2,
+                                      child: GestureDetector(
+                                        onTap: controller.pickImage,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                AppColors.primaryPalette[200],
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors
+                                                    .primaryPalette[800]!
+                                                    .withValues(alpha: 0.7),
+                                                blurRadius: 6,
+                                                offset: const Offset(0, 2),
                                               ),
-                                              blurRadius: 4,
-                                            ),
-                                          ],
+                                            ],
+                                          ),
+                                          child: Icon(
+                                            Icons.edit,
+                                            size: 18,
+                                            color:
+                                                AppColors.primaryPalette[700],
+                                          ),
                                         ),
-                                        child: Icon(
-                                          Icons.edit,
-                                          size: 18,
-                                          color: AppColors.primaryPalette[500],
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : controller.bannerUrl.value != null
+                              ? Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Image.network(
+                                        controller.bannerUrl.value!,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: GestureDetector(
+                                        onTap: controller.pickImage,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                AppColors.primaryPalette[200],
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors
+                                                    .primaryPalette[800]!
+                                                    .withValues(alpha: 0.7),
+                                                blurRadius: 6,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Icon(
+                                            Icons.edit,
+                                            size: 18,
+                                            color:
+                                                AppColors.primaryPalette[700],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -782,8 +836,9 @@ class CreateCommunityPage extends StatelessWidget {
                     .isNotEmpty;
 
                 final isTagValid = controller.selectedTags.isNotEmpty;
-
-                final isImageValid = controller.selectedImage.value != null;
+                final isImageValid = controller.isEditMode.value
+                    ? true
+                    : controller.selectedImage.value != null;
 
                 final isTypeValid = true;
 
@@ -796,19 +851,23 @@ class CreateCommunityPage extends StatelessWidget {
                 }
 
                 try {
-                  await controller.createCommunity();
+                  await controller.submitCommunity();
+
+                  Get.back(result: true);
 
                   DialogHelper.showNotification(
-                    title: 'สำเร็จ',
-                    message: 'สร้างชุมชนเรียบร้อยแล้ว',
+                    title: controller.isEditMode.value
+                        ? 'แก้ไขชุมชนสำเร็จ'
+                        : 'สร้างชุมชนสำเร็จ',
+                    message: controller.isEditMode.value
+                        ? 'ชุมชนของคุณถูกอัปเดตแล้ว'
+                        : 'ชุมชนของคุณถูกสร้างเรียบร้อยแล้ว',
                     type: NotificationType.success,
                   );
-
-                  Get.back(); // ปิดหน้า
                 } catch (e) {
                   DialogHelper.showNotification(
                     title: 'เกิดข้อผิดพลาด',
-                    message: 'ไม่สามารถสร้างชุมชนได้',
+                    message: 'ไม่สามารถบันทึกข้อมูลได้',
                     type: NotificationType.error,
                   );
                 }
@@ -826,7 +885,7 @@ class CreateCommunityPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "สร้าง",
+                controller.isEditMode.value ? "บันทึก" : "สร้าง",
                 style: const TextStyle(
                   color: AppColors.white,
                   fontWeight: FontWeight.w600,

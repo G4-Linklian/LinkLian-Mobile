@@ -250,7 +250,6 @@ class CommunityDetailController extends GetxController {
             memberCount: old.memberCount - 1,
             membershipStatus: 'none',
           );
-
           commuController.communities.refresh();
         }
       }
