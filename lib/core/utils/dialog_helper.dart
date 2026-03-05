@@ -3,21 +3,12 @@ import 'package:get/get.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/sizes.dart';
 import '../../features/login/widgets/otp_popup.dart';
-import '../../features/classes/widgets/image_source_sheet.dart';
-import '../../features/classes/widgets/link_attach_dialog.dart';
+import '../../features/classes/presentation/widgets/image_source_sheet.dart';
+import '../../features/classes/presentation/widgets/link_attach_dialog.dart';
 
 enum NotificationType { success, error, warning, info }
 
 class DialogHelper {
-  // ฟังก์ชันแสดง Error
-  // static void showErrorDialog({String title = "Error", String description = "Something went wrong"}) {
-  //   Get.defaultDialog(
-  //     title: title,
-  //     middleText: description,
-  //     textConfirm: "OK",
-  //     onConfirm: () => Get.back(),
-  //   );
-  // }
 
   static void showErrorDialog({
     String title = "แจ้งเตือน",

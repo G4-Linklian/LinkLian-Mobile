@@ -35,22 +35,22 @@ class ChatRepository {
 
     if (response.statusCode == 200 && response.data != null) {
       final list = response.data!['data'] as List;
-      AppLogger.info('Response data: ${response.data!['data']}');
+      appLog.info('Response data: ${response.data!['data']}');
 
-      AppLogger.info('Fetched chats count: ${list.length}');
+      appLog.info('Fetched chats count: ${list.length}');
 
       try {
         final chats = list.map((chatJson) {
-          AppLogger.info('Parsing chatJson: $chatJson');
+          appLog.info('Parsing chatJson: $chatJson');
           return ChatModel.fromJson(Map<String, dynamic>.from(chatJson));
         }).toList();
 
-        AppLogger.info('Parsed chats count: ${chats.length}');
+        appLog.info('Parsed chats count: ${chats.length}');
         return chats;
       } catch (e, stack) {
-        AppLogger.error('❌ Error parsing chats');
-        AppLogger.error('${e}');
-        AppLogger.error('${stack}');
+        appLog.error('❌ Error parsing chats');
+        appLog.error('${e}');
+        appLog.error('${stack}');
         rethrow;
       }
     }
@@ -115,7 +115,7 @@ class ChatRepository {
     );
 
     if (response.statusCode == 200) {
-      AppLogger.info('Chat deleted successfully');
+      appLog.info('Chat deleted successfully');
       return;
     }
 

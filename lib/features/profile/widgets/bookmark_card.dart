@@ -1,6 +1,6 @@
 import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/constants/colors.dart';
-import 'package:LinkLian/data/model/bookmark_model.dart';
+import 'package:LinkLian/features/classes/data/models/bookmark_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';

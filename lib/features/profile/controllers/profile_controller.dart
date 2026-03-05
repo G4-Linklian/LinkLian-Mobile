@@ -1,7 +1,7 @@
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../data/model/profile_model.dart';
+import '../../shared/models/profile_model.dart';
 import '../../../data/repository/profile_repository.dart';
 import '../../../data/repository/teaching_schedule_repository.dart';
 import '../../auth/controller/auth_controller.dart';
