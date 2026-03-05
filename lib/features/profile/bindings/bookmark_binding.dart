@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import '../../../core/services/api_client.dart';
-import '../../../data/repository/bookmark_repository.dart';
-import '../controllers/bookmark_controller.dart';
+import '../../shared/repositories/bookmark_repository.dart';
+import '../../shared/presentations/bookmark_controller.dart';
 
 class BookmarkBinding extends Bindings {
   @override

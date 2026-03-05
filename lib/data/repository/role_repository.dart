@@ -34,7 +34,7 @@ class RoleRepository {
     if (response.statusCode == 200 && response.data != null) {
       final list = response.data!['data'] as List;
 
-      AppLogger.info('Fetched roles count: ${list.length}');
+      appLog.info('Fetched roles count: ${list.length}');
 
       return list
           .map((e) => RoleModel.fromJson(Map<String, dynamic>.from(e)))

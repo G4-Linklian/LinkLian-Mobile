@@ -1,7 +1,7 @@
 import 'package:LinkLian/features/profile/views/student_profile_view.dart';
 import 'package:LinkLian/features/profile/views/teacher_profile_view.dart';
 import 'package:flutter/material.dart';
-import '../../../data/model/profile_model.dart';
+import '../../shared/models/profile_model.dart';
 
 class ProfileBody extends StatelessWidget {
   final ProfileModel profile;

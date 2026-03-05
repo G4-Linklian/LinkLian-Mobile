@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/profile_controller.dart';
 import '../widgets/profile_settings_sheet.dart';
+import '../../shared/presentations/bookmark_controller.dart';
+import '../widgets/bookmark_card.dart';
 
 class ProfilePage extends GetView<ProfileController> {
   const ProfilePage({super.key});
