@@ -8,7 +8,6 @@ import '../../../auth/controller/auth_controller.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../data/model/teaching_schedule_model.dart';
-import 'package:flutter/foundation.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 import '../../../../config/app_routes.dart';
 

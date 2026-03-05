@@ -9,10 +9,6 @@ import '../../../../core/constants/linklian-icon.dart';
 import '../../../../core/constants/sizes.dart';
 
 import '../controllers/community_comment_controller.dart';
-import '../../../classes/presentation/widgets/comment_inputbar.dart';
-import '../../../classes/presentation/widgets/card_comment.dart';
-
-import '../../data/models/community_comment_model.dart';
 
 class CommunityCommentPage extends StatelessWidget {
   const CommunityCommentPage({super.key});
