@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import '../../../data/model/education_model.dart';
-import '../../../data/model/teaching_schedule_model.dart';
+import '../../profile/data/model/teaching_schedule_model.dart';
 
 part 'profile_model.g.dart';
 

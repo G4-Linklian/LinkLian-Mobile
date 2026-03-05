@@ -1,4 +1,4 @@
-import 'package:LinkLian/features/community/controllers/community_controller.dart';
+import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
 import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/features/assignment/data/repositories/assignment_repository.dart';
 import 'package:LinkLian/features/assignment/presentation/controllers/class_assignment_controller.dart';

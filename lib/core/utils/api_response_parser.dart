@@ -22,4 +22,11 @@ class ApiResponseParser {
         .map(fromJson)
         .toList();
   }
+
+  static bool parseSuccess(dynamic response) {
+    if (response is Map) {
+      return response['success'] == true;
+    }
+    return false;
+  }
 }

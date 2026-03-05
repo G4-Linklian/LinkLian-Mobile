@@ -1,6 +1,6 @@
 import 'package:LinkLian/core/services/api_client.dart';
-import 'package:LinkLian/data/repository/community_repository.dart';
-import 'package:LinkLian/features/community/controllers/community_controller.dart';
+import 'package:LinkLian/features/community/data/repositories/community_repository.dart';
+import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'config/theme.dart';

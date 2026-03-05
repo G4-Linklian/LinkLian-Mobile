@@ -258,7 +258,7 @@ extension MultipartApi on ApiClient {
       extra: {'requiresAuth': requiresAuth},
     );
 
-    AppLogger.info('📤 Upload multipart → $path');
+    appLog.info(('📤 Upload multipart → $path'));
 
     return _dio.request(
       path,
