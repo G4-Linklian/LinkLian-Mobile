@@ -1,23 +1,22 @@
 import '../../../../core/services/api_client.dart';
+import '../../../../core/utils/api_response_parser.dart';
 import '../../../../core/utils/logger.dart';
 import '../models/assignment_model.dart';
 import '../models/group_model.dart';
+import '../models/assignment_post_detail_model.dart';
+import '../../../shared/models/profile_model.dart';
 
 class AssignmentRepository {
   final ApiClient _apiClient;
 
-  AssignmentRepository({required ApiClient apiClient})
-      : _apiClient = apiClient;
-
-  /// Get assignments for a specific section
-  /// Calls: GET /social-feed/assignment?section_id=X&role=Y
-  /// Header: x-user-id (attached automatically by ApiClient)
+  AssignmentRepository({required ApiClient apiClient}) : _apiClient = apiClient;
   Future<List<AssignmentModel>> getClassAssignments({
     required int sectionId,
     String? role,
     int offset = 0,
     int limit = 10,
   }) async {
+    
     try {
       final response = await _apiClient.get(
         '/assignment',
@@ -30,19 +29,17 @@ class AssignmentRepository {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data is List
-            ? response.data
-            : (response.data['data'] ?? []);
-        return data.map((json) => AssignmentModel.fromJson(json)).toList();
+        return ApiResponseParser.parseList(response.data, AssignmentModel.fromJson);
       }
       return [];
+      
     } catch (e) {
-      appLog.info('❌ Error fetching class assignments: $e');
+      appLog.error('❌ Error fetching class assignments: $e');
       return [];
     }
   }
 
-  Future<Map<String, dynamic>?> getPostAssignment({
+  Future<AssignmentPostDetailModel?> getPostAssignment({
     required int postId,
     String? role,
   }) async {
@@ -52,10 +49,11 @@ class AssignmentRepository {
         queryParameters: {'post_id': postId, if (role != null) 'role': role},
       );
 
-      appLog.info('🔍 getPostAssignment response: ${response.data}');
-
       if (response.statusCode == 200) {
-        return response.data['data'] as Map<String, dynamic>?;
+        return ApiResponseParser.parseObject(
+          response.data,
+          AssignmentPostDetailModel.fromJson,
+        );
       }
       return null;
     } catch (e) {
@@ -70,25 +68,27 @@ class AssignmentRepository {
     String role = 'student',
     int limit = 50,
   }) async {
-    final response = await _apiClient.get<Map<String, dynamic>>(
-      '/assignment/search',
-      queryParameters: {
-        'section_id': sectionId,
-        'keyword': keyword,
-        'role': role,
-        'limit': limit,
-      },
-    );
+    try {
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/assignment/search',
+        queryParameters: {
+          'section_id': sectionId,
+          'keyword': keyword,
+          'role': role,
+          'limit': limit,
+        },
+      );
 
-    final rawList =
-        (response.data as Map<String, dynamic>)['data'] as List? ?? [];
-
-    return rawList
-        .map<AssignmentModel>(
-            (e) => AssignmentModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+      appLog.info('🔍 searchAssignments response: $response.data');
+      if (response.statusCode == 200) {
+        return ApiResponseParser.parseList(response.data, AssignmentModel.fromJson);
+      }
+      return [];
+    } catch (e) {
+      appLog.info('❌ Error searching assignments: $e');
+      return [];
+    }
   }
-
   // ===== Group =====
 
   Future<GroupModel?> getGroup({required int assignmentId}) async {
@@ -101,9 +101,7 @@ class AssignmentRepository {
       appLog.info('🔍 getGroup response: ${response.data}');
 
       if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
-        final data = response.data['data'] as Map<String, dynamic>?;
-        if (data == null) return null;
-        return GroupModel.fromJson(data);
+        return ApiResponseParser.parseObject(response.data, GroupModel.fromJson);
       }
       return null;
     } catch (e) {
@@ -122,11 +120,7 @@ class AssignmentRepository {
       );
 
       if (response.statusCode == 200) {
-        final data = response.data['data'] as List? ?? [];
-        appLog.info('All groups: ${data.length} groups');
-        return data
-            .map((e) => GroupModel.fromJson(e as Map<String, dynamic>))
-            .toList();
+        return ApiResponseParser.parseList(response.data, GroupModel.fromJson);
       }
       return [];
     } catch (e) {
@@ -163,7 +157,9 @@ class AssignmentRepository {
     required List<int> memberIds,
   }) async {
     try {
-      appLog.info('📡 updateGroup: assignmentId=$assignmentId, groupId=$groupId');
+      appLog.info(
+        '📡 updateGroup: assignmentId=$assignmentId, groupId=$groupId',
+      );
 
       final response = await _apiClient.post(
         '/assignment/update-group',
@@ -182,7 +178,7 @@ class AssignmentRepository {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getStudentsInSection({
+  Future<List<ProfileModel>> getStudentsInSection({
     required int sectionId,
   }) async {
     try {
@@ -192,7 +188,7 @@ class AssignmentRepository {
       );
 
       if (response.statusCode == 200) {
-        return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+        return ApiResponseParser.parseList(response.data, ProfileModel.fromJson);
       }
       return [];
     } catch (e) {

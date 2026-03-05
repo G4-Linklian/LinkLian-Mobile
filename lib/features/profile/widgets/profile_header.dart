@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/model/profile_model.dart';
+import '../../shared/models/profile_model.dart';
 
 class ProfileHeader extends StatelessWidget {
   final ProfileModel profile;

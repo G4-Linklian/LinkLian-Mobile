@@ -1,20 +1,18 @@
 import '../../../../core/services/api_client.dart';
+import '../../../../core/utils/api_response_parser.dart';
 import '../../../../core/utils/logger.dart';
 import 'package:dio/dio.dart' as dio;
+import '../models/submission_model.dart';
 
-/// Handles all submission and file operations for assignments.
-/// Separated from AssignmentRepository because file I/O
-/// is a distinct responsibility from assignment domain logic.
 class SubmissionRepository {
   final ApiClient _apiClient;
 
-  SubmissionRepository({required ApiClient apiClient})
-      : _apiClient = apiClient;
+  SubmissionRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
-  Future<Map<String, dynamic>?> createSubmission({
+  Future<SubmissionModel?> createSubmission({
     required int assignmentId,
     int? groupId,
-    List<Map<String, String>>? files,
+    List<Map<String, dynamic>>? files,
   }) async {
     try {
       appLog.info(
@@ -35,7 +33,7 @@ class SubmissionRepository {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return response.data as Map<String, dynamic>?;
+        return ApiResponseParser.parseObject(response.data, SubmissionModel.fromJson);
       }
       return null;
     } on dio.DioException catch (e) {
@@ -47,11 +45,11 @@ class SubmissionRepository {
     }
   }
 
-  Future<Map<String, dynamic>?> updateSubmission({
+  Future<SubmissionModel?> updateSubmission({
     required int submissionId,
     required int assignmentId,
     int? groupId,
-    List<Map<String, String>>? files,
+    List<Map<String, dynamic>>? files,
   }) async {
     try {
       final response = await _apiClient.post(
@@ -65,7 +63,7 @@ class SubmissionRepository {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return response.data as Map<String, dynamic>?;
+        return ApiResponseParser.parseObject(response.data, SubmissionModel.fromJson);
       }
       return null;
     } catch (e) {
@@ -74,28 +72,28 @@ class SubmissionRepository {
     }
   }
 
-  Future<Map<String, dynamic>?> getSubmission({
-    required int submissionId,
-  }) async {
-    try {
-      final response = await _apiClient.get(
-        '/assignment/submission',
-        queryParameters: {'submission_id': submissionId},
-      );
+Future<SubmissionModel?> getSubmission({
+  required int submissionId,
+}) async {
+  try {
+    final response = await _apiClient.get(
+      '/assignment/submission',
+      queryParameters: {'submission_id': submissionId},
+    );
 
-      if (response.statusCode == 200) {
-        return response.data['data'] as Map<String, dynamic>?;
-      }
-      return null;
-    } catch (e) {
-      appLog.info('❌ Error fetching submission: $e');
-      return null;
+    if (response.statusCode == 200) {
+      return ApiResponseParser.parseObject(response.data, SubmissionModel.fromJson);
     }
+    return null;
+  } catch (e) {
+    appLog.info('❌ Error fetching submission: $e');
+    return null;
   }
-
+}
   Future<Map<String, dynamic>?> uploadSubmissionFile({
     required String filePath,
     required String fileName,
+    
   }) async {
     try {
       final formData = dio.FormData.fromMap({

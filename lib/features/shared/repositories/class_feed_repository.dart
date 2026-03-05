@@ -1,5 +1,5 @@
 import 'package:LinkLian/core/utils/logger.dart';
-import '../../../data/model/class_feed_model.dart';
+import '../../classes/data/models/class_feed_model.dart';
 import '../../../core/services/api_client.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';

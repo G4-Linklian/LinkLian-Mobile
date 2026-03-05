@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/constants/sizes.dart';
 import '../../../../core/constants/colors.dart';
-import '../../../classes/controllers/class_feed_controller.dart';
-import '../../../classes/widgets/class_card.dart';
-import '../../../classes/widgets/semester_selector.dart';
-import '../../../../config/app_routes.dart';
+import '../../../classes/presentation/controllers/class_feed_controller.dart';
+import '../../../classes/presentation/widgets/class_card.dart';
+import '../../../classes/presentation/widgets/semester_selector.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 
 class AssignmentPage extends StatefulWidget {
@@ -47,8 +46,6 @@ class _AssignmentPageState extends State<AssignmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Note: Transition is handled by layout.dart using Stack + AnimatedSlide
-    // This page only shows the feed body, overlay is managed by MainPage
     return _AssignmentFeedBody(
       key: const ValueKey('assignmentFeedBody'),
       scrollController: _scrollController,

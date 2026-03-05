@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:LinkLian/core/constants/colors.dart';
-import '../controllers/bookmark_controller.dart';
+import '../../shared/presentations/bookmark_controller.dart';
 import 'bookmark_card.dart';
 
 class BookmarkSwitcher extends GetView<BookmarkController> {

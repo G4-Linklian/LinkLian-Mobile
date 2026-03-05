@@ -1,8 +1,9 @@
 import 'package:get/get.dart';
 import '../../auth/controller/auth_controller.dart';
-import '../../../data/model/bookmark_model.dart';
-import '../../../data/repository/bookmark_repository.dart';
+import '../../classes/data/models/bookmark_model.dart';
+import '../../shared/repositories/bookmark_repository.dart';
 import '../../../core/utils/dialog_helper.dart';
+import '../../../core/utils/logger.dart';
 
 enum BookmarkType { post, community }
 
@@ -69,7 +70,7 @@ class BookmarkController extends GetxController {
 
       print('✅ Loaded ${result.length} bookmarks');
     } catch (e) {
-      print('❌ Error fetching bookmarks: $e');
+      appLog.info('❌ Error fetching bookmarks: $e');
       DialogHelper.showNotification(
         title: 'เกิดข้อผิดพลาด',
         message: 'ไม่สามารถโหลดบุ๊กมาร์กได้',
@@ -116,29 +117,23 @@ class BookmarkController extends GetxController {
       }
 
       // เรียก API
-      final result = await repo.createBookmark(userId: userId, postId: postId);
+      final success = await repo.toggleBookmark(userId: userId, postId: postId);
 
-      // ตรวจสอบ response
-      if (result['success'] != true) {
-        throw Exception(result['message'] ?? 'Unknown error');
-      }
+      if (!success) throw Exception('Toggle bookmark failed');
 
-      final action = result['data']['action']; // 'created' หรือ 'removed'
-
-      if (action == 'created') {
+      if (!wasBookmarked) {
         // สร้าง bookmark สำเร็จ
-        print('✅ Bookmark created for post $postId');
+        appLog.info('✅ Bookmark created for post $postId');
         DialogHelper.showNotification(
           title: 'สำเร็จ',
           message: 'บันทึกโพสต์เรียบร้อยแล้ว',
           type: NotificationType.success,
         );
-
         // Refresh bookmark list เพื่อได้ข้อมูลทั้งหมด
         await _fetchBookmarks(userId);
-      } else if (action == 'removed') {
+      } else {
         // ลบ bookmark สำเร็จ
-        print('✅ Bookmark removed for post $postId');
+        appLog.info('✅ Bookmark removed for post $postId');
         DialogHelper.showNotification(
           title: 'สำเร็จ',
           message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
@@ -146,7 +141,7 @@ class BookmarkController extends GetxController {
         );
       }
     } catch (e) {
-      print('❌ Error toggling bookmark: $e');
+      appLog.info('❌ Error toggling bookmark: $e');
 
       if (wasBookmarked) {
         bookmarkedPostIds.add(postId);
@@ -177,14 +172,14 @@ class BookmarkController extends GetxController {
       // เรียก API
       await repo.deleteBookmark(userId: userId, postId: postId);
 
-      print('✅ Bookmark removed for post $postId');
+      appLog.info('✅ Bookmark removed for post $postId');
       DialogHelper.showNotification(
         title: 'สำเร็จ',
         message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
         type: NotificationType.success,
       );
     } catch (e) {
-      print('❌ Error removing bookmark: $e');
+      appLog.info('❌ Error removing bookmark: $e');
 
       // Rollback
       await _fetchBookmarks(userId);

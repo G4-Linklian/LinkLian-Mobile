@@ -14,10 +14,11 @@ import 'features/shared/repositories/class_feed_repository.dart';
 import 'data/repository/semester_repository.dart';
 import 'features/login/pages/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'data/repository/bookmark_repository.dart';
-import 'features/profile/controllers/bookmark_controller.dart';
+import 'features/shared/repositories/bookmark_repository.dart';
+import 'features/shared/presentations/bookmark_controller.dart';
 import 'features/layout/controllers/navigation_controller.dart';
 import 'features/assignment/data/repositories/assignment_repository.dart';
+import 'features/assignment/data/repositories/submission_repository.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
@@ -49,6 +50,10 @@ void main() async {
   );
   Get.put<AssignmentRepository>(
     AssignmentRepository(apiClient: Get.find<ApiClient>()),
+    permanent: true,
+  );
+  Get.put<SubmissionRepository>(
+    SubmissionRepository(apiClient: Get.find<ApiClient>()),
     permanent: true,
   );
 

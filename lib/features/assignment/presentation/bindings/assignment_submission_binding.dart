@@ -14,17 +14,21 @@ class AssignmentSubmissionBinding extends Bindings {
       );
     }
     if (!Get.isRegistered<SubmissionRepository>()) {
-      Get.put<SubmissionRepository>(
-        SubmissionRepository(apiClient: Get.find<ApiClient>()),
-        permanent: true,
+      Get.lazyPut<SubmissionRepository>(
+        () => SubmissionRepository(apiClient: Get.find<ApiClient>()),
+        fenix: true,
       );
     }
 
     if (Get.isRegistered<AssignmentSubmissionController>()) {
-      Get.delete<AssignmentSubmissionController>();
+      Get.delete<AssignmentSubmissionController>(force: true);
     }
     Get.put<AssignmentSubmissionController>(
-      AssignmentSubmissionController(),
+      AssignmentSubmissionController(
+        repo: Get.find<AssignmentRepository>(),
+        submissionRepo: Get.find<SubmissionRepository>(),
+        authController: Get.find(),
+      ),
     );
   }
 }

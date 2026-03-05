@@ -1,5 +1,8 @@
 import 'package:LinkLian/features/community/controllers/community_controller.dart';
+import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/features/assignment/data/repositories/assignment_repository.dart';
 import 'package:LinkLian/features/assignment/presentation/controllers/class_assignment_controller.dart';
+import 'package:LinkLian/features/shared/repositories/class_feed_repository.dart';
 import 'package:get/get.dart';
 
 class NavigationController extends GetxController {
@@ -21,8 +24,38 @@ class NavigationController extends GetxController {
   final Rxn<Map<String, dynamic>> classAssignmentArgs =
       Rxn<Map<String, dynamic>>();
 
-  // Tab switching
+  // ─── Helper: ensure a dependency is registered ────────────────────────────
 
+  /// Register a controller/repository only if it's not already registered.
+  /// Returns the instance.
+  T _ensurePut<T>(T Function() factory, {bool permanent = false}) {
+    if (!Get.isRegistered<T>()) {
+      return Get.put<T>(factory(), permanent: permanent);
+    }
+    return Get.find<T>();
+  }
+
+  /// Safely delete a controller if it exists.
+  void _safeDelete<T>({bool force = false}) {
+    if (Get.isRegistered<T>()) {
+      Get.delete<T>(force: force);
+    }
+  }
+
+  // ─── Ensure shared repositories (permanent, created once) ─────────────────
+
+  void _ensureAssignmentDependencies() {
+    _ensurePut<AssignmentRepository>(
+      () => AssignmentRepository(apiClient: Get.find<ApiClient>()),
+      permanent: true,
+    );
+    _ensurePut<ClassFeedRepository>(
+      () => ClassFeedRepository(),
+      permanent: true,
+    );
+  }
+
+  // Tab switching
 
   void changeTab(int index) {
     final previousIndex = selectedIndex.value;
@@ -46,7 +79,6 @@ class NavigationController extends GetxController {
     isShowingClassDetail.value = false;
     classDetailArgs.value = null;
   }
-  
 
   void showClassDetailFromRedirect(Map<String, dynamic> args) {
     classDetailArgs.value = args;
@@ -72,6 +104,23 @@ class NavigationController extends GetxController {
   // Class Assignment (Tab 0 sub-page)
 
   void showClassAssignment(Map<String, dynamic> args) {
+    // 1) Ensure repositories exist
+    _ensureAssignmentDependencies();
+
+    // 2) Register or re-use ClassAssignmentController
+    if (!Get.isRegistered<ClassAssignmentController>()) {
+      Get.put<ClassAssignmentController>(
+        ClassAssignmentController(
+          Get.find<AssignmentRepository>(),
+          Get.find<ClassFeedRepository>(),
+        ),
+      );
+    }
+
+    // 3) Reinitialise with new args (handles same-section skip internally)
+    Get.find<ClassAssignmentController>().reinitialise(args);
+
+    // 4) Update navigation state
     classAssignmentArgs.value = args;
     isShowingClassAssignment.value = true;
   }
@@ -79,6 +128,9 @@ class NavigationController extends GetxController {
   void hideClassAssignment() {
     isShowingClassAssignment.value = false;
     classAssignmentArgs.value = null;
+
+    // Dispose the controller to free memory
+    _safeDelete<ClassAssignmentController>(force: true);
   }
 
   void resetForRoleChange(bool isStudent) {
@@ -93,12 +145,11 @@ class NavigationController extends GetxController {
     isShowingCommunityDetail.value = false;
     communityDetailArgs.value = null;
 
+    // Also dispose ClassAssignmentController on role change
+    if (isShowingClassAssignment.value) {
+      _safeDelete<ClassAssignmentController>(force: true);
+    }
     isShowingClassAssignment.value = false;
     classAssignmentArgs.value = null;
-
-    // Delete ClassAssignmentController to clear stale state on role change
-    if (Get.isRegistered<ClassAssignmentController>()) {
-      Get.delete<ClassAssignmentController>(force: true);
-    }
   }
 }

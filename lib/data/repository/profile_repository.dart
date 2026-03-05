@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import '../model/profile_model.dart';
+import '../../features/shared/models/profile_model.dart';
 import '../../core/services/api_client.dart';
 
 class ProfileRepository {

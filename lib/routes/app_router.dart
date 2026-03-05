@@ -21,23 +21,24 @@ import '../features/community/pages/community_page.dart';
 import '../features/profile/pages/profile_page.dart';
 import '../features/layout/pages/layout.dart';
 import '../features/login/pages/login_page.dart';
-import '../features/classes/bindings/class_feed_binding.dart';
-import '../features/classes/pages/class_detail_page.dart';
-import '../features/classes/bindings/class_detail_binding.dart';
-import '../features/classes/pages/create_post_class_page.dart';
-import '../features/classes/controllers/create_post_controller.dart';
+import '../features/classes/presentation/bindings/class_feed_binding.dart';
+import '../features/classes/presentation/pages/class_detail_page.dart';
+import '../features/classes/presentation/bindings/class_detail_binding.dart';
+import '../features/classes/presentation/pages/create_post_class_page.dart';
+import '../features/classes/presentation/controllers/create_post_controller.dart';
 import '../features/shared/repositories/post_repository.dart';
-import '../features/classes/pages/comment_page.dart';
-import '../features/classes/bindings/comment_binding.dart';
+import '../features/classes/presentation/pages/comment_page.dart';
+import '../features/classes/presentation/bindings/comment_binding.dart';
 import '../features/profile/bindings/bookmark_binding.dart';
-import '../features/classes/pages/search_post_page.dart';
+import '../features/classes/presentation/pages/search_post_page.dart';
 import '../features/assignment/presentation/pages/class_assignment_page.dart';
 import '../features/assignment/presentation/bindings/class_assignment_binding.dart';
 import '../features/assignment/presentation/pages/assignment_submission_page.dart';
 import '../features/assignment/presentation/bindings/assignment_submission_binding.dart';
-import '../features/classes/controllers/search_post_controller.dart';
+import '../features/classes/presentation/controllers/search_post_controller.dart';
 import '../features/assignment/presentation/pages/search_assignment_page.dart';
 import '../features/assignment/presentation/controllers/search_assignment_controller.dart';
+import '../features/assignment/data/repositories/assignment_repository.dart';
 
 class AppRouter {
   static final routes = [
@@ -143,12 +144,21 @@ class AppRouter {
       binding: ProfileBinding(),
     ),
     GetPage(
-      name: AppRoutes.searchAssignment,
-      page: () => const SearchAssignmentPage(),
-      binding: BindingsBuilder(() {
-        Get.lazyPut<SearchAssignmentController>(() => SearchAssignmentController());
-      }),
-      transition: Transition.rightToLeft,
-    ),
+  name: AppRoutes.searchAssignment,
+  page: () => const SearchAssignmentPage(),
+  binding: BindingsBuilder(() {
+    // Ensure repository exists (may already be registered by NavigationController)
+    if (!Get.isRegistered<AssignmentRepository>()) {
+      Get.put<AssignmentRepository>(
+        AssignmentRepository(apiClient: Get.find()),
+        permanent: true,
+      );
+    }
+    Get.lazyPut<SearchAssignmentController>(
+      () => SearchAssignmentController(),
+    );
+  }),
+  transition: Transition.rightToLeft,
+),
   ];
 }

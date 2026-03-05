@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:LinkLian/core/constants/linklian-icon.dart';
-import 'package:LinkLian/data/model/profile_model.dart';
+import 'package:LinkLian/features/shared/models/profile_model.dart';
 import 'package:LinkLian/features/auth/controller/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/sizes.dart';
 import '../../../../core/constants/linklian-icon.dart';
+import '../../../../core/services/api_client.dart';
 import '../../../../config/app_routes.dart';
+import '../../data/repositories/assignment_repository.dart';
 import '../controllers/search_assignment_controller.dart';
 import '../widgets/assignment_card.dart';
 
@@ -30,6 +32,15 @@ class _SearchAssignmentPageState extends State<SearchAssignmentPage> {
     _sectionId = args?['sectionId'] as int?;
     _subjectName = args?['subjectName'] as String? ?? '';
     _role = args?['role'] as String? ?? 'student';
+
+    // Ensure AssignmentRepository is available (may not be if navigated
+    // from custom Stack navigation rather than GetPage binding).
+    if (!Get.isRegistered<AssignmentRepository>()) {
+      Get.put<AssignmentRepository>(
+        AssignmentRepository(apiClient: Get.find<ApiClient>()),
+        permanent: true,
+      );
+    }
 
     if (!Get.isRegistered<SearchAssignmentController>()) {
       Get.put(SearchAssignmentController());

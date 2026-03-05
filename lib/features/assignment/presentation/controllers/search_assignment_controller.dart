@@ -3,7 +3,7 @@ import '../../data/models/assignment_model.dart';
 import '../../data/repositories/assignment_repository.dart';
 
 class SearchAssignmentController extends GetxController {
-  final AssignmentRepository _assignmentRepository = Get.find<AssignmentRepository>();
+  late final AssignmentRepository _assignmentRepository;
 
   final RxBool isLoading = false.obs;
   final RxString error = ''.obs;
@@ -16,6 +16,12 @@ class SearchAssignmentController extends GetxController {
   Worker? _debounceWorker;
 
   void init({int? sectionId, String? role}) {
+    if (!Get.isRegistered<AssignmentRepository>()) {
+      throw StateError(
+        'AssignmentRepository must be registered before calling init()',
+      );
+    }
+    _assignmentRepository = Get.find<AssignmentRepository>();
     this.sectionId = sectionId;
     this.role = role ?? 'student';
 

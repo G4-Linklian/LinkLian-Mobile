@@ -6,11 +6,12 @@ import '../../data/models/assignment_model.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 
 class ClassAssignmentController extends GetxController {
-  final AssignmentRepository _assignmentRepository =
-      Get.find<AssignmentRepository>();
-  final ClassFeedRepository _classFeedRepository =
-      Get.find<ClassFeedRepository>();
-
+ ClassAssignmentController(
+    this._assignmentRepository,
+    this._classFeedRepository,
+  );
+  final AssignmentRepository _assignmentRepository;
+  final ClassFeedRepository _classFeedRepository;
   final RxList<AssignmentModel> assignments = <AssignmentModel>[].obs;
   final RxList<AssignmentModel> filteredAssignments =
       <AssignmentModel>[].obs;
@@ -50,29 +51,36 @@ class ClassAssignmentController extends GetxController {
   void onInit() {
     super.onInit();
 
+
     Map<String, dynamic>? args;
     if (Get.isRegistered<NavigationController>()) {
       args = Get.find<NavigationController>().classAssignmentArgs.value;
     }
-    args ??= Get.arguments as Map<String, dynamic>? ?? {};
+    args ??= Get.arguments as Map<String, dynamic>?;
 
-    sectionId = args['sectionId'] ?? 0;
-    className = args['className'] ?? '';
-    subjectName = args['subjectName'] ?? '';
-    userRole.value = args['role'] ?? 'student';
+    if (args != null && args.isNotEmpty) {
+      sectionId = args['sectionId'] ?? 0;
+      className = args['className'] ?? '';
+      subjectName = args['subjectName'] ?? '';
+      userRole.value = args['role'] ?? 'student';
 
-    if (currentFilter.value.isEmpty) {
-      currentFilter.value = isStudent ? 'ทั้งหมด' : 'โพสต์ล่าสุด';
+      if (currentFilter.value.isEmpty) {
+        currentFilter.value = isStudent ? 'ทั้งหมด' : 'โพสต์ล่าสุด';
+      }
+
+      _fetchTeacherName();
+      fetchAssignments();
+    } else {
+      sectionId = 0;
+      className = '';
+      subjectName = '';
+      currentFilter.value = 'ทั้งหมด';
     }
-
-    _fetchTeacherName();
-    fetchAssignments();
   }
 
 void reinitialise(Map<String, dynamic> args) {
   final newSectionId = args['sectionId'] ?? 0;
 
-  // เปรียบเทียบ sectionId ก่อน — ถ้าเป็น section เดิมและโหลดแล้ว ข้ามได้
   if (newSectionId == sectionId && _hasLoadedOnce && !_isCurrentlyLoading) {
     appLog.info(
       '⏭️ Same sectionId ($newSectionId) already loaded — skip',
@@ -91,8 +99,6 @@ void reinitialise(Map<String, dynamic> args) {
   subjectName = args['subjectName'] ?? '';
   userRole.value = args['role'] ?? 'student';
   currentFilter.value = isStudent ? 'ทั้งหมด' : 'โพสต์ล่าสุด';
-
-  // Reset state ก่อนโหลดใหม่
   _hasLoadedOnce = false;
   _isCurrentlyLoading = false;
   _currentOffset = 0;
@@ -136,14 +142,12 @@ void applyFilter(String filter) {
     final sorted = List<AssignmentModel>.from(assignments);
 
     if (filter == 'โพสต์เก่าสุด') {
-      // เรียงจาก createdAt น้อย→มาก (เก่าสุดขึ้นก่อน)
       sorted.sort((a, b) {
         final aDate = a.createdAt ?? DateTime(2000);
         final bDate = b.createdAt ?? DateTime(2000);
         return aDate.compareTo(bDate);
       });
     } else {
-      // โพสต์ล่าสุด: createdAt มาก→น้อย (ใหม่สุดขึ้นก่อน)
       sorted.sort((a, b) {
         final aDate = a.createdAt ?? DateTime(2000);
         final bDate = b.createdAt ?? DateTime(2000);

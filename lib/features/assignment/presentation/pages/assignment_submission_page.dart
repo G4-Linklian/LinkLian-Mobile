@@ -6,7 +6,7 @@ import '../../../../core/constants/sizes.dart';
 import '../../../../core/constants/linklian-icon.dart';
 
 import '../controllers/assignment_submission_controller.dart';
-import '../../../classes/widgets/card_post.dart';
+import '../../../classes/presentation/widgets/card_post.dart';
 import '../widgets/submission_bottomsheet.dart';
 
 
@@ -55,7 +55,7 @@ class AssignmentSubmissionPage extends StatelessWidget {
                 AppSizes.md,
                 16,
                 AppSizes.md,
-                200, // 🔑 เว้นที่ให้ bottom sheet
+                200,
               ),
               children: [
                 CardPost(post: post, onSelectForAI: null),

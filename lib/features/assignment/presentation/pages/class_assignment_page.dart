@@ -1,4 +1,3 @@
-import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -11,9 +10,9 @@ import '../../../../core/constants/linklian-bg.dart';
 import '../../../../core/constants/linklian-icon.dart';
 import '../../../../core/constants/sizes.dart';
 import '../../../../core/constants/strings.dart';
-import '../../../classes/controllers/create_post_controller.dart';
-import '../../../classes/widgets/class_info_popup.dart';
-import '../../../classes/pages/class_detail_page.dart' show BlurIconButton;
+import '../../../classes/presentation/controllers/create_post_controller.dart';
+import '../../../classes/presentation/widgets/class_info_popup.dart';
+import '../../../classes/presentation/pages/class_detail_page.dart' show BlurIconButton;
 import '../../../auth/controller/auth_controller.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 import '../../../layout/widgets/activeIcon.dart';
@@ -29,43 +28,55 @@ class ClassAssignmentPage extends StatefulWidget {
 }
 
 class _ClassAssignmentPageState extends State<ClassAssignmentPage> {
-  late final ClassAssignmentController controller;
   late final NavigationController _navController;
   final ScrollController _scrollController = ScrollController();
 
-  bool get isTeacher => controller.isTeacher;
+  /// Nullable — controller may not yet be registered when layout.dart
+  /// eagerly builds this page inside an AnimatedSlide / Stack.
+  ClassAssignmentController? _controller;
 
-  @override
+  bool get isTeacher => _controller?.isTeacher ?? false;
+
   @override
   void initState() {
     super.initState();
     _navController = Get.find<NavigationController>();
 
-    if (!Get.isRegistered<ClassAssignmentController>()) {
-      Get.put(ClassAssignmentController());
-    }
-    controller = Get.find<ClassAssignmentController>();
+    _tryFindController();
+    ever<bool>(_navController.isShowingClassAssignment, (showing) {
+      if (!mounted) return;
+      if (showing && _controller == null) {
+        _tryFindController();
+        if (_controller != null) setState(() {});
+      } else if (!showing) {
+        _controller = null;
+        setState(() {});
+      }
+    });
 
-    // ✅ ใช้ reinitialise() แทน onInit()
-    final args = _navController.classAssignmentArgs.value ?? {};
-    if (args.isNotEmpty) {
-      controller.reinitialise(args);
-    }
-
-    // ✅ Listen เมื่อ args เปลี่ยน (เช่น กด class อื่น)
-    ever(_navController.classAssignmentArgs, (args) {
+    ever<Map<String, dynamic>?>(_navController.classAssignmentArgs, (args) {
       if (args != null && mounted) {
-        controller.reinitialise(args);
+        _tryFindController();
+        _controller?.reinitialise(args);
+        if (mounted) setState(() {});
       }
     });
 
     _scrollController.addListener(_onScroll);
   }
 
+  void _tryFindController() {
+    if (Get.isRegistered<ClassAssignmentController>()) {
+      _controller = Get.find<ClassAssignmentController>();
+    } else {
+      _controller = null;
+    }
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      controller.loadMoreAssignments();
+      _controller?.loadMoreAssignments();
     }
   }
 
@@ -75,7 +86,6 @@ class _ClassAssignmentPageState extends State<ClassAssignmentPage> {
     super.dispose();
   }
 
-  //Bottom nav
 
   bool get _isStudent {
     final auth = Get.find<AuthController>();
@@ -139,6 +149,14 @@ class _ClassAssignmentPageState extends State<ClassAssignmentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = _controller;
+    if (controller == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.white,
       extendBody: true,

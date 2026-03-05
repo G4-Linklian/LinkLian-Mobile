@@ -41,6 +41,9 @@ class SubmissionModel {
 
   final String? feedback;
 
+  @JsonKey(name: 'attachments')
+  final List<Map<String, dynamic>> attachments;
+
   const SubmissionModel({
     required this.submissionId,
     this.assignmentId,
@@ -50,6 +53,7 @@ class SubmissionModel {
     this.markedAt,
     this.score,
     this.feedback,
+    this.attachments = const [],
   });
 
   factory SubmissionModel.fromJson(Map<String, dynamic> json) =>

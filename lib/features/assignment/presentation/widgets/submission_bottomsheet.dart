@@ -158,13 +158,6 @@ class _GroupTab extends StatelessWidget {
   _GroupTab({required this.controller});
   final TextEditingController _groupNameController = TextEditingController();
 
-  int? _parseUserId(dynamic value) {
-    if (value == null) return null;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value);
-    return null;
-  }
-
   Widget _buildAvatar(String? profilePic, String firstName, String lastName) {
     if (profilePic != null && profilePic.isNotEmpty) {
       return CircleAvatar(
@@ -461,17 +454,24 @@ class _GroupTab extends StatelessWidget {
                 itemBuilder: (_, index) {
                   final student = controller.filteredStudents[index];
 
-                  final userIdDynamic = student['user_sys_id'];
-                  final userId = _parseUserId(userIdDynamic);
+                  final userId = student.userSysId;
+                  
+                  appLog.info(
+                    'Student[$index]: '
+                    'user_sys_id=$userId (${userId.runtimeType}) → '
+                    'parsed=$userId | '
+                    '${student.firstName} ${student.lastName} | '
+                    'isCurrentUser=${userId != null ? controller.isCurrentUser(userId) : 'N/A'}',
+                  );
 
                   if (userId == null) {
                     return const SizedBox.shrink();
                   }
 
-                  final firstName = student['first_name'] ?? '';
-                  final lastName = student['last_name'] ?? '';
+                  final firstName = student.firstName;
+final lastName = student.lastName;
                   final name = '$firstName $lastName';
-                  final profilePic = student['profile_pic'] as String?;
+                  final profilePic = student.profilePic;
                   final isCurrentUser = controller.isCurrentUser(userId);
 
                   if (isCurrentUser) {
@@ -695,11 +695,11 @@ class _StudentSubmissionTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final hasSubmission = controller.existingSubmission.value != null;
+final hasSubmission = controller.submission.value != null;
       final isSubmitting = controller.isSubmittingWork.value;
 
       // ===== แสดงเวลาที่ส่งงาน =====
-      final submittedAt = controller.existingSubmission.value?['submitted_at'];
+      final submittedAt = controller.submission.value?.submittedAt;
       DateTime? submittedDate;
       if (submittedAt != null) {
         submittedDate = submittedAt is DateTime

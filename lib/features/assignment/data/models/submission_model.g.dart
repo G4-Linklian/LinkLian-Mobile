@@ -16,6 +16,10 @@ SubmissionModel _$SubmissionModelFromJson(Map<String, dynamic> json) =>
       markedAt: _dateTimeFromJson(json['marked_at']),
       score: _intFromJson(json['score']),
       feedback: json['feedback'] as String?,
+      attachments: (json['attachments'] as List<dynamic>?)
+              ?.map((e) => e as Map<String, dynamic>)
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$SubmissionModelToJson(SubmissionModel instance) =>
@@ -28,4 +32,5 @@ Map<String, dynamic> _$SubmissionModelToJson(SubmissionModel instance) =>
       'marked_at': instance.markedAt?.toIso8601String(),
       'score': instance.score,
       'feedback': instance.feedback,
+      'attachments': instance.attachments,
     };

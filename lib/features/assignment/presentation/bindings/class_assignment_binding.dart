@@ -14,15 +14,21 @@ class ClassAssignmentBinding extends Bindings {
       );
     }
     if (!Get.isRegistered<ClassFeedRepository>()) {
-      Get.put<ClassFeedRepository>(ClassFeedRepository(), permanent: true);
+      Get.lazyPut<AssignmentRepository>(
+  () => AssignmentRepository(apiClient: Get.find<ApiClient>()),
+  fenix: true,
+);
     }
 
     if (Get.isRegistered<ClassAssignmentController>()) {
-      Get.delete<ClassAssignmentController>();
+      Get.delete<ClassAssignmentController>(force: true);
     }
 
     Get.put<ClassAssignmentController>(
-      ClassAssignmentController(),
+      ClassAssignmentController(
+        Get.find<AssignmentRepository>(),
+        Get.find<ClassFeedRepository>(),
+      ),
       permanent: false,
     );
   }
