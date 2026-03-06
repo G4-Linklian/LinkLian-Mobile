@@ -77,7 +77,7 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
     final name = community.communityName;
     final description = community.description ?? '';
     final isPrivate = community.isPrivate;
-    final rules = community.rules ?? [];
+    final rules = community.rules ;
     final createdRaw = community.createdAt;
     final firstName = community.firstName ?? '';
     final lastName = community.lastName ?? '';
