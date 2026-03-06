@@ -12,18 +12,9 @@ class CommunityTagRepository {
       queryParameters: {'keyword': keyword},
     );
 
-    final Map<String, dynamic> data =
-        ApiResponseParser.parseObject<Map<String, dynamic>>(
-          response.data,
-          (json) => json,
-        ) ??
-        {};
-
-    final rawTags = (data['tags'] as List?) ?? [];
-
-    return rawTags
-        .whereType<Map<String, dynamic>>()
-        .map(CommunityTagModel.fromJson)
-        .toList();
+    return ApiResponseParser.parseList(
+      response.data?['data']?['tags'],
+      CommunityTagModel.fromJson,
+    );
   }
 }

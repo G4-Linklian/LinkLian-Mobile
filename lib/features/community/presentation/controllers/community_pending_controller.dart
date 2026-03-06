@@ -35,11 +35,9 @@ class CommunityPendingController extends GetxController {
       isLoading.value = true;
       errorMessage.value = null;
 
-      final raw = await _repo.getPendingMembers(communityId);
+      final result = await _repo.getPendingMembers(communityId);
 
-      pendingMembers.assignAll(
-        raw.map((e) => CommunityMemberModel.fromJson(e)).toList(),
-      );
+      pendingMembers.assignAll(result);
     } catch (e) {
       errorMessage.value = "โหลดคำขอเข้าร่วมไม่สำเร็จ";
     } finally {

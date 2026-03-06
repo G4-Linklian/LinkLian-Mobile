@@ -10,7 +10,8 @@ import '../models/community_post_model.dart';
 class CommunityPostRepository {
   final ApiClient _apiClient = ApiClient();
 
-  Future<Map<String, dynamic>> createPost({
+  // Future<Map<String, dynamic>> createPost({
+  Future<CommunityPostModel> createPost({
     required int communityId,
     required String content,
     List<File>? files,
@@ -24,12 +25,16 @@ class CommunityPostRepository {
       fields: fields,
     );
 
-    final data = ApiResponseParser.parseObject<Map<String, dynamic>>(
+    final post = ApiResponseParser.parseObject(
       response.data,
-      (json) => json,
+      CommunityPostModel.fromJson,
     );
 
-    return data ?? {};
+    if (post == null) {
+      throw Exception("Create post failed");
+    }
+
+    return post;
   }
 
   Future<List<CommunityPostModel>> getCommunityFeed({
@@ -38,24 +43,15 @@ class CommunityPostRepository {
     int offset = 0,
     String sort = 'newest',
   }) async {
-    final response = await _apiClient.get<dynamic>(
+    final response = await _apiClient.get<Map<String, dynamic>>(
       '/community/post/$communityId',
       queryParameters: {'limit': limit, 'offset': offset, 'sort': sort},
     );
 
-    final data =
-        ApiResponseParser.parseObject<Map<String, dynamic>>(
-          response.data,
-          (json) => json,
-        ) ??
-        {};
-
-    final rawPosts = (data['posts'] as List?) ?? [];
-
-    return rawPosts
-        .whereType<Map<String, dynamic>>()
-        .map(CommunityPostModel.fromJson)
-        .toList();
+    return ApiResponseParser.parseList(
+      response.data?['data']?['posts'],
+      CommunityPostModel.fromJson,
+    );
   }
 
   Future<CommunityPostModel> updatePost({
@@ -79,16 +75,16 @@ class CommunityPostRepository {
       fields: fields,
     );
 
-    final data = ApiResponseParser.parseObject<Map<String, dynamic>>(
+    final post = ApiResponseParser.parseObject(
       response.data,
-      (json) => json,
+      CommunityPostModel.fromJson,
     );
 
-    if (data == null) {
+    if (post == null) {
       throw Exception("Backend did not return updated post data");
     }
 
-    return CommunityPostModel.fromJson(data);
+    return post;
   }
 
   Future<bool> deletePost({required int postId}) async {
@@ -96,12 +92,9 @@ class CommunityPostRepository {
       '/community/post/$postId/hard',
     );
 
-    final data = ApiResponseParser.parseObject<Map<String, dynamic>>(
-      res.data,
-      (json) => json,
-    );
+    final success = ApiResponseParser.parseSuccess(res.data);
 
-    if (data == null) {
+    if (!success) {
       throw Exception('Delete failed');
     }
 

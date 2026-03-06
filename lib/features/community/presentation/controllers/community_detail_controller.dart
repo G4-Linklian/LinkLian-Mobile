@@ -239,19 +239,9 @@ class CommunityDetailController extends GetxController {
       if (Get.isRegistered<CommunityController>()) {
         final commuController = Get.find<CommunityController>();
 
-        final index = commuController.communities.indexWhere(
+        commuController.communities.removeWhere(
           (c) => c.communityId == communityId,
         );
-
-        if (index != -1) {
-          final old = commuController.communities[index];
-
-          commuController.communities[index] = old.copyWith(
-            memberCount: old.memberCount - 1,
-            membershipStatus: 'none',
-          );
-          commuController.communities.refresh();
-        }
       }
 
       DialogHelper.showNotification(
@@ -259,7 +249,7 @@ class CommunityDetailController extends GetxController {
         message: "คุณออกจากกลุ่มเรียบร้อยแล้ว",
         type: NotificationType.success,
       );
-       Get.find<NavigationController>().hideCommunityDetail();
+      Get.find<NavigationController>().hideCommunityDetail();
     } catch (e) {
       DialogHelper.showNotification(
         title: "ผิดพลาด",

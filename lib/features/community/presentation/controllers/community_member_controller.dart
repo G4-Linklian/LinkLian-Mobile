@@ -22,13 +22,10 @@ class CommunityMemberController extends GetxController {
   Future<void> loadMembers() async {
     isLoading.value = true;
 
-    final raw = await _repo.getMembers(communityId);
+    final result = await _repo.getMembers(communityId);
 
-    members.assignAll(
-      raw.map((e) => CommunityMemberModel.fromJson(e)).toList(),
-    );
+    members.assignAll(result);
 
     isLoading.value = false;
   }
-  
 }

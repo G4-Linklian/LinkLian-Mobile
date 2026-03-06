@@ -17,19 +17,10 @@ class CommunityRepository {
           : null,
     );
 
-    final Map<String, dynamic> data =
-        ApiResponseParser.parseObject<Map<String, dynamic>>(
-          response.data,
-          (json) => json,
-        ) ??
-        {};
-
-    final raw = (data['communities'] as List?) ?? [];
-
-    return raw
-        .whereType<Map<String, dynamic>>()
-        .map(CommunityModel.fromJson)
-        .toList();
+    return ApiResponseParser.parseList(
+      response.data?['data']?['communities'],
+      CommunityModel.fromJson,
+    );
   }
 
   /// GET COMMUNITY DETAIL
@@ -66,12 +57,7 @@ class CommunityRepository {
         'tags': jsonEncode(tags),
       },
     );
-    final data = ApiResponseParser.parseObject<Map<String, dynamic>>(
-      response.data,
-      (json) => json,
-    );
-
-    if (data == null) {
+    if (!ApiResponseParser.parseSuccess(response.data)) {
       throw Exception('Create failed');
     }
   }
@@ -120,12 +106,7 @@ class CommunityRepository {
       '/community/bookmark/toggle',
       data: {'post_commu_id': postId},
     );
-    final data = ApiResponseParser.parseObject<Map<String, dynamic>>(
-      res.data,
-      (json) => json,
-    );
-
-    if (data == null) {
+    if (!ApiResponseParser.parseSuccess(res.data)) {
       throw Exception('Toggle failed');
     }
   }
@@ -136,12 +117,7 @@ class CommunityRepository {
       '/community/post/$postId',
     );
 
-    final data = ApiResponseParser.parseObject<Map<String, dynamic>>(
-      res.data,
-      (json) => json,
-    );
-
-    if (data == null) {
+    if (!ApiResponseParser.parseSuccess(res.data)) {
       throw Exception('Delete failed');
     }
   }

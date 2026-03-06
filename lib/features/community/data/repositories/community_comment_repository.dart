@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/utils/api_response_parser.dart';
+import 'package:LinkLian/features/community/data/models/community_comment_page_result.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/services/api_client.dart';
 import '../models/community_comment_model.dart';
@@ -20,16 +21,12 @@ class CommunityCommentRepository {
         'limit': limit,
       },
     );
+    final comments = ApiResponseParser.parseList(
+      res.data?['data']?['comments'],
+      CommunityCommentModel.fromJson,
+    );
 
     final data = ApiResponseParser.parseObject(res.data, (json) => json) ?? {};
-
-    final rawComments = (data['comments'] as List?) ?? [];
-
-    final comments = rawComments
-        .whereType<Map<String, dynamic>>()
-        .map(CommunityCommentModel.fromJson)
-        .toList();
-
     final hasMore = data['hasMore'] == true;
 
     return CommunityCommentPageResult(
@@ -57,11 +54,16 @@ class CommunityCommentRepository {
 
     final data = ApiResponseParser.parseObject(res.data, (json) => json);
 
-    if (data == null || data['comment_id'] == null) {
+    if (data == null) {
       throw Exception('Invalid response structure');
     }
 
-    return int.parse(data['comment_id'].toString());
+    final commentId = data['comment_id'];
+    if (commentId == null) {
+      throw Exception('comment_id not found');
+    }
+
+    return int.parse(commentId.toString());
   }
 
   /// UPDATE COMMUNITY COMMENT
@@ -79,10 +81,10 @@ class CommunityCommentRepository {
       options: Options(headers: {'x-user-id': userId.toString()}),
     );
 
-    final root = res.data ?? {};
+    final success = ApiResponseParser.parseSuccess(res.data);
 
-    if (root['success'] != true) {
-      throw Exception(root['message'] ?? 'Failed to update comment');
+    if (!success) {
+      throw Exception('Failed to update comment');
     }
 
     return true;
@@ -98,25 +100,12 @@ class CommunityCommentRepository {
       data: {'comment_id': commentId},
       options: Options(headers: {'x-user-id': userId.toString()}),
     );
+    final success = ApiResponseParser.parseSuccess(res.data);
 
-    final root = res.data ?? {};
-
-    if (root['success'] != true) {
-      throw Exception(root['message'] ?? 'Failed to delete comment');
+    if (!success) {
+      throw Exception('Failed to delete comment');
     }
 
     return true;
   }
-}
-
-class CommunityCommentPageResult {
-  final List<CommunityCommentModel> comments;
-  final int? nextCursor;
-  final bool hasMore;
-
-  CommunityCommentPageResult({
-    required this.comments,
-    required this.nextCursor,
-    required this.hasMore,
-  });
 }
