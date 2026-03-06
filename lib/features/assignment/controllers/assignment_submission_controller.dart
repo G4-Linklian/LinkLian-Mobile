@@ -7,11 +7,11 @@ import '../../../data/model/assignment_submission_info.dart';
 import '../../../core/utils/dialog_helper.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
-import '../../auth/controller/auth_controller.dart'; // ✅ เพิ่ม import
+import '../../auth/controller/auth_controller.dart';
 
 class AssignmentSubmissionController extends GetxController {
   final AssignmentRepository repo = Get.find();
-  final AuthController authController = Get.find(); // ✅ เพิ่มบรรทัดนี้
+  final AuthController authController = Get.find();
 
   final isLoading = true.obs;
 
@@ -25,7 +25,7 @@ class AssignmentSubmissionController extends GetxController {
   final students = <Map<String, dynamic>>[].obs;
   final filteredStudents = <Map<String, dynamic>>[].obs;
 
-   // ===== ✅ เพิ่ม: all groups สำหรับ Teacher
+  // =====add : all groups สำหรับ Teacher
   final allGroups = <Map<String, dynamic>>[].obs;
   final isLoadingGroups = false.obs;
 
@@ -46,14 +46,13 @@ class AssignmentSubmissionController extends GetxController {
   final originalGroupName = ''.obs;
   final originalMemberIds = <int>[].obs;
 
-  // ✅ ดึง userId จาก AuthController
+  // pull userId from AuthController
   int? get currentUserId => authController.userId.value;
 
   bool get isTeacher {
     final roleName = authController.roleName.value?.toLowerCase() ?? '';
     return roleName.contains('teacher') || roleName.contains('instructor');
   }
-
 
   @override
   void onInit() {
@@ -62,7 +61,7 @@ class AssignmentSubmissionController extends GetxController {
     fetchAssignmentPost(args['postId']);
   }
 
-Future<void> fetchAssignmentPost(int postId) async {
+  Future<void> fetchAssignmentPost(int postId) async {
     try {
       isLoading.value = true;
       _resetAllState();
@@ -82,7 +81,11 @@ Future<void> fetchAssignmentPost(int postId) async {
           ? SubmissionModel.fromJson(submissionJson)
           : null;
 
-      AppLogger.info('✅ isGroup = ${assignmentInfo.value!.isGroup}');
+      appLog.info(
+        '[GroupAssignment]',
+        data: assignmentInfo.value!.toJson(),
+        actionPage: 'AssignmentSubmissionController',
+      );
 
       if (assignmentInfo.value!.isGroup) {
         // ✅ Teacher: ดึงกลุ่มทั้งหมด
@@ -94,7 +97,11 @@ Future<void> fetchAssignmentPost(int postId) async {
 
           if (group.value == null && currentUserId != null) {
             selectedStudentIds.add(currentUserId!);
-            AppLogger.info('✅ Auto-selected current user: $currentUserId');
+            appLog.info(
+              '[Assignment User ]',
+              data: currentUserId,
+              actionPage: 'AssignmentSubmissionController',
+            );
           }
 
           await fetchStudentsInSection();
@@ -104,10 +111,15 @@ Future<void> fetchAssignmentPost(int postId) async {
       isLoading.value = false;
     }
   }
-// ✅ เพิ่ม: Fetch all groups สำหรับ Teacher
+
+  // Fetch all groups สำหรับ Teacher
   Future<void> fetchAllGroups() async {
     final assignmentId = assignmentInfo.value?.assignmentId;
-    AppLogger.info('🔍 fetchAllGroups assignmentId = $assignmentId');
+    appLog.info(
+      '[Assignment ID]',
+      data: assignmentId,
+      actionPage: 'AssignmentSubmissionController',
+    );
 
     if (assignmentId == null) return;
 
@@ -115,58 +127,65 @@ Future<void> fetchAssignmentPost(int postId) async {
       isLoadingGroups.value = true;
 
       final result = await repo.getAllGroups(assignmentId: assignmentId);
-      
-      AppLogger.info('📦 Fetched ${result.length} groups');
-      
+
+      appLog.info(
+        '[Number of group]',
+        data: result.length,
+        actionPage: 'AssignmentSubmissionController',
+      );
+
       allGroups.assignAll(result);
     } finally {
       isLoadingGroups.value = false;
     }
   }
 
-  
-// ✅ เพิ่ม method reset state ทั้งหมด
-void _resetAllState() {
-  // Reset tab
-  currentTab.value = 0;
-  
-  // Reset group state
-  isEditingGroup.value = false;
-  group.value = null;
-  
-  // Reset form
-  groupName.value = '';
-  selectedStudentIds.clear();
-  searchKeyword.value = '';
-  
-  // Reset students
-  students.clear();
-  filteredStudents.clear();
-  allGroups.clear(); // ✅ เพิ่ม
+  // เพิ่ม method reset state ทั้งหมด
+  void _resetAllState() {
+    // Reset tab
+    currentTab.value = 0;
 
-  
-  // Reset original state
-  originalGroupName.value = '';
-  originalMemberIds.clear();
-  
-  // Reset loading
-  isStudentLoading.value = false;
-  isSubmittingGroup.value = false;
-  
-  isLoadingGroups.value = false; // ✅ เพิ่ม
+    // Reset group state
+    isEditingGroup.value = false;
+    group.value = null;
 
+    // Reset form
+    groupName.value = '';
+    selectedStudentIds.clear();
+    searchKeyword.value = '';
 
+    // Reset students
+    students.clear();
+    filteredStudents.clear();
+    allGroups.clear();
 
-}
+    // Reset original state
+    originalGroupName.value = '';
+    originalMemberIds.clear();
 
-Future<void> fetchGroup() async {
-  final assignmentId = assignmentInfo.value?.assignmentId;
-  AppLogger.info('🔍 fetchGroup assignmentId = $assignmentId');
+    // Reset loading
+    isStudentLoading.value = false;
+    isSubmittingGroup.value = false;
+
+    isLoadingGroups.value = false;
+  }
+
+  Future<void> fetchGroup() async {
+    final assignmentId = assignmentInfo.value?.assignmentId;
+    appLog.info(
+      '[Assignment ID]',
+      data: assignmentId,
+      actionPage: 'AssignmentSubmissionController',
+    );
 
     if (assignmentId == null) return;
 
     final result = await repo.getGroup(assignmentId: assignmentId);
-    AppLogger.info('🔍 getGroup result = $result');
+    appLog.info(
+      '[Group in this Assignment ID]',
+      data: result,
+      actionPage: 'AssignmentSubmissionController',
+    );
 
     group.value = result;
   }
@@ -206,57 +225,55 @@ Future<void> fetchGroup() async {
     _applyStudentFilter();
   }
 
-void _applyStudentFilter() {
-  final keyword = searchKeyword.value.toLowerCase();
+  void _applyStudentFilter() {
+    final keyword = searchKeyword.value.toLowerCase();
 
-  filteredStudents.assignAll(
-    students.where((s) {
-      final name = '${s['first_name']} ${s['last_name']}'.toLowerCase();
+    filteredStudents.assignAll(
+      students.where((s) {
+        final name = '${s['first_name']} ${s['last_name']}'.toLowerCase();
 
-      if (keyword.isNotEmpty && !name.contains(keyword)) {
-        return false;
-      }
+        if (keyword.isNotEmpty && !name.contains(keyword)) {
+          return false;
+        }
 
-      return true;
-    }).toList(),
-  );
+        return true;
+      }).toList(),
+    );
+    ensureCurrentUserIsSelected();
 
-  // ✅ ตรวจสอบว่าตัวเองยังอยู่ใน selected หรือไม่
-  ensureCurrentUserIsSelected();
-
-  AppLogger.info('🔍 filteredStudents = ${filteredStudents.length}');
-}
-
-// ================= SELECT =================
-
-void toggleStudent(int userId) {
-  // ✅ ไม่ต้อง check isCurrentUser แล้ว เพราะ UI ไม่ให้กดอยู่แล้ว
-  if (selectedStudentIds.contains(userId)) {
-    selectedStudentIds.remove(userId);
-  } else {
-    selectedStudentIds.add(userId);
+    appLog.info('[Number of student in group]', data: filteredStudents.length);
   }
 
-  selectedStudentIds.refresh();
+  // ================= SELECT =================
 
-  AppLogger.info('✅ Selected IDs: $selectedStudentIds');
-}
+  void toggleStudent(int userId) {
+    if (selectedStudentIds.contains(userId)) {
+      selectedStudentIds.remove(userId);
+    } else {
+      selectedStudentIds.add(userId);
+    }
 
-// ✅ ช่วยตรวจสอบว่า selectedStudentIds มีตัวเองอยู่เสมอ
-void ensureCurrentUserIsSelected() {
-  if (currentUserId != null && !selectedStudentIds.contains(currentUserId)) {
-    selectedStudentIds.insert(0, currentUserId!); // เพิ่มไว้ตำแหน่งแรก
     selectedStudentIds.refresh();
-    AppLogger.info('🔒 Auto-added current user to selection');
-  }
-}
 
+    appLog.info('[Selected student IDs]', data: selectedStudentIds);
+  }
+
+  void ensureCurrentUserIsSelected() {
+    if (currentUserId != null && !selectedStudentIds.contains(currentUserId)) {
+      selectedStudentIds.insert(0, currentUserId!);
+      selectedStudentIds.refresh();
+      appLog.info(
+        '[Auto-added current user to selection]',
+        data: currentUserId,
+        actionPage: 'AssignmentSubmissionController',
+      );
+    }
+  }
 
   bool isStudentSelected(int userId) {
     return selectedStudentIds.contains(userId);
   }
 
-  // ✅ เช็คว่าเป็นตัวเองหรือไม่
   bool isCurrentUser(int userId) {
     return userId == currentUserId;
   }
@@ -264,10 +281,20 @@ void ensureCurrentUserIsSelected() {
   // ================= SUBMIT =================
 
   bool get canSubmitGroup {
-    // ✅ ต้องมีตัวเองอยู่ใน selectedStudentIds
-    final hasCurrentUser = currentUserId != null && 
-                          selectedStudentIds.contains(currentUserId);
-    
+    final hasCurrentUser =
+        currentUserId != null && selectedStudentIds.contains(currentUserId);
+
+    appLog.info(
+      '[Validation check]',
+      data: {
+        'groupName': groupName.value,
+        'selectedStudentIds': selectedStudentIds,
+        'hasCurrentUser': hasCurrentUser,
+        'isSubmittingGroup': isSubmittingGroup.value,
+      },
+      actionPage: 'AssignmentSubmissionController',
+    );
+
     return groupName.value.trim().isNotEmpty &&
         selectedStudentIds.isNotEmpty &&
         hasCurrentUser &&
@@ -348,23 +375,30 @@ void ensureCurrentUserIsSelected() {
     isEditingGroup.value = false;
     groupName.value = '';
     selectedStudentIds.clear();
-    
-    // ✅ reset แล้ว auto-select ตัวเองใหม่
+
     if (currentUserId != null) {
       selectedStudentIds.add(currentUserId!);
     }
-    
+
     originalGroupName.value = '';
     originalMemberIds.clear();
   }
 
   Future<void> submitGroup() async {
     if (!canSubmitGroup) {
-      AppLogger.info('❌ Cannot submit - validation failed');
+      appLog.error(
+        '[Create Group] Cannot submit - validation failed',
+        data: {
+          'groupName': groupName.value,
+          'selectedStudentIds': selectedStudentIds,
+          'currentUserId': currentUserId,
+        },
+        actionPage: 'AssignmentSubmissionController',
+        exception: Exception('Validation failed'),
+        stackTrace: StackTrace.current,
+      );
       return;
     }
-
-    // ✅ Double-check ว่ามีตัวเองอยู่
     if (currentUserId == null || !selectedStudentIds.contains(currentUserId)) {
       DialogHelper.showNotification(
         title: 'ไม่สามารถบันทึกได้',
@@ -384,7 +418,7 @@ void ensureCurrentUserIsSelected() {
 
       if (isUpdate) {
         final rawGroupId = group.value!['group_id'];
-        
+
         int? groupId;
         if (rawGroupId is int) {
           groupId = rawGroupId;
@@ -393,11 +427,23 @@ void ensureCurrentUserIsSelected() {
         }
 
         if (groupId == null) {
-          AppLogger.info('❌ Invalid group_id: $rawGroupId');
+          appLog.error(
+            '[Invalid Group ID]',
+            data: rawGroupId,
+            actionPage: 'AssignmentSubmissionController',
+            exception: Exception('Invalid group_id format'),
+            stackTrace: StackTrace.current,
+          );
           throw Exception('Invalid group_id format');
         }
 
-        AppLogger.info('📤 Updating group: groupId=$groupId, assignmentId=$assignmentId');
+        appLog.debug(
+          '[Updating group]', 
+          data: {
+            'groupId': groupId,
+            'assignmentId': assignmentId,
+          },
+        );
 
         result = await repo.updateGroup(
           assignmentId: assignmentId,
@@ -406,22 +452,26 @@ void ensureCurrentUserIsSelected() {
           memberIds: selectedStudentIds.toList(),
         );
 
-        AppLogger.info('📥 Update result: $result');
+        appLog.info('[Update result]', data: result);
       } else {
-        AppLogger.info('📤 Creating group: assignmentId=$assignmentId');
-        
+        appLog.info(
+          '[Creating group]',
+          data: assignmentId,
+          actionPage: 'AssignmentSubmissionController'
+          );
+
         result = await repo.createGroup(
           assignmentId: assignmentId,
           groupName: groupName.value.trim(),
           memberIds: selectedStudentIds.toList(),
         );
 
-        AppLogger.info('📥 Create result: $result');
+        appLog.debug('[Create result]', data: result);
       }
 
       if (result != null && result['success'] == true) {
-        AppLogger.info('✅ Success! Showing notification');
-        
+        appLog.info('[Response]', data: result.values);
+
         DialogHelper.showNotification(
           title: 'สำเร็จ!',
           message: isUpdate
@@ -437,9 +487,18 @@ void ensureCurrentUserIsSelected() {
         searchKeyword.value = '';
         originalGroupName.value = '';
         originalMemberIds.clear();
+
+        appLog.info(
+          '[Group state reset after submit]',
+          data: {
+            'groupName': groupName.value,
+            'selectedStudentIds': selectedStudentIds,
+            'searchKeyword': searchKeyword.value,
+          },
+          actionPage: 'AssignmentSubmissionController',
+        );
       } else {
-        AppLogger.info('❌ Result is null or success=false');
-        
+
         DialogHelper.showNotification(
           title: 'ไม่สำเร็จ',
           message: result?['message'] ?? 'ไม่สามารถบันทึกกลุ่มได้',
@@ -447,10 +506,13 @@ void ensureCurrentUserIsSelected() {
         );
       }
     } catch (e, stackTrace) {
-      AppLogger.info('❌ submitGroup error: $e\n$stackTrace');
+      appLog.error('[Group Submit Error]', 
+      actionPage: 'AssignmentSubmissionController', 
+      exception: e, 
+      stackTrace: stackTrace);
 
       String errorMessage = 'ไม่สามารถบันทึกกลุ่มได้';
-      
+
       if (e.toString().contains('must be a member')) {
         errorMessage = 'คุณต้องเป็นสมาชิกในกลุ่มที่สร้าง';
       } else if (e.toString().contains('cannot remove yourself')) {

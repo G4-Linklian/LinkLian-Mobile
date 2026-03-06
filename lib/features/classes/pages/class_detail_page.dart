@@ -37,7 +37,6 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
 
     ever(Get.find<NavigationController>().classDetailArgs, (args) {
       if (args == null || !mounted) return;
-      // ✅ ให้ initializeWithArgs จัดการทุกกรณีเอง
       controller.initializeWithArgs(args);
     });
   }
@@ -88,7 +87,7 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
       body: RefreshIndicator(
         color: AppColors.primaryPalette[500],
         onRefresh: () async {
-          AppLogger.info('🔄 Pull to refresh', screen: 'ClassDetailScreen');
+          appLog.info('[Class detail page] Pull to refresh', actionPage: 'ClassDetailScreen');
           await controller.fetchPosts();
         },
         child: CustomScrollView(
@@ -416,8 +415,8 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                             style: TextStyle(
                               fontSize: titleFontSize,
                               fontWeight: FontWeight.w700,
-                              color: _textColor, // ✅ adaptive
-                              shadows: _textShadow, // ✅ adaptive
+                              color: _textColor, 
+                              shadows: _textShadow,
                             ),
                             maxLines: expandRatio > 0.5 ? 2 : 1,
                             overflow: TextOverflow.ellipsis,
@@ -441,8 +440,8 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                           style: TextStyle(
                             fontSize: sectionFontSize,
                             fontWeight: FontWeight.w500,
-                            color: _textColor.withOpacity(0.85), // ✅ adaptive
-                            shadows: _textShadow, // ✅ adaptive
+                            color: _textColor.withOpacity(0.85),
+                            shadows: _textShadow, 
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -461,8 +460,8 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                                 fontSize: teacherFontSize,
                                 color: _textColor.withOpacity(
                                   0.75,
-                                ), // ✅ adaptive
-                                shadows: _textShadow, // ✅ adaptive
+                                ), 
+                                shadows: _textShadow,
                               ),
                             ),
                             Expanded(
@@ -471,8 +470,8 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                                 style: TextStyle(
                                   fontSize: teacherFontSize,
                                   fontWeight: FontWeight.w500,
-                                  color: _textColor, // ✅ adaptive
-                                  shadows: _textShadow, // ✅ adaptive
+                                  color: _textColor, 
+                                  shadows: _textShadow,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

@@ -440,7 +440,7 @@ class _CardPostState extends State<CardPost> {
           ),
           recognizer: TapGestureRecognizer()
             ..onTap = () async {
-              AppLogger.info('🔗 Tapped link in content: $url');
+              appLog.info('[Card Post widget] Tapped link in content: $url');
               try {
                 final uri = Uri.parse(url);
                 final launched = await launchUrl(

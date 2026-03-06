@@ -22,7 +22,7 @@ class ClassFeedRepository {
       throw Exception('User not authenticated');
     }
 
-    AppLogger.info(
+    appLog.info(
       '🧪 semesterId sent to API = $semesterId, userId = $userId, role = $roleName, offset = $offset, limit = $limit',
     );
 
@@ -72,7 +72,7 @@ class ClassFeedRepository {
 
       return ClassFeedModel.fromJson(data.first as Map<String, dynamic>);
     } catch (e) {
-      AppLogger.info('Error fetching class detail: $e');
+      appLog.info('Error fetching class detail: $e');
       return null;
     }
   }
@@ -109,7 +109,7 @@ class ClassFeedRepository {
       }
       return null;
     } catch (e) {
-      AppLogger.info('❌ Error fetching section educators: $e');
+      appLog.info('❌ Error fetching section educators: $e');
       return null;
     }
   }
@@ -121,7 +121,7 @@ class ClassFeedRepository {
         '/social-feed/class-info/$sectionId',
       );
 
-      AppLogger.info('📦 class-info raw response = ${response.data}');
+      appLog.info('📦 class-info raw response = ${response.data}');
 
       // กรณี ApiClient unwrap data มาแล้ว
       if (response.data is Map<String, dynamic>) {
@@ -136,7 +136,7 @@ class ClassFeedRepository {
 
       return null;
     } catch (e) {
-      AppLogger.info('❌ Error fetching class info: $e');
+      appLog.info('❌ Error fetching class info: $e');
       return null;
     }
   }
