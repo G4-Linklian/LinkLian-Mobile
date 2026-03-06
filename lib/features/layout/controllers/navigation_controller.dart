@@ -99,6 +99,15 @@ class NavigationController extends GetxController {
   void hideCommunityDetail() {
     isShowingCommunityDetail.value = false;
     communityDetailArgs.value = null;
+    if (Get.isRegistered<CommunityController>()) {
+      final controller = Get.find<CommunityController>();
+
+      controller.loadCommunities(
+        keyword: controller.searchKeyword.value.isEmpty
+            ? null
+            : controller.searchKeyword.value,
+      );
+    }
   }
 
   // Class Assignment (Tab 0 sub-page)
