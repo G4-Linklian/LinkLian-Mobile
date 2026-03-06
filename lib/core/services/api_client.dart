@@ -37,9 +37,12 @@ class ApiClient {
       if (Get.isRegistered<AuthController>()) {
         return Get.find<AuthController>().userId.value;
       }
-    } catch (e) {
-      // ✅ ใช้ appLog แทน AppLogger.warning(...)
-      appLog.warning('Cannot get userId: $e', actionPage: 'ApiClient');
+    } catch (e, stack) {
+      appLog.warning(
+        'Cannot get userId',
+        actionPage: 'ApiClient',
+        data: {"error": e.toString()},
+      );
     }
     return null;
   }
@@ -49,7 +52,7 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           final extra = options.extra;
-          final requiresAuth = extra['requiresAuth'] ?? true;
+          final requiresAuth = options.extra['requiresAuth'] as bool? ?? true;
 
           if (requiresAuth) {
             final token = await LocalStorage.getToken();
@@ -60,7 +63,7 @@ class ApiClient {
               appLog.warning(
                 'Missing token — request will be sent without Authorization',
                 actionPage: 'ApiClient',
-                url: options.path,
+                data: 'url: ${options.path}',
               );
             }
 
@@ -78,8 +81,8 @@ class ApiClient {
           // ✅ Log request เริ่มต้น (ยังไม่มี statusCode, ใช้ info แทน)
           appLog.info(
             '${options.method} request sent',
-            url: options.path,
             actionPage: 'ApiClient',
+            data: 'url : ${options.path}',
           );
 
           handler.next(options);
@@ -210,6 +213,7 @@ class ApiClient {
 extension MultipartApi on ApiClient {
   Future<Response<dynamic>> uploadMultipart(
     String path, {
+    String method = 'POST', 
     required List<File> files,
     required String fieldName,
     Map<String, dynamic>? fields,
@@ -230,7 +234,7 @@ extension MultipartApi on ApiClient {
       appLog.info(
         'Uploading file → name=$fileName, size=$fileSize bytes',
         actionPage: actionPage ?? 'ApiClient',
-        url: path,
+        data: 'url: $path',
       );
 
       formData.files.add(
@@ -252,6 +256,7 @@ extension MultipartApi on ApiClient {
     }
 
     final options = Options(
+      method: method,
       contentType: 'multipart/form-data',
       extra: {'requiresAuth': requiresAuth},
     );

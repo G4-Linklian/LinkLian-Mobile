@@ -20,10 +20,12 @@ class SubmissionBottomSheet extends StatelessWidget {
 
       builder: (context, scrollController) {
         appLog.info(
-          '🔍 BottomSheet build | showGroupTab=${controller.showGroupTab}',
+          '[BottomSheet] | showGroupTab=${controller.showGroupTab}',
+          data: context,
         );
         appLog.info(
-          '🔍 isGroup=${controller.assignmentInfo.value?.isGroup}',
+          '[BottomSheet] | isGroup=${controller.assignmentInfo.value?.isGroup}',
+          data: context,
         );
 
         return Container(
@@ -120,7 +122,7 @@ Obx(() {
         final selected = controller.currentTab.value == index;
         // Debug log
         if (selected) {
-          appLog.info('📍 Active tab: $text (index=$index)');
+          appLog.info('[BottomSheet] | Active tab: $text (index=$index)');
         }
         return GestureDetector(
           onTap: () => controller.currentTab.value = index,
@@ -170,7 +172,7 @@ class _GroupTab extends StatelessWidget {
         radius: 24,
         backgroundImage: NetworkImage(profilePic),
         onBackgroundImageError: (exception, stackTrace) {
-          appLog.info('⚠️ Failed to load profile pic: $profilePic');
+          appLog.info('[GroupTab] | Failed to load profile pic: $profilePic');
         },
       );
     }
@@ -195,7 +197,7 @@ class _GroupTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     appLog.info(
-      '🧩 GroupTab build | '
+      '[GroupTab] | '
       'group=${controller.group.value != null} | '
       'students=${controller.students.length} | '
       'filtered=${controller.filteredStudents.length}',
@@ -230,7 +232,7 @@ class _GroupTab extends StatelessWidget {
   // ===== UI แสดงกลุ่ม (หลังสร้างเสร็จ) =====
   Widget _buildGroupDisplay(Map<String, dynamic> group) {
     final members = group['members'] as List<dynamic>? ?? [];
-    appLog.info('👥 Group members = $members');
+    appLog.info('[GroupTab] | Group members = $members');
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -560,7 +562,7 @@ class _GroupTab extends StatelessWidget {
 
                   return InkWell(
                     onTap: () {
-                      appLog.info('👆 Tapped on user: $userId ($name)');
+                      appLog.info('[Choosing] Tapped on user: $userId ($name)');
                       controller.toggleStudent(userId);
                     },
                     child: Container(
@@ -1034,7 +1036,7 @@ class _TeacherGroupTab extends StatelessWidget {
         radius: 20,
         backgroundImage: NetworkImage(profilePic),
         onBackgroundImageError: (exception, stackTrace) {
-          appLog.info('⚠️ Failed to load profile pic: $profilePic');
+          appLog.info('[Group Tab] | Failed to load profile pic: $profilePic');
         },
       );
     }

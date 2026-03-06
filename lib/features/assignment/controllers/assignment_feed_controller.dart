@@ -1,11 +1,4 @@
 import 'package:get/get.dart';
-
-/// Controller for the assignment feed page (first screen — class list)
-///
-/// Design: ไม่เรียก API ซ้ำ — ใช้ข้อมูล class feed จาก ClassFeedController
-/// ที่ register ไว้แล้วตอน app init ผ่าน Get.find()
-///
-/// ถ้าต้องการ fetch เอง (fallback) ให้ inject ClassFeedRepository แทน
 class AssignmentFeedController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;

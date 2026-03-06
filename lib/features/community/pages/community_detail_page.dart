@@ -1,12 +1,10 @@
 import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/utils/dialog_helper.dart';
-import 'package:LinkLian/features/auth/controller/auth_controller.dart';
 import 'package:LinkLian/features/community/widgets/community_card_post.dart';
 import 'package:LinkLian/features/community/widgets/community_info_popup.dart';
 import 'package:LinkLian/features/community/widgets/community_post_filter_widget.dart';
 import 'package:LinkLian/features/layout/controllers/navigation_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/sizes.dart';
@@ -148,11 +146,16 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.md,
                     ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final post = controller.posts[index];
-                        return CardPostCommunity(post: post);
-                      }, childCount: controller.posts.length),
+                    sliver: Obx(
+                      () => SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final post = controller.posts[index];
+                          return CardPostCommunity(
+                            key: ValueKey(post.postId),
+                            post: post,
+                          );
+                        }, childCount: controller.posts.length),
+                      ),
                     ),
                   ),
               ],
@@ -190,17 +193,17 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   const Color.fromARGB(0, 255, 255, 255),
-                                  AppColors.primaryPalette[100]!.withOpacity(
-                                    0.2,
+                                  AppColors.primaryPalette[100]!.withValues(
+                                    alpha: 0.2,
                                   ),
-                                  AppColors.primaryPalette[100]!.withOpacity(
-                                    0.3,
+                                  AppColors.primaryPalette[100]!.withValues(
+                                    alpha: 0.3,
                                   ),
-                                  AppColors.primaryPalette[100]!.withOpacity(
-                                    0.4,
+                                  AppColors.primaryPalette[100]!.withValues(
+                                    alpha: 0.4,
                                   ),
-                                  AppColors.primaryPalette[100]!.withOpacity(
-                                    0.5,
+                                  AppColors.primaryPalette[100]!.withValues(
+                                    alpha: 0.5,
                                   ),
                                   AppColors.primaryPalette[100]!,
                                 ],
@@ -218,14 +221,14 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                             child: Row(
                               children: [
                                 Container(
-                                  // decoration: BoxDecoration(
-                                  //   color: Colors.white.withOpacity(0.2),
-                                  //   shape: BoxShape.circle,
-                                  // ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withValues(alpha: 0.6),
+                                    shape: BoxShape.circle,
+                                  ),
                                   child: IconButton(
                                     icon: Icon(
                                       LinkLianIcon.back,
-                                      color: AppColors.primaryPalette[700]!,
+                                      color: AppColors.white,
                                     ),
                                     onPressed: () {
                                       Get.find<NavigationController>()
@@ -236,14 +239,14 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                 const Spacer(),
 
                                 Container(
-                                  // decoration: BoxDecoration(
-                                  //   color: Colors.white.withOpacity(0.2),
-                                  //   shape: BoxShape.circle,
-                                  // ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withValues(alpha: 0.6),
+                                    shape: BoxShape.circle,
+                                  ),
                                   child: IconButton(
                                     icon: Icon(
                                       Icons.search,
-                                      color: AppColors.primaryPalette[700]!,
+                                      color: AppColors.white,
                                       size: 30,
                                     ),
                                     onPressed: controller.canInteract()
@@ -265,14 +268,14 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                 const SizedBox(width: 8),
 
                                 Container(
-                                  // decoration: BoxDecoration(
-                                  //   color: Colors.white.withOpacity(0.2),
-                                  //   shape: BoxShape.circle,
-                                  // ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withValues(alpha: 0.6),
+                                    shape: BoxShape.circle,
+                                  ),
                                   child: IconButton(
                                     icon: Icon(
                                       LinkLianIcon.add,
-                                      color: AppColors.primaryPalette[500],
+                                      color: AppColors.white,
                                       size: 30,
                                     ),
 
@@ -288,8 +291,8 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                                                     .value,
                                               },
                                             );
-                                            if (result == true) {
-                                              controller.loadDetail();
+                                            if (result != null) {
+                                              await controller.loadDetail();
                                               DialogHelper.showNotification(
                                                 title: 'โพสต์สำเร็จ',
                                                 message:

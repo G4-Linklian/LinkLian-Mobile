@@ -26,7 +26,7 @@ class ScheduleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -38,7 +38,7 @@ class ScheduleCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.9),
+              color: accentColor.withValues(alpha: 0.9),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),

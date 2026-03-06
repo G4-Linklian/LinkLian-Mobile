@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:LinkLian/data/model/community_attachment_model.dart';
+
 import '../../core/services/api_client.dart';
 import '../model/community_post_model.dart';
 
@@ -13,9 +15,6 @@ class CommunityPostRepository {
     List<File>? files,
   }) async {
     final fields = {'community_id': communityId, 'content': content};
-
-    print("📤 CONTENT SENT TO BACKEND:");
-    print(content);
 
     final response = await _apiClient.uploadMultipart(
       '/community/post',
@@ -32,6 +31,7 @@ class CommunityPostRepository {
 
     return root['data'] ?? {};
   }
+
 
   Future<List<CommunityPostModel>> getCommunityFeed({
     required int communityId,
@@ -57,9 +57,45 @@ class CommunityPostRepository {
         .toList();
   }
 
+Future<CommunityPostModel> updatePost({
+  required int postId,
+  required String content,
+  List<File>? files,
+  List<CommunityAttachmentModel>? keepAttachments,
+}) async {
+  final fields = {
+  'content': content,
+  'keep_attachments': jsonEncode(
+    keepAttachments?.map((e) => e.toJson()).toList() ?? [],
+  ),
+};
+
+  final response = await _apiClient.uploadMultipart(
+    '/community/post/$postId',
+    method: 'PUT',
+    files: files ?? [],
+    fieldName: 'files',
+    fields: fields,
+  );
+
+  final root = response.data ?? {};
+
+  if (root['success'] != true) {
+    throw Exception(root['message'] ?? 'Update failed');
+  }
+
+ final data = root['data'];
+
+if (data == null) {
+  throw Exception("Backend did not return updated post data");
+}
+
+return CommunityPostModel.fromJson(data);
+}
+
   Future<bool> deletePost({required int postId}) async {
     final res = await _apiClient.delete<Map<String, dynamic>>(
-      '/community/post/$postId',
+       '/community/post/$postId/hard',
     );
 
     final root = res.data ?? {};

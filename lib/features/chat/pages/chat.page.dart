@@ -26,7 +26,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _loadChats() async {
     try {
       final chats = await _chatController.getChat();
-      appLog.info('Loaded chats count: ${chats.length}');
+      appLog.info('[ChatPage] | Loaded chats count: ${chats.length}');
 
       // Sort by last_sent (most recent first)
       chats.sort((a, b) {
