@@ -104,7 +104,7 @@ class PostRepository {
       },
     );
 
-    appLog.debug('GET POST RESPONSE RAW: ${response.data.runtimeType}');
+    AppLogger.debug('GET POST RESPONSE RAW: ${response.data.runtimeType}');
 
     final rawList =
         (response.data as Map<String, dynamic>)['data'] as List? ?? [];
@@ -196,7 +196,7 @@ class PostRepository {
       },
     );
 
-    appLog.debug('🔍 Search posts response: ${response.data.runtimeType}');
+    AppLogger.debug('🔍 Search posts response: ${response.data.runtimeType}');
 
     final rawList =
         (response.data as Map<String, dynamic>)['data'] as List? ?? [];

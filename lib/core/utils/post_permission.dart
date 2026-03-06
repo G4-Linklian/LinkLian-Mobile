@@ -1,5 +1,5 @@
 import '../../features/auth/controller/auth_controller.dart';
-import '../../../data/model/post_model.dart';
+import '../../features/shared/models/post_model.dart';
 
 class PostPermission {
   final PostModel post;

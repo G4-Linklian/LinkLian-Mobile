@@ -1,4 +1,6 @@
-import 'package:LinkLian/features/classes/widgets/attachment_file.dart';
+import 'dart:io';
+
+import 'package:LinkLian/features/classes/presentation/widgets/attachment_file.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

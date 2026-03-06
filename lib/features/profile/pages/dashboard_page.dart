@@ -1,6 +1,6 @@
 import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:flutter/material.dart';
-import '../../classes/widgets/semester_selector.dart';
+import '../../classes/presentation/widgets/semester_selector.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});

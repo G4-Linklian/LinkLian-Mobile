@@ -1,12 +1,12 @@
 import 'package:LinkLian/core/services/api_client.dart';
-import 'package:LinkLian/data/repository/bookmark_repository.dart';
-import 'package:LinkLian/features/profile/controllers/bookmark_controller.dart';
+import 'package:LinkLian/features/shared/repositories/bookmark_repository.dart';
+import 'package:LinkLian/features/shared/presentations/bookmark_controller.dart';
 import 'package:LinkLian/features/profile/pages/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
-import '../../../data/model/profile_model.dart';
+import '../../shared/models/profile_model.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/dashboard_card.dart';
 import '../widgets/bookmark_switcher.dart';
