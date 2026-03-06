@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/data/repository/community_bookmark_repository.dart';
+import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
+import 'package:LinkLian/features/profile/controllers/bookmark_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:get/get.dart';
@@ -23,11 +26,13 @@ import '../../auth/controller/auth_controller.dart';
 class CardPostCommunity extends StatefulWidget {
   final CommunityPostModel post;
   final String? highlightKeyword;
+  final bool showMoreButton;
 
   const CardPostCommunity({
     super.key,
     required this.post,
     this.highlightKeyword,
+    this.showMoreButton = true,
   });
 
   @override
@@ -67,29 +72,34 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
   @override
   void initState() {
     super.initState();
+    AppLogger.info(
+      "CARD DATA -> postId: ${widget.post.postId}, "
+      "communityId: ${widget.post.communityId}",
+    );
+
     _loadBookmarkStatus();
   }
 
   Future<void> _loadBookmarkStatus() async {
-  try {
-    final status =
-        await _bookmarkRepo.checkBookmark(widget.post.postId);
+    try {
+      final status = await _bookmarkRepo.checkBookmark(widget.post.postId);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isBookmarked = status;
-    });
-  } catch (e) {
-    debugPrint("Bookmark load error: $e");
+      setState(() {
+        _isBookmarked = status;
+      });
+    } catch (e) {
+      AppLogger.info("[community]Bookmark load error: $e");
+    }
   }
-}
 
   void _openComment() {
     Get.toNamed(
       AppRoutes.communityComment,
       arguments: {
         'postCommuId': widget.post.postId,
+        'communityId': widget.post.communityId,
         'postCardWidget': widget,
         'userSysId': Get.find<AuthController>().userId.value,
       },
@@ -98,6 +108,8 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Get.find<AuthController>();
+    final isOwner = widget.post.userId == auth.userId.value;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _openComment,
@@ -108,7 +120,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.22),
+              color: Colors.black.withValues(alpha: 0.22),
               blurRadius: 8,
               spreadRadius: 1,
               offset: const Offset(0, 0),
@@ -144,14 +156,16 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                                 Icon(
                                   Icons.access_time,
                                   size: 16,
-                                  color: AppColors.black.withOpacity(0.5),
+                                  color: AppColors.black.withValues(alpha: 0.5),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   _formatDateTime(widget.post.createdAt),
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: AppColors.black.withOpacity(0.5),
+                                    color: AppColors.black.withValues(
+                                      alpha: 0.5,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -159,7 +173,9 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                           ],
                         ),
                       ),
-                      _buildMoreButton(context),
+                      // if (widget.showMoreButton) _buildMoreButton(context),
+                      if (widget.showMoreButton && isOwner)
+                        _buildMoreButton(context),
                     ],
                   ),
 
@@ -295,7 +311,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         content,
         style: TextStyle(
           fontSize: 15,
-          color: AppColors.black.withOpacity(0.8),
+          color: AppColors.black.withValues(alpha: 0.8),
         ),
         maxLines: maxLines,
         overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
@@ -309,61 +325,68 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     for (final match in matches) {
       // Add text before the URL
       if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: content.substring(lastEnd, match.start),
-          style: TextStyle(
-            fontSize: 15,
-            color: AppColors.black.withOpacity(0.8),
+        spans.add(
+          TextSpan(
+            text: content.substring(lastEnd, match.start),
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.black.withValues(alpha: 0.8),
+            ),
           ),
-        ));
+        );
       }
 
       // Add clickable URL
       final url = match.group(0)!;
-      spans.add(TextSpan(
-        text: url,
-        style: TextStyle(
-          fontSize: 15,
-          color: AppColors.primaryPalette[600],
-          decoration: TextDecoration.underline,
-          decorationColor: AppColors.primaryPalette[600],
-        ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () async {
-            debugPrint('🔗 Tapped link in content: $url');
-            try {
-              final uri = Uri.parse(url);
-              final launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
-              if (!launched) {
-                Get.snackbar(
-                  'ไม่สามารถเปิดลิงก์ได้',
-                  url,
-                  snackPosition: SnackPosition.BOTTOM,
+      spans.add(
+        TextSpan(
+          text: url,
+          style: TextStyle(
+            fontSize: 15,
+            color: AppColors.primaryPalette[600],
+            decoration: TextDecoration.underline,
+            decorationColor: AppColors.primaryPalette[600],
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () async {
+              try {
+                final uri = Uri.parse(url);
+                final launched = await launchUrl(
+                  uri,
+                  mode: LaunchMode.platformDefault,
+                );
+                if (!launched) {
+                  DialogHelper.showNotification(
+                    title: 'ไม่สามารถเปิดลิงก์ได้',
+                    message: url,
+                    type: NotificationType.error,
+                  );
+                }
+              } catch (e) {
+                DialogHelper.showNotification(
+                  title: 'ไม่สามารถเปิดลิงก์ได้',
+                  message: 'กรุณาลองใหม่อีกครั้ง',
+                  type: NotificationType.error,
                 );
               }
-            } catch (e) {
-              debugPrint('❌ Error opening link: $e');
-              Get.snackbar(
-                'ไม่สามารถเปิดลิงก์ได้',
-                'กรุณาลองใหม่อีกครั้ง',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            }
-          },
-      ));
+            },
+        ),
+      );
 
       lastEnd = match.end;
     }
 
     // Add remaining text after last URL
     if (lastEnd < content.length) {
-      spans.add(TextSpan(
-        text: content.substring(lastEnd),
-        style: TextStyle(
-          fontSize: 15,
-          color: AppColors.black.withOpacity(0.8),
+      spans.add(
+        TextSpan(
+          text: content.substring(lastEnd),
+          style: TextStyle(
+            fontSize: 15,
+            color: AppColors.black.withValues(alpha: 0.8),
+          ),
         ),
-      ));
+      );
     }
 
     return RichText(
@@ -426,7 +449,8 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                     ),
                   ),
 
-                if (hasMultiple && _currentAttachmentIndex < attachments.length - 1)
+                if (hasMultiple &&
+                    _currentAttachmentIndex < attachments.length - 1)
                   Positioned(
                     right: 8,
                     top: 0,
@@ -479,7 +503,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.black.withOpacity(0.7),
+                    color: AppColors.black.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -514,10 +538,10 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           : null,
       onNext: _currentAttachmentIndex < totalCount - 1
           ? () => setState(() {
-                _currentAttachmentIndex++;
-                _localPdfPath = null;
-                _pdfLoadFailed = false;
-              })
+              _currentAttachmentIndex++;
+              _localPdfPath = null;
+              _pdfLoadFailed = false;
+            })
           : null,
     );
   }
@@ -528,7 +552,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       icon: Icon(icon),
       color: AppColors.white,
       style: IconButton.styleFrom(
-        backgroundColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
       ),
     );
   }
@@ -539,7 +563,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         file.fileUrl,
         fit: BoxFit.cover,
         width: double.infinity,
-        errorBuilder: (_, __, ___) {
+        errorBuilder: (_, _, _) {
           return _buildFileIcon(file.fileType);
         },
       );
@@ -581,13 +605,13 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         defaultPage: 0,
         fitPolicy: FitPolicy.BOTH,
         onRender: (pages) {
-          debugPrint('PDF rendered: $pages pages');
+          AppLogger.info('[community]PDF rendered: $pages pages');
         },
         onError: (error) {
-          debugPrint('PDF error: $error');
+          AppLogger.info('[community]PDF error: $error');
         },
         onPageError: (page, error) {
-          debugPrint('PDF page error: $page | $error');
+          AppLogger.info('[community]PDF page error: $page | $error');
         },
       ),
     );
@@ -608,10 +632,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
             const SizedBox(height: 8),
             Text(
               'ไม่สามารถโหลด PDF ได้',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -647,7 +668,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         });
       }
     } catch (e) {
-      debugPrint('PDF download error: $e');
+      AppLogger.info('[community]PDF download error: $e');
       if (mounted) {
         setState(() {
           _isPdfLoading = false;
@@ -673,12 +694,31 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   IconData _getFileIconData(String fileType) {
     final type = fileType.toLowerCase();
-    if (type.contains('pdf')) return Icons.picture_as_pdf;
-    if (type.contains('image')) return Icons.image;
-    if (type.contains('video')) return Icons.video_file;
-    if (type.contains('word') || type.contains('doc')) return Icons.description;
-    if (type.contains('excel') || type.contains('xls')) return Icons.table_chart;
-    if (type.contains('powerpoint') || type.contains('ppt')) return Icons.slideshow;
+
+    if (type.contains('pdf')) {
+      return Icons.picture_as_pdf;
+    }
+
+    if (type.contains('image')) {
+      return Icons.image;
+    }
+
+    if (type.contains('video')) {
+      return Icons.video_file;
+    }
+
+    if (type.contains('word') || type.contains('doc')) {
+      return Icons.description;
+    }
+
+    if (type.contains('excel') || type.contains('xls')) {
+      return Icons.table_chart;
+    }
+
+    if (type.contains('powerpoint') || type.contains('ppt')) {
+      return Icons.slideshow;
+    }
+
     return Icons.insert_drive_file;
   }
 
@@ -709,7 +749,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     if (isOwner) {
       items.add(
         PopupMenuItem(
-          // onTap: _onEditPost,
+          onTap: _onEditPost,
           child: const ListTile(
             leading: Icon(Icons.edit),
             title: Text('แก้ไขโพสต์'),
@@ -719,23 +759,13 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
       items.add(
         PopupMenuItem(
-          // onTap: _onDeletePost,
+          onTap: _onDeletePost,
           child: ListTile(
             leading: Icon(Icons.delete, color: AppColors.dangerPalette[500]),
             title: Text(
               'ลบโพสต์',
               style: TextStyle(color: AppColors.dangerPalette[700]),
             ),
-          ),
-        ),
-      );
-    } else {
-      items.add(
-        PopupMenuItem(
-          onTap: _onReportPost,
-          child: const ListTile(
-            leading: Icon(Icons.flag),
-            title: Text('รายงานโพสต์'),
           ),
         ),
       );
@@ -753,68 +783,107 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     );
   }
 
-//   void _onEditPost() {
-//   Get.toNamed(
-//     AppRoutes.createCommunityPost,
-//     arguments: {
-//       'isEdit': true,
-//       'post': widget.post,
-//     },
-//   );
-// }
-
-  
-  // void _onDeletePost() async {
-  //   final confirm = await Get.dialog<bool>(
-  //     AlertDialog(
-  //       title: const Text('ยืนยันการลบ'),
-  //       content: const Text('คุณต้องการลบโพสต์นี้หรือไม่'),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Get.back(result: false),
-  //           child: const Text('ยกเลิก'),
-  //         ),
-  //         TextButton(
-  //           onPressed: () => Get.back(result: true),
-  //           child: Text(
-  //             'ลบ',
-  //             style: TextStyle(color: AppColors.dangerPalette[500]),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
+  // void _onEditPost() async {
+  //   final result = await Get.toNamed(
+  //     AppRoutes.createPostCommunity,
+  //     arguments: {
+  //       'isEdit': true,
+  //       'post': widget.post,
+  //       'community_id': widget.post.communityId,
+  //     },
   //   );
 
-  //   if (confirm != true) return;
+  //   if (result == true) {
+  //     final controller = Get.find<CommunityDetailController>();
 
-  //   try {
-  //     await CommunityPostRepository().deletePost(postId: widget.post.postId);
-      
+  //     await controller.loadDetail();
+
   //     DialogHelper.showNotification(
-  //       title: 'ลบโพสต์สำเร็จ',
-  //       message: 'โพสต์ถูกลบเรียบร้อยแล้ว',
+  //       title: 'แก้ไขสำเร็จ',
+  //       message: 'โพสต์ถูกอัปเดตแล้ว',
   //       type: NotificationType.success,
-  //     );
-      
-  //     Get.back(); // Go back after successful deletion
-  //   } catch (e) {
-  //     DialogHelper.showNotification(
-  //       title: 'เกิดข้อผิดพลาด',
-  //       message: 'ไม่สามารถลบโพสต์ได้: $e',
-  //       type: NotificationType.error,
   //     );
   //   }
   // }
-
-  void _onReportPost() {
-    // TODO: Implement report post
-    debugPrint('📝 Report post: ${widget.post.postId}');
-    Get.snackbar(
-      'รายงานโพสต์',
-      'ฟีเจอร์นี้กำลังพัฒนา',
-      snackPosition: SnackPosition.BOTTOM,
+  void _onEditPost() async {
+    final result = await Get.toNamed(
+      AppRoutes.createPostCommunity,
+      arguments: {
+        'isEdit': true,
+        'post': widget.post,
+        'community_id': widget.post.communityId,
+      },
     );
+
+    if (result is CommunityPostModel) {
+      final controller = Get.find<CommunityDetailController>();
+
+      controller.updatePostInList(result);
+
+      DialogHelper.showNotification(
+        title: 'แก้ไขสำเร็จ',
+        message: 'โพสต์ถูกอัปเดตแล้ว',
+        type: NotificationType.success,
+      );
+    }
   }
+
+  void _onDeletePost() async {
+    AppLogger.info("[community]DELETE POST ID: ${widget.post.postId}");
+    AppLogger.info(
+      "[community]DELETE COMMUNITY ID: ${widget.post.communityId}",
+    );
+    final confirm = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('ยืนยันการลบ'),
+        content: const Text('คุณต้องการลบโพสต์นี้หรือไม่'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text(
+              'ลบ',
+              style: TextStyle(color: AppColors.dangerPalette[500]),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await CommunityPostRepository().deletePost(postId: widget.post.postId);
+
+      final controller = Get.find<CommunityDetailController>();
+      controller.removePost(widget.post.postId);
+
+      DialogHelper.showNotification(
+        title: 'ลบโพสต์สำเร็จ',
+        message: 'โพสต์ถูกลบเรียบร้อยแล้ว',
+        type: NotificationType.success,
+      );
+    } catch (e) {
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่สามารถลบโพสต์ได้: $e',
+        type: NotificationType.error,
+      );
+    }
+  }
+
+  // void _onReportPost() {
+  //   // TODO: Implement report post
+  //   debugPrint('📝 Report post: ${widget.post.postId}');
+  //   Get.snackbar(
+  //     'รายงานโพสต์',
+  //     'ฟีเจอร์นี้กำลังพัฒนา',
+  //     snackPosition: SnackPosition.BOTTOM,
+  //   );
+  // }
 
   // ================= PROFILE AVATAR =================
   Widget _buildProfileAvatar() {
@@ -851,29 +920,41 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
   }
 
   void _toggleBookmark() async {
-  if (_isBookmarkLoading) return;
+    if (_isBookmarkLoading) return;
 
-  setState(() => _isBookmarkLoading = true);
+    setState(() => _isBookmarkLoading = true);
 
-  try {
-    final result = await _bookmarkRepo
-        .toggleBookmark(postId: widget.post.postId);
+    try {
+      final result = await _bookmarkRepo.toggleBookmark(
+        postId: widget.post.postId,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isBookmarked = result['action'] == 'created';
-    });
-  } catch (e) {
-    DialogHelper.showErrorDialog(
-      description: "ไม่สามารถบันทึกได้",
-    );
-  } finally {
-    if (mounted) {
-      setState(() => _isBookmarkLoading = false);
+      final action = result['action'];
+
+      setState(() {
+        _isBookmarked = action == 'created';
+      });
+      if (Get.isRegistered<BookmarkController>()) {
+        Get.find<BookmarkController>().loadCommunityBookmarks();
+      }
+
+      DialogHelper.showNotification(
+        title: 'สำเร็จ',
+        message: action == 'created'
+            ? 'บันทึกโพสต์เรียบร้อยแล้ว'
+            : 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
+        type: NotificationType.success,
+      );
+    } catch (e) {
+      DialogHelper.showErrorDialog(description: "ไม่สามารถบันทึกได้");
+    } finally {
+      if (mounted) {
+        setState(() => _isBookmarkLoading = false);
+      }
     }
   }
-}
 
   void _openFileFullscreen(CommunityAttachmentModel file) {
     Get.to(
@@ -887,9 +968,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     try {
       // Show loading dialog
       Get.dialog(
-        const Center(
-          child: CircularProgressIndicator(),
-        ),
+        const Center(child: CircularProgressIndicator()),
         barrierDismissible: false,
       );
 
@@ -917,27 +996,21 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       if (Platform.isIOS) {
         // iOS: Use Share Sheet to let user save file
         try {
-          final result = await Share.shareXFiles(
-            [XFile(filePath)],
-          );
+          final result = await Share.shareXFiles([XFile(filePath)]);
 
           if (result.status == ShareResultStatus.success) {
-            Get.snackbar(
-              'แชร์ไฟล์สำเร็จ',
-              'คุณสามารถบันทึกไฟล์ได้แล้ว',
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(seconds: 2),
-              backgroundColor: AppColors.successPalette[100],
+            DialogHelper.showNotification(
+              title: 'แชร์ไฟล์สำเร็จ',
+              message: 'คุณสามารถบันทึกไฟล์ได้แล้ว',
+              type: NotificationType.success,
             );
           }
         } catch (e) {
           // Fallback: Show file location
-          Get.snackbar(
-            'ดาวน์โหลดสำเร็จ',
-            'ไฟล์ถูกบันทึกไว้แล้ว\n$filePath',
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(seconds: 3),
-            backgroundColor: AppColors.successPalette[100],
+          DialogHelper.showNotification(
+            title: 'ดาวน์โหลดสำเร็จ',
+            message: 'ไฟล์ถูกบันทึกไว้แล้ว',
+            type: NotificationType.success,
           );
         }
       } else {
@@ -946,10 +1019,10 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         if (!status.isGranted) {
           status = await Permission.storage.request();
           if (!status.isGranted) {
-            Get.snackbar(
-              'ไม่มีสิทธิ์เข้าถึง',
-              'กรุณาอนุญาตการเข้าถึงที่เก็บข้อมูลเพื่อดาวน์โหลดไฟล์',
-              snackPosition: SnackPosition.BOTTOM,
+            DialogHelper.showNotification(
+              title: 'ไม่มีสิทธิ์เข้าถึง',
+              message: 'กรุณาอนุญาตการเข้าถึงที่เก็บข้อมูล',
+              type: NotificationType.error,
             );
             return;
           }
@@ -969,35 +1042,29 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
           final nameWithoutExt = nameParts.length > 1
               ? nameParts.sublist(0, nameParts.length - 1).join('.')
               : fileName;
-          finalPath = '${downloadsDir.path}/$nameWithoutExt ($counter)${extension.isNotEmpty ? '.$extension' : ''}';
+          finalPath =
+              '${downloadsDir.path}/$nameWithoutExt ($counter)${extension.isNotEmpty ? '.$extension' : ''}';
           counter++;
         }
 
         await downloadedFile.copy(finalPath);
 
-        Get.snackbar(
-          'ดาวน์โหลดสำเร็จ',
-          'บันทึกไฟล์ไว้ที่: Download/$fileName',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 3),
-          backgroundColor: AppColors.successPalette[100],
+        DialogHelper.showNotification(
+          title: 'ดาวน์โหลดสำเร็จ',
+          message: 'บันทึกไฟล์ไว้ที่ Download',
+          type: NotificationType.success,
         );
       }
-
-      debugPrint('✅ File downloaded: $fileName');
     } catch (e) {
       // Close loading if still open
       if (Get.isDialogOpen == true) {
         Get.back();
       }
 
-      debugPrint('❌ Download error: $e');
-
-      Get.snackbar(
-        'เกิดข้อผิดพลาด',
-        'ไม่สามารถดาวน์โหลดไฟล์ได้: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.dangerPalette[100],
+      DialogHelper.showNotification(
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่สามารถดาวน์โหลดไฟล์ได้',
+        type: NotificationType.error,
       );
     }
   }
@@ -1070,7 +1137,6 @@ class _FileViewerPageState extends State<_FileViewerPage> {
         });
       }
     } catch (e) {
-      debugPrint('PDF download error: $e');
       if (mounted) {
         setState(() {
           _isPdfLoading = false;
@@ -1085,7 +1151,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
     return Scaffold(
       backgroundColor: AppColors.primaryPalette[200],
       appBar: AppBar(
-        backgroundColor: AppColors.primaryPalette[500]!.withOpacity(0.8),
+        backgroundColor: AppColors.primaryPalette[500]!.withValues(alpha: 0.8),
         leading: IconButton(
           icon: Icon(LinkLianIcon.close, color: AppColors.dangerPalette[700]),
           onPressed: () => Get.back(),
@@ -1125,7 +1191,8 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           child: Image.network(
             widget.file.fileUrl,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => _buildErrorState('ไม่สามารถโหลดรูปภาพได้'),
+            errorBuilder: (_, _, _) =>
+                _buildErrorState('ไม่สามารถโหลดรูปภาพได้'),
           ),
         ),
       );
@@ -1155,7 +1222,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           setState(() {
             _totalPages = pages ?? 0;
           });
-          debugPrint('PDF rendered: $pages pages');
+          AppLogger.info('[community]PDF rendered: $pages pages');
         },
         onPageChanged: (page, total) {
           setState(() {
@@ -1164,7 +1231,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           });
         },
         onError: (error) {
-          debugPrint('PDF error: $error');
+          AppLogger.info('[community]PDF error: $error');
         },
       );
     }
@@ -1180,13 +1247,13 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: AppColors.white.withOpacity(0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             message,
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -1203,13 +1270,13 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Icon(
             Icons.insert_drive_file,
             size: 64,
-            color: AppColors.white.withOpacity(0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             'ไม่รองรับการดูไฟล์ประเภทนี้',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -1217,7 +1284,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Text(
             'กรุณาดาวน์โหลดเพื่อเปิดดู',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.5),
+              color: AppColors.white.withValues(alpha: 0.5),
               fontSize: 14,
             ),
           ),
@@ -1279,7 +1346,6 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Metadata fetch error: $e');
       if (mounted) {
         setState(() => _loading = false);
       }
@@ -1288,7 +1354,6 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
 
   Future<void> _openLink() async {
     final url = widget.url;
-    debugPrint('🔗 Opening link: $url');
 
     try {
       final uri = Uri.parse(url);
@@ -1300,11 +1365,10 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
       try {
         launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
         if (launched) {
-          debugPrint('✅ Opened with platformDefault');
           return;
         }
       } catch (e) {
-        debugPrint('⚠️ platformDefault failed: $e');
+        AppLogger.info('[community]platformDefault failed: $e');
       }
 
       // Try 2: External application
@@ -1312,11 +1376,10 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
         try {
           launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
           if (launched) {
-            debugPrint('✅ Opened with externalApplication');
             return;
           }
         } catch (e) {
-          debugPrint('⚠️ externalApplication failed: $e');
+          AppLogger.info('[community]externalApplication failed: $e');
         }
       }
 
@@ -1325,28 +1388,25 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
         try {
           launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
           if (launched) {
-            debugPrint('✅ Opened with inAppBrowserView');
             return;
           }
         } catch (e) {
-          debugPrint('⚠️ inAppBrowserView failed: $e');
+          AppLogger.info('[community]inAppBrowserView failed: $e');
         }
       }
 
       if (!launched) {
-        Get.snackbar(
-          'ไม่สามารถเปิดลิงก์ได้',
-          'ลิงก์: $url',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 3),
+        DialogHelper.showNotification(
+          title: 'ไม่สามารถเปิดลิงก์ได้',
+          message: url,
+          type: NotificationType.error,
         );
       }
     } catch (e) {
-      debugPrint('❌ Error opening link: $e');
-      Get.snackbar(
-        'ไม่สามารถเปิดลิงก์ได้',
-        'กรุณาลองใหม่อีกครั้ง',
-        snackPosition: SnackPosition.BOTTOM,
+      DialogHelper.showNotification(
+        title: 'ไม่สามารถเปิดลิงก์ได้',
+        message: 'กรุณาลองใหม่อีกครั้ง',
+        type: NotificationType.error,
       );
     }
   }
@@ -1366,7 +1426,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
               border: Border.all(color: AppColors.primaryPalette[200]!),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryPalette[100]!.withOpacity(0.3),
+                  color: AppColors.primaryPalette[100]!.withValues(alpha: 0.3),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -1389,17 +1449,17 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                           child: CircularProgressIndicator(strokeWidth: 1.5),
                         )
                       : _metadata?.image != null && _metadata!.image!.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: const BorderRadius.horizontal(
-                                left: Radius.circular(8),
-                              ),
-                              child: Image.network(
-                                _metadata!.image!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _buildLinkIcon(),
-                              ),
-                            )
-                          : _buildLinkIcon(),
+                      ? ClipRRect(
+                          borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(8),
+                          ),
+                          child: Image.network(
+                            _metadata!.image!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => _buildLinkIcon(),
+                          ),
+                        )
+                      : _buildLinkIcon(),
                 ),
 
                 // Title & URL

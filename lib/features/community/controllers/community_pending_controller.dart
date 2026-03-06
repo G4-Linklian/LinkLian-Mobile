@@ -1,3 +1,6 @@
+import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/features/community/controllers/community_controller.dart';
+import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
 import 'package:get/get.dart';
 import '../../../data/model/community_member_model.dart';
 import '../../../data/repository/community_member_repository.dart';
@@ -48,21 +51,38 @@ class CommunityPendingController extends GetxController {
     try {
       await _repo.approve(communityId, userId);
 
-      final index = pendingMembers.indexWhere((e) => e.userSysId == userId);
+      pendingMembers.removeWhere((e) => e.userSysId == userId);
 
-      if (index != -1) {
-        final old = pendingMembers[index];
+      //uadate in community detail page
+      if (Get.isRegistered<CommunityDetailController>()) {
+        final detailController = Get.find<CommunityDetailController>();
+        final community = detailController.community.value;
 
-        pendingMembers[index] = CommunityMemberModel(
-          userSysId: old.userSysId,
-          firstName: old.firstName,
-          lastName: old.lastName,
-          profilePic: old.profilePic,
-          status: 'active',
+        if (community != null) {
+          detailController.community.value = community.copyWith(
+            memberCount: community.memberCount + 1,
+          );
+        }
+      }
+
+      // update in communitypage
+      if (Get.isRegistered<CommunityController>()) {
+        final commuController = Get.find<CommunityController>();
+
+        final index = commuController.communities.indexWhere(
+          (c) => c.communityId == communityId,
         );
+
+        if (index != -1) {
+          final old = commuController.communities[index];
+
+          commuController.communities[index] = old.copyWith(
+            memberCount: old.memberCount + 1,
+          );
+        }
       }
     } catch (e) {
-      print("ERROR APPROVE: $e");
+      AppLogger.info("[community]ERROR APPROVE: $e");
     }
   }
 
@@ -72,7 +92,7 @@ class CommunityPendingController extends GetxController {
 
       pendingMembers.removeWhere((e) => e.userSysId == userId);
     } catch (e) {
-      print("ERROR REJECT: $e");
+      AppLogger.info("[community]ERROR REJECT: $e");
     }
   }
 }

@@ -43,11 +43,7 @@ class CommentPage extends StatelessWidget {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
-            LinkLianIcon.back,
-            color: AppColors.black,
-            size: 24,
-          ),
+          icon: const Icon(LinkLianIcon.back, color: AppColors.black, size: 24),
           onPressed: () => Get.back(),
         ),
       ),
@@ -57,7 +53,9 @@ class CommentPage extends StatelessWidget {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => controller.refreshComments(),
-              child: Obx(() => _buildScrollableContent(controller, scrollController)),
+              child: Obx(
+                () => _buildScrollableContent(controller, scrollController),
+              ),
             ),
           ),
 
@@ -68,11 +66,10 @@ class CommentPage extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // SCROLLABLE CONTENT (POST + COMMENTS)
-  // ============================================================
-
-  Widget _buildScrollableContent(CommentController controller, ScrollController scrollController) {
+  Widget _buildScrollableContent(
+    CommentController controller,
+    ScrollController scrollController,
+  ) {
     if (controller.isLoading.value && controller.flatComments.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -82,20 +79,22 @@ class CommentPage extends StatelessWidget {
     return ListView.builder(
       controller: scrollController,
       padding: const EdgeInsets.only(bottom: 16),
-      // +1 for post card, +1 for divider, +1 for empty state if no comments, +1 for loading indicator
       itemCount: flat.isEmpty ? 3 : flat.length + 3,
       itemBuilder: (context, index) {
-        // First item: Post card
         if (index == 0) {
+          if (controller.post == null) {
+            return const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
           return Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSizes.md,
               vertical: AppSizes.sm,
             ),
-            child: CardPost(
-              post: controller.post,
-              onSelectForAI: null,
-            ),
+            child: CardPost(post: controller.post!, onSelectForAI: null),
           );
         }
 
@@ -156,7 +155,7 @@ class CommentPage extends StatelessWidget {
                     ? () => controller.toggleReplies(comment)
                     : null,
                 remainingReplies: remaining,
-              )
+              ),
             ],
           ),
         );
@@ -164,23 +163,14 @@ class CommentPage extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // DEPTH & THREAD HELPERS
-  // ============================================================
-
-  int _calculateDepth(
-    CommentModel comment,
-    List<CommentModel> flat,
-  ) {
+  int _calculateDepth(CommentModel comment, List<CommentModel> flat) {
     int depth = 0;
     CommentModel? current = comment;
 
     while (current?.parentId != null) {
       depth++;
       try {
-        current = flat.firstWhere(
-          (c) => c.commentId == current!.parentId,
-        );
+        current = flat.firstWhere((c) => c.commentId == current!.parentId);
       } catch (_) {
         break;
       }
@@ -188,11 +178,7 @@ class CommentPage extends StatelessWidget {
     return depth;
   }
 
-  bool _hasNextSibling(
-    List<CommentModel> flat,
-    int index,
-    int depth,
-  ) {
+  bool _hasNextSibling(List<CommentModel> flat, int index, int depth) {
     for (int i = index + 1; i < flat.length; i++) {
       final d = _calculateDepth(flat[i], flat);
       if (d == depth) return true;
@@ -201,17 +187,16 @@ class CommentPage extends StatelessWidget {
     return false;
   }
 
-  // ============================================================
-  // EMPTY
-  // ============================================================
-
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.chat_bubble_outline,
-              size: 64, color: Colors.grey.shade300),
+          Icon(
+            Icons.chat_bubble_outline,
+            size: 64,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
           Text(
             'ยังไม่มีความคิดเห็น',
@@ -227,18 +212,11 @@ class CommentPage extends StatelessWidget {
   }
 }
 
-// ============================================================
-// THREAD LINE PAINTER (Facebook style)
-// ============================================================
-
 class _ThreadLinePainter extends CustomPainter {
   final int depth;
   final bool hasNextSibling;
 
-  _ThreadLinePainter({
-    required this.depth,
-    required this.hasNextSibling,
-  });
+  _ThreadLinePainter({required this.depth, required this.hasNextSibling});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -251,20 +229,12 @@ class _ThreadLinePainter extends CustomPainter {
 
       // vertical line
       if (hasNextSibling || i < depth - 1) {
-        canvas.drawLine(
-          Offset(x, 0),
-          Offset(x, size.height),
-          paint,
-        );
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
       }
 
       // horizontal connector
       if (i == depth - 1) {
-        canvas.drawLine(
-          Offset(x, 24.0),
-          Offset(x + 16.0, 24.0),
-          paint,
-        );
+        canvas.drawLine(Offset(x, 24.0), Offset(x + 16.0, 24.0), paint);
       }
     }
   }

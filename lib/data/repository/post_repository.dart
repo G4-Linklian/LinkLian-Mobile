@@ -255,4 +255,22 @@ class PostRepository {
       },
     );
   }
+
+  Future<PostModel> getPostDetail(int postId) async {
+    final response = await _apiClient.get<Map<String, dynamic>>(
+      '/social-feed/post/$postId',
+    );
+
+    final raw = response.data;
+
+    if (raw == null) {
+      throw Exception('No data');
+    }
+
+    if (raw.containsKey('data')) {
+      return PostModel.fromJson(raw['data']);
+    }
+
+    return PostModel.fromJson(raw);
+  }
 }

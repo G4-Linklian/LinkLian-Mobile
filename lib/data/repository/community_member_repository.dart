@@ -1,22 +1,18 @@
+import 'package:LinkLian/core/utils/logger.dart';
+
 import '../../core/services/api_client.dart';
 
 class CommunityMemberRepository {
   final ApiClient _api = ApiClient();
 
-  Future<Map<String, dynamic>> join(int communityId) async {
-    final res = await _api.post<Map<String, dynamic>>(
-      '/community/member/$communityId',
-    );
+Future<void> join(int communityId) async {
+  final res = await _api.post(
+    '/community/member/$communityId',
+  );
 
-    final root = res.data ?? {};
+  AppLogger.info("[community]JOIN RESPONSE => ${res.data}");
 
-    if (root['success'] != true) {
-      throw Exception(root['message'] ?? 'Join failed');
-    }
-
-    return root['data'];
-  }
-
+}
   Future<Map<String, dynamic>> leave(int communityId) async {
     final res = await _api.delete<Map<String, dynamic>>(
       '/community/member/$communityId',

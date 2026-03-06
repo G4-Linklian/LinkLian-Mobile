@@ -1,5 +1,5 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../data/model/profile_model.dart';
 import '../../../data/repository/profile_repository.dart';
@@ -37,7 +37,7 @@ class ProfileController extends GetxController {
   /// Helper: Debug logging
   void _log(String message) {
     assert(() {
-      debugPrint(message);
+      AppLogger.info(message);
       return true;
     }());
   }
@@ -176,7 +176,7 @@ class ProfileController extends GetxController {
         );
       }
     } catch (e) {
-      _log('❌ Failed to load teaching schedule: $e');
+      AppLogger.info('[Profile]Failed to load teaching schedule: $e');
       teachingSchedules.clear();
     } finally {
       loadingSchedule.value = false;

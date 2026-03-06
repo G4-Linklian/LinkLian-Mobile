@@ -30,4 +30,5 @@ class CommunityMemberController extends GetxController {
 
     isLoading.value = false;
   }
+  
 }

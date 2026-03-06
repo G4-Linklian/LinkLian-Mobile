@@ -35,6 +35,17 @@ class CommunityModel {
   final List<String> rules;
   @JsonKey(name: 'current_user_id', fromJson: _intFromJson)
   final int? currentUserId;
+  @JsonKey(name: 'created_at')
+final String? createdAt;
+
+@JsonKey(name: 'first_name')
+final String? firstName;
+
+@JsonKey(name: 'last_name')
+final String? lastName;
+
+@JsonKey(name: 'profile_pic')
+final String? profilePic;
 
   const CommunityModel({
     required this.communityId,
@@ -49,7 +60,33 @@ class CommunityModel {
     required this.membershipStatus,
     required this.rules,
     this.currentUserId,
+    this.createdAt,
+this.firstName,
+this.lastName,
+this.profilePic,
   });
+
+  CommunityModel copyWith({
+  int? memberCount,
+  String? membershipStatus,
+  bool? isOwner,
+  String? status,
+}) {
+  return CommunityModel(
+    communityId: communityId,
+    communityName: communityName,
+    description: description,
+    isPrivate: isPrivate,
+    imageBanner: imageBanner,
+    status: status ?? this.status,
+    memberCount: memberCount ?? this.memberCount,
+    tags: tags,
+    isOwner: isOwner ?? this.isOwner,
+    membershipStatus: membershipStatus ?? this.membershipStatus,
+    rules: rules,
+    currentUserId: currentUserId,
+  );
+}
   bool get isMember => membershipStatus == 'active';
   bool get isPending => membershipStatus == 'pending';
   bool get isNone => membershipStatus == 'none';
