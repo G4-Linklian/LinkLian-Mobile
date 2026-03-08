@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:LinkLian/features/chat/data/models/chat.model.dart';
@@ -25,6 +26,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
   int? _jumpBackIndex;
   bool _initialScrollDone = false;
   DateTime? _jumpBackReadyTime;
+  int _lastRenderedMessageCount = 0;
 
   @override
   void initState() {
@@ -32,7 +34,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     if (widget.chat.chatId != null) {
       _controller.init(widget.chat.chatId!);
     }
-    // Hide go-back button 
+    // Hide go-back button
     _itemPositionsListener.itemPositions.addListener(_onPositionsChanged);
   }
 
@@ -46,11 +48,16 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
 
   void _onPositionsChanged() {
     if (_jumpBackIndex == null) return;
-    if (_jumpBackReadyTime != null && DateTime.now().isBefore(_jumpBackReadyTime!)) return;
+    if (_jumpBackReadyTime != null &&
+        DateTime.now().isBefore(_jumpBackReadyTime!))
+      return;
     final positions = _itemPositionsListener.itemPositions.value;
     if (positions.isEmpty) return;
     final closestVisible = positions.reduce(
-      (a, b) => (a.index - _jumpBackIndex!).abs() < (b.index - _jumpBackIndex!).abs() ? a : b,
+      (a, b) =>
+          (a.index - _jumpBackIndex!).abs() < (b.index - _jumpBackIndex!).abs()
+          ? a
+          : b,
     );
     if ((closestVisible.index - _jumpBackIndex!).abs() <= 3) {
       setState(() {
@@ -161,6 +168,17 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
         });
       }
     });
+  }
+
+  bool _isUserNearBottom(int lastKnownIndex, {int tolerance = 1}) {
+    if (lastKnownIndex <= 0) return true;
+
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return true;
+
+    final maxVisibleIndex = positions.map((p) => p.index).reduce(math.max);
+
+    return maxVisibleIndex >= (lastKnownIndex - tolerance);
   }
 
   @override
@@ -284,6 +302,11 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                     }
 
                     final messages = snapshot.data ?? [];
+                    final hasNewMessages =
+                        messages.length > _lastRenderedMessageCount;
+                    final wasNearBottom = _isUserNearBottom(
+                      _lastRenderedMessageCount - 1,
+                    );
 
                     // Auto scroll to bottom only on first load
                     if (messages.isNotEmpty && !_initialScrollDone) {
@@ -291,7 +314,15 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _scrollToBottom();
                       });
+                    } else if (hasNewMessages && wasNearBottom) {
+                      // Keep view pinned to newest messages only when user
+                      // was already reading from the bottom.
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToBottom();
+                      });
                     }
+
+                    _lastRenderedMessageCount = messages.length;
 
                     // Debounce auto scroll to prevent excessive scrolling
                     return ScrollablePositionedList.builder(
@@ -359,6 +390,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                               senderLastName: widget.chat.lastName,
                               profileImage: widget.chat.profileImage,
                               highlight:
+                                  _highlightMessageId != null &&
                                   message.messageId == _highlightMessageId,
                               onReply: (msg) {
                                 setState(() {

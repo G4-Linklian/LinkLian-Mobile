@@ -27,6 +27,7 @@ class ChatMessageController {
   Timer? _updateTimer;
   bool _hasUpdates = false;
   StreamSubscription? _socketSubscription;
+  final Set<String> _socketFallbackKeys = <String>{};
 
   Future<void> init(int chatId) async {
     _currentChatId = chatId;
@@ -44,14 +45,12 @@ class ChatMessageController {
     // await _socketService.connect(
     //   dotenv.env['SOCKET_URL'] ?? 'wss://socket-wachawich.linklian.org/ws',
     // );
+    
     final socketUrl =
         dotenv.env['SOCKET_URL'] ?? 'wss://socket-wachawich.linklian.org/ws';
-    print("SOCKET URL = ${dotenv.env['SOCKET_URL']}");
     if (!_socketService.isConnected) {
-      print("CONNECT SOCKET");
       await _socketService.connect(socketUrl);
     }
-    print("JOIN ROOM user=$_currentUserId chat=$chatId");
     _socketService.joinRoom(userId: _currentUserId!, chatId: chatId);
     // _socketService.socketResponseStream.listen((data) {
     //    print("WS DATA: $data");
@@ -60,7 +59,6 @@ class ChatMessageController {
     _socketSubscription?.cancel();
 
     _socketSubscription = _socketService.socketResponseStream.listen((data) {
-      print("WS DATA: $data");
       _handleIncomingMessage(data);
     });
   }
@@ -74,6 +72,7 @@ class ChatMessageController {
       );
 
       _messages = messages;
+      _socketFallbackKeys.clear();
       // Direct update for initial load (no debounce needed)
       _messagesController.add(List.unmodifiable(_messages));
       appLog.info(
@@ -86,31 +85,69 @@ class ChatMessageController {
 
   void _handleIncomingMessage(dynamic data) {
     try {
-      if (data is Map<String, dynamic>) {
-        //if (data['type'] == 'CHAT_RECEIVE' || data['content'] != null) {
-        //if (data['type'] == 'CHAT_RECEIVE' || data['content'] != null) {
-        if (data['type'] == 'CHAT_RECEIVE' || data['type'] == 'CHAT_DELIVER') {
-          final payload = data['payload'] ?? data['data'] ?? data;
-          // final payload = data['payload'] ?? data;
-          // final newMessage = ChatModel.fromJson(paylo
-          // ad);
-          // _messages.add(newMessage);
-          // _scheduleUIUpdate();
-          final newMessage = ChatModel.fromJson(payload);
+      if (data is! Map<String, dynamic>) return;
 
-          final exists = _messages.any(
-            (m) => m.messageId == newMessage.messageId,
-          );
+      final eventType = (data['type'] ?? '').toString();
+      if (eventType != 'CHAT_RECEIVE' && eventType != 'CHAT_DELIVER') return;
 
-          if (!exists) {
-            _messages.add(newMessage);
-            _scheduleUIUpdate();
-          }
+      final payload = data['payload'] ?? data['data'] ?? data;
+      if (payload is! Map<String, dynamic>) return;
+
+      final newMessage = ChatModel.fromJson(payload);
+
+      // Ignore messages from other rooms when chat_id is present.
+      if (_currentChatId != null &&
+          newMessage.chatId != null &&
+          newMessage.chatId != _currentChatId) {
+        return;
+      }
+
+      final fallbackKey = _buildFallbackSocketKey(payload);
+
+      final exists = _messages.any((m) {
+        // Primary dedupe: stable message_id from backend.
+        if (newMessage.messageId != null && m.messageId != null) {
+          return m.messageId == newMessage.messageId;
         }
+
+        // Fallback dedupe for payloads that come with empty message_id.
+        return m.chatId == newMessage.chatId &&
+            m.senderId == newMessage.senderId &&
+            m.content == newMessage.content &&
+            m.createdAt == newMessage.createdAt;
+      });
+
+      final seenByFallbackKey =
+          newMessage.messageId == null &&
+          _socketFallbackKeys.contains(fallbackKey);
+
+      if (!exists && !seenByFallbackKey) {
+        _messages.add(newMessage);
+        if (newMessage.messageId == null) {
+          _socketFallbackKeys.add(fallbackKey);
+        }
+        appLog.info(
+          'Realtime message added: chat=${newMessage.chatId} sender=${newMessage.senderId} id=${newMessage.messageId}',
+        );
+        _scheduleUIUpdate();
+      } else {
+        appLog.info(
+          'Realtime message skipped as duplicate: chat=${newMessage.chatId} sender=${newMessage.senderId} id=${newMessage.messageId}',
+        );
       }
     } catch (e) {
       appLog.error('Error parsing chat message: $e');
     }
+  }
+
+  String _buildFallbackSocketKey(Map<String, dynamic> payload) {
+    final chatId = (payload['chat_id'] ?? '').toString();
+    final senderId = (payload['sender_id'] ?? '').toString();
+    final content = (payload['content'] ?? '').toString();
+    final createdAt = (payload['created_at'] ?? payload['send_at'] ?? '')
+        .toString();
+
+    return '$chatId|$senderId|$content|$createdAt';
   }
 
   void _scheduleUIUpdate() {
@@ -160,7 +197,7 @@ class ChatMessageController {
   void dispose() {
     _updateTimer?.cancel();
     _socketSubscription?.cancel();
-    // _socketService.disconnect();
+    _socketService.disconnect();
     _messagesController.close();
   }
 
