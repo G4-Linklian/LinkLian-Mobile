@@ -36,9 +36,11 @@ class BookmarkController extends GetxController {
     ever<int?>(auth.userId, (userId) {
       if (userId != null) {
         _fetchBookmarks(userId);
+        loadCommunityBookmarks();
       } else {
         bookmarks.clear();
         bookmarkedPostIds.clear();
+        communityBookmarks.clear();
       }
     });
 
