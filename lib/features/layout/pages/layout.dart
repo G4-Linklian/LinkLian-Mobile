@@ -23,7 +23,7 @@ import '../../../core/constants/logo.dart';
 import '../widgets/activeIcon.dart';
 import '../../classes/presentation/pages/create_post_class_page.dart';
 import '../../notification/pages/notification_page.dart';
-import '../../chat/pages/chat.page.dart';
+import '../../chat/presentation/pages/chat.page.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
 import '../../classes/presentation/controllers/class_feed_controller.dart';
