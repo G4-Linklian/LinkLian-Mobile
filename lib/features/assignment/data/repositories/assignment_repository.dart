@@ -188,28 +188,31 @@ class AssignmentRepository {
     }
   }
 
-  Future<List<ProfileModel>> getStudentsInSection({
-    required int sectionId,
-  }) async {
-    try {
-      final response = await _apiClient.get(
-        '/section/enrollment',
-        queryParameters: {'section_id': sectionId, 'flag_valid': true},
+Future<List<ProfileModel>> getStudentsInSection({
+  required int sectionId,
+}) async {
+  try {
+    final response = await _apiClient.get(
+      '/section/enrollment',
+      queryParameters: {
+        'section_id': sectionId,
+        'flag_valid': true,
+        'user_status': 'Active',  
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return ApiResponseParser.parseList(
+        response.data,
+        ProfileModel.fromJson,
       );
-
-      if (response.statusCode == 200) {
-        return ApiResponseParser.parseList(
-          response.data,
-          ProfileModel.fromJson,
-        );
-      }
-      return [];
-    } catch (e) {
-      appLog.info('❌ Error fetching students: $e');
-      return [];
     }
+    return [];
+  } catch (e) {
+    appLog.info('❌ Error fetching students: $e');
+    return [];
   }
-
+}
   /// Get all students with submission status for a given assignment (Teacher view)
   Future<List<StudentSubmissionStatusModel>> getStudentsSubmissionStatus({
     required int assignmentId,

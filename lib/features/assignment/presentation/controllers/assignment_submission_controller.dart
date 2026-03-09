@@ -178,7 +178,9 @@ class AssignmentSubmissionController extends GetxController {
 
     // Filter out inactive users — only show Active students
     final activeList = list.where((s) {
-      return s.roleName.toLowerCase().contains('student');
+      final roleOk = s.roleName.toLowerCase().contains('student');
+      final active = (s.userStatus ?? '').toLowerCase() == 'active';
+      return roleOk && active;
     }).toList();
 
     appLog.info(
@@ -268,23 +270,28 @@ class AssignmentSubmissionController extends GetxController {
       final assignmentId = assignmentInfo.value?.assignmentId;
       if (assignmentId == null) return;
 
+      final userId = authController.userId.value;
+      if (userId == null) return;
+
+      final members = {...selectedStudentIds, userId}.whereType<int>().toList();
+
       bool success;
 
       if (group.value != null) {
         final groupId = group.value?.groupId;
-        if (groupId == null) return; // 🔐 ป้องกัน null
+        if (groupId == null) return;
 
         success = await repo.updateGroup(
           assignmentId: assignmentId,
           groupId: groupId,
           groupName: groupName.value,
-          memberIds: selectedStudentIds,
+          memberIds: members,
         );
       } else {
         success = await repo.createGroup(
           assignmentId: assignmentId,
           groupName: groupName.value,
-          memberIds: selectedStudentIds,
+          memberIds: members,
         );
       }
 
