@@ -179,6 +179,7 @@ class _CommuPageState extends State<CommuPage> {
                       onPressed: () {
                         controller.searchController.clear();
                         controller.searchKeyword.value = "";
+                        FocusScope.of(context).unfocus();
                         controller.loadCommunities();
                       },
                     )
