@@ -82,7 +82,7 @@ class CommunityPendingController extends GetxController {
         }
       }
     } catch (e) {
-      AppLogger.info("[community]ERROR APPROVE: $e");
+      appLog.info("[community]ERROR APPROVE: $e");
     }
   }
 
@@ -92,7 +92,7 @@ class CommunityPendingController extends GetxController {
 
       pendingMembers.removeWhere((e) => e.userSysId == userId);
     } catch (e) {
-      AppLogger.info("[community]ERROR REJECT: $e");
+      appLog.info("[community]ERROR REJECT: $e");
     }
   }
 }

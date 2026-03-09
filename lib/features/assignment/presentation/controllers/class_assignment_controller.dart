@@ -13,7 +13,8 @@ class ClassAssignmentController extends GetxController {
   final AssignmentRepository _assignmentRepository;
   final ClassFeedRepository _classFeedRepository;
   final RxList<AssignmentModel> assignments = <AssignmentModel>[].obs;
-  final RxList<AssignmentModel> filteredAssignments = <AssignmentModel>[].obs;
+  final RxList<AssignmentModel> filteredAssignments =
+      <AssignmentModel>[].obs;
   final RxBool isLoading = false.obs;
   final RxBool isLoadingMore = false.obs;
   final RxString errorMessage = ''.obs;
@@ -77,43 +78,15 @@ class ClassAssignmentController extends GetxController {
     }
   }
 
-  void reinitialise(Map<String, dynamic> args) {
-    final newSectionId = args['sectionId'] ?? 0;
-
-    // เปรียบเทียบ sectionId ก่อน — ถ้าเป็น section เดิมและโหลดแล้ว ข้ามได้
-    if (newSectionId == sectionId && _hasLoadedOnce && !_isCurrentlyLoading) {
-      return;
-    }
-
-    sectionId = newSectionId;
-    className = args['className'] ?? '';
-    subjectName = args['subjectName'] ?? '';
-    userRole.value = args['role'] ?? 'student';
-    currentFilter.value = isStudent ? 'ทั้งหมด' : 'โพสต์ล่าสุด';
-
-    // Reset state ก่อนโหลดใหม่
-    _hasLoadedOnce = false;
-    _isCurrentlyLoading = false;
-    _currentOffset = 0;
-    _hasMoreData = true;
-
-    teacherName.value = '';
-    assignments.clear();
-    filteredAssignments.clear();
-    errorMessage.value = '';
+void reinitialise(Map<String, dynamic> args) {
+  final newSectionId = args['sectionId'] ?? 0;
 
   if (newSectionId == sectionId && _hasLoadedOnce && !_isCurrentlyLoading) {
     appLog.info(
-      '[ClassAssignment Page]: $newSectionId',
-      data: {
-        'className': className,
-        'subjectName': subjectName,
-        'userRole': userRole.value,
-      },
+      '⏭️ Same sectionId ($newSectionId) already loaded — skip',
+      actionPage: 'ClassAssignmentScreen',
     );
-
-    _fetchTeacherName();
-    fetchAssignments();
+    return;
   }
 
   appLog.info(
@@ -136,7 +109,7 @@ class ClassAssignmentController extends GetxController {
   filteredAssignments.clear();
   errorMessage.value = '';
 
-  appLog.screenEnter('ClassAssignmentScreen ($newSectionId)');
+  appLog.info('ClassAssignmentScreen ($newSectionId)');
 
   _fetchTeacherName();
   fetchAssignments();
@@ -149,30 +122,21 @@ class ClassAssignmentController extends GetxController {
       );
 
       if (result != null && result.isNotEmpty) {
-        teacherName.value = result[0]['display_name'] ?? 'ไม่ระบุ';
-        appLog.info('[Teacher in this Class]',
-        data: {
-          'sectionId': sectionId,
-          'teacherName': teacherName.value,
-        });
+        final teacherDisplayName = result.first.fullName.isNotEmpty
+            ? result.first.fullName
+            : 'ไม่ระบุ';
+        teacherName.value = teacherDisplayName;
       } else {
         teacherName.value = 'ไม่พบผู้สอนหลัก';
       }
     } catch (e) {
-      appLog.error('[Class Assignment Error]',
-        data: {
-          'sectionId': sectionId,
-        },
-        exception: e,
-        stackTrace: StackTrace.current,
-        actionPage: 'ClassAssignmentController',
-      );
+      appLog.info('❌ Error fetching teacher name: $e');
       teacherName.value = 'ไม่พบผู้สอนหลัก';
     }
   }
 
-  void applyFilter(String filter) {
-    currentFilter.value = filter;
+void applyFilter(String filter) {
+  currentFilter.value = filter;
 
   if (isStudent) {
     filteredAssignments.assignAll(_filterItems(assignments));
@@ -193,19 +157,21 @@ class ClassAssignmentController extends GetxController {
       });
     }
 
-    appLog.info(
-      '[Class Assignment Filter]' , 
-      data : {
-        'filter': filter,
-        'filteredCount': filteredAssignments.length,
-      },
-      actionPage: 'ClassAssignmentScreen',
-    );
+    filteredAssignments.assignAll(sorted);
   }
 
+  appLog.info(
+    '🔍 Filter: $filter → ${filteredAssignments.length} items',
+    actionPage: 'ClassAssignmentScreen',
+  );
+}
+
   Future<void> fetchAssignments() async {
+    appLog.info(
+        '🔍 fetchAssignments called - hasLoaded: $_hasLoadedOnce, isLoading: $_isCurrentlyLoading');
 
     if (_hasLoadedOnce || _isCurrentlyLoading) {
+      appLog.info('⚠️ Skipped - already loaded or loading');
       return;
     }
 
@@ -225,14 +191,7 @@ class ClassAssignmentController extends GetxController {
         limit: _limit,
       );
 
-      appLog.info('[Loading Assignment]' , 
-      data: {
-        'sectionId': sectionId,
-        'offset': _currentOffset,
-        'limit': _limit,
-        'fetchedCount': result.length,
-      },
-      actionPage: 'ClassAssignmentScreen');
+      appLog.info('📦 Fetched ${result.length} assignments');
 
       assignments.clear();
       filteredAssignments.clear();
@@ -242,10 +201,7 @@ class ClassAssignmentController extends GetxController {
 
       applyFilter(currentFilter.value);
     } catch (e) {
-      appLog.error(
-        'Error: $e', 
-        actionPage: 'ClassAssignmentScreen');
-
+      appLog.info('❌ Error: $e');
       errorMessage.value = 'ไม่สามารถโหลดข้อมูลได้';
       _hasLoadedOnce = false;
     } finally {
@@ -254,79 +210,70 @@ class ClassAssignmentController extends GetxController {
     }
   }
 
-  Future<void> loadMoreAssignments() async {
-    if (!_hasMoreData || isLoadingMore.value || _isCurrentlyLoading) return;
+Future<void> loadMoreAssignments() async {
+  if (!_hasMoreData || isLoadingMore.value || _isCurrentlyLoading) return;
 
-    isLoadingMore.value = true;
+  isLoadingMore.value = true;
 
-    try {
-      final result = await _assignmentRepository.getClassAssignments(
-        sectionId: sectionId,
-        role: userRole.value,
-        offset: _currentOffset,
-        limit: _limit,
-      );
+  try {
+    final result = await _assignmentRepository.getClassAssignments(
+      sectionId: sectionId,
+      role: userRole.value,
+      offset: _currentOffset,
+      limit: _limit,
+    );
 
-      if (result.isEmpty) {
-        _hasMoreData = false;
+    appLog.info('📦 Load more: got ${result.length} assignments');
+
+    if (result.isEmpty) {
+      _hasMoreData = false;
+    } else {
+      assignments.addAll(result);
+      _currentOffset += result.length;
+      _hasMoreData = result.length == _limit;
+
+      if (isTeacher) {
+        applyFilter(currentFilter.value);
       } else {
-        assignments.addAll(result);
-        _currentOffset += result.length;
-        _hasMoreData = result.length == _limit;
-
-        if (isTeacher) {
-          applyFilter(currentFilter.value);
-        } else {
-          // student: เพิ่มเฉพาะ item ใหม่ที่ตรง filter ปัจจุบัน
-          final newFiltered = _filterItems(result);
-          filteredAssignments.addAll(newFiltered);
-        }
+        // student: เพิ่มเฉพาะ item ใหม่ที่ตรง filter ปัจจุบัน
+        final newFiltered = _filterItems(result);
+        filteredAssignments.addAll(newFiltered);
       }
-    } catch (e) {
-      appLog.error(
-        '[Load assignment failed]: $e',
-        actionPage: 'ClassAssignmentScreen',
-      );
-    } finally {
-      isLoadingMore.value = false;
     }
+  } catch (e) {
+    appLog.error('loadMoreAssignments failed: $e', actionPage: 'ClassAssignmentScreen');
+  } finally {
+    isLoadingMore.value = false;
   }
+}
 
-  // helper แยก filter logic ออกมา
-  List<AssignmentModel> _filterItems(List<AssignmentModel> items) {
-    switch (currentFilter.value) {
-      case 'ส่งช้า':
-        return items
-            .where(
-              (a) =>
-                  a.studentStatus == 'ส่งแล้วเกินกำหนด' ||
-                  a.studentStatus == 'ยังไม่ส่งเกินกำหนด',
-            )
-            .toList();
-      case 'ยังไม่ส่ง':
-        return items
-            .where(
-              (a) =>
-                  a.studentStatus == 'ยังไม่ส่ง' ||
-                  a.studentStatus == 'ยังไม่ส่งเกินกำหนด',
-            )
-            .toList();
-      case 'ส่งแล้ว':
-        return items
-            .where(
-              (a) =>
-                  a.studentStatus == 'ส่งแล้ว' ||
-                  a.studentStatus == 'ส่งแล้วเกินกำหนด',
-            )
-            .toList();
-      default:
-        return items;
-    }
+// helper แยก filter logic ออกมา
+List<AssignmentModel> _filterItems(List<AssignmentModel> items) {
+  switch (currentFilter.value) {
+    case 'ส่งช้า':
+      return items.where((a) =>
+        a.studentStatus == 'ส่งแล้วเกินกำหนด' ||
+        a.studentStatus == 'ยังไม่ส่งเกินกำหนด').toList();
+    case 'ยังไม่ส่ง':
+      return items.where((a) =>
+        a.studentStatus == 'ยังไม่ส่ง' ||
+        a.studentStatus == 'ยังไม่ส่งเกินกำหนด').toList();
+    case 'ส่งแล้ว':
+      return items.where((a) =>
+        a.studentStatus == 'ส่งแล้ว' ||
+        a.studentStatus == 'ส่งแล้วเกินกำหนด').toList();
+    default:
+      return items;
   }
+}
+
 
   Future<void> refreshAssignments() async {
     _hasLoadedOnce = false;
     _isCurrentlyLoading = false;
-    await Future.wait([_fetchTeacherName(), fetchAssignments()]);
+    await Future.wait([
+      _fetchTeacherName(),
+      fetchAssignments(),
+    ]);
   }
 }

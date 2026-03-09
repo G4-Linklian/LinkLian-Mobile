@@ -78,7 +78,6 @@ class ApiClient {
 
           options.extra['_startTime'] = DateTime.now().millisecondsSinceEpoch;
 
-          // ✅ Log request เริ่มต้น (ยังไม่มี statusCode, ใช้ info แทน)
           appLog.info(
             '${options.method} request sent',
             actionPage: 'ApiClient',
@@ -94,7 +93,6 @@ class ApiClient {
               ? DateTime.now().millisecondsSinceEpoch - (startTime as int)
               : 0;
 
-          // ✅ ใช้ appLog.http สำหรับ response สำเร็จ
           appLog.http(
             method: response.requestOptions.method,
             url: response.requestOptions.path,
@@ -115,7 +113,6 @@ class ApiClient {
 
           final statusCode = error.response?.statusCode ?? 0;
 
-          // ✅ ใช้ appLog.http สำหรับ error response
           appLog.http(
             method: error.requestOptions.method,
             url: error.requestOptions.path,
@@ -218,7 +215,7 @@ extension MultipartApi on ApiClient {
     required String fieldName,
     Map<String, dynamic>? fields,
     bool requiresAuth = true,
-    String? actionPage, // ✅ รับ actionPage เพื่อ log ให้ตรงกับ page ที่เรียก
+    String? actionPage, 
   }) async {
     final formData = FormData();
 
@@ -230,7 +227,6 @@ extension MultipartApi on ApiClient {
 
       final fileSize = await file.length();
 
-      // ✅ ใช้ appLog.info พร้อม actionPage
       appLog.info(
         'Uploading file → name=$fileName, size=$fileSize bytes',
         actionPage: actionPage ?? 'ApiClient',

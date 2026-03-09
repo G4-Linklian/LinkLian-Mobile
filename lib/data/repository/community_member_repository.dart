@@ -10,7 +10,7 @@ Future<void> join(int communityId) async {
     '/community/member/$communityId',
   );
 
-  AppLogger.info("[community]JOIN RESPONSE => ${res.data}");
+  appLog.info("[community]JOIN RESPONSE => ${res.data}");
 
 }
   Future<Map<String, dynamic>> leave(int communityId) async {

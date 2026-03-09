@@ -29,12 +29,14 @@ class CardPost extends StatefulWidget {
   final PostModel post;
   final Function(int postId)? onSelectForAI;
   final ClassDetailController? classDetailController;
+  final bool returnAfterDelete;
 
   const CardPost({
     super.key,
     required this.post,
     this.onSelectForAI,
     this.classDetailController,
+    this.returnAfterDelete = false,
   });
 
   @override
@@ -110,16 +112,7 @@ class _CardPostState extends State<CardPost> {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        Get.toNamed(
-          AppRoutes.comment,
-          arguments: {
-            'postId': widget.post.postId,
-            'postContentId': widget.post.postContentId,
-            'post': widget.post,
-          },
-        );
-      },
+      onTap: _openCommentPage,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16, top: 16),
         decoration: BoxDecoration(
@@ -268,16 +261,7 @@ class _CardPostState extends State<CardPost> {
                     width: 40,
                     height: 40,
                     child: IconButton(
-                      onPressed: () {
-                        Get.toNamed(
-                          AppRoutes.comment,
-                          arguments: {
-                            'postId': widget.post.postId,
-                            'postContentId': widget.post.postContentId,
-                            'post': widget.post,
-                          },
-                        );
-                      },
+                      onPressed: _openCommentPage,
                       icon: LinkLianHugeIcon.comment(
                         size: 24,
                         color: AppColors.primaryPalette[700]!,
@@ -544,14 +528,16 @@ class _CardPostState extends State<CardPost> {
     }
 
     // Get max score - default to 0 if null
-final maxScore = widget.post.maxScore;
-final scoreText = maxScore == null
-    ? '0'
-    : maxScore % 1 == 0
+    final maxScore = widget.post.maxScore;
+    final scoreText = maxScore == null
+        ? '0'
+        : maxScore % 1 == 0
         ? maxScore.toInt().toString()
         : maxScore.toString();
+    final assignmentTypeText = widget.post.isGroup == true
+        ? 'งานกลุ่ม'
+        : 'งานเดี่ยว';
 
-Text('$scoreText คะแนน');
     return [
       // Due Date Tag
       Container(
@@ -590,7 +576,7 @@ Text('$scoreText คะแนน');
             Icon(Icons.star, size: 12, color: color),
             const SizedBox(width: 4),
             Text(
-              '$maxScore คะแนน',
+              '$scoreText คะแนน',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -598,6 +584,23 @@ Text('$scoreText คะแนน');
               ),
             ),
           ],
+        ),
+      ),
+
+      // Assignment Type Tag
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          assignmentTypeText,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ),
     ];
@@ -613,7 +616,7 @@ Text('$scoreText คะแนน');
       final isSelected = _classController!.selectedPostIdsForAI.contains(
         widget.post.postId,
       );
-      
+
       // Check if can select this post (either already selected or has room)
       final canSelect = _classController!.canSelectForAI(widget.post.postId);
 
@@ -626,18 +629,18 @@ Text('$scoreText คะแนน');
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: isSelected 
-                ? AppColors.primaryPalette[600] 
-                : canSelect 
-                    ? AppColors.primaryPalette[100]
-                    : AppColors.gray.withOpacity(0.3),
+            color: isSelected
+                ? AppColors.primaryPalette[600]
+                : canSelect
+                ? AppColors.primaryPalette[100]
+                : AppColors.gray.withOpacity(0.3),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected 
+              color: isSelected
                   ? AppColors.primaryPalette[600]!
-                  : canSelect 
-                      ? AppColors.primaryPalette[400]!
-                      : AppColors.gray.withOpacity(0.5),
+                  : canSelect
+                  ? AppColors.primaryPalette[400]!
+                  : AppColors.gray.withOpacity(0.5),
               width: 1.5,
             ),
           ),
@@ -647,11 +650,11 @@ Text('$scoreText คะแนน');
               Icon(
                 Icons.auto_awesome,
                 size: 14,
-                color: isSelected 
-                    ? Colors.white 
-                    : canSelect 
-                        ? AppColors.primaryPalette[600]
-                        : AppColors.gray,
+                color: isSelected
+                    ? Colors.white
+                    : canSelect
+                    ? AppColors.primaryPalette[600]
+                    : AppColors.gray,
               ),
               const SizedBox(width: 4),
               Text(
@@ -659,11 +662,11 @@ Text('$scoreText คะแนน');
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isSelected 
-                      ? Colors.white 
-                      : canSelect 
-                          ? AppColors.primaryPalette[600]
-                          : AppColors.gray,
+                  color: isSelected
+                      ? Colors.white
+                      : canSelect
+                      ? AppColors.primaryPalette[600]
+                      : AppColors.gray,
                 ),
               ),
             ],
@@ -1074,8 +1077,24 @@ Text('$scoreText คะแนน');
         postContentId: postContentId,
       );
 
-      if (_hasClassController) {
-        await _classController!.fetchPosts();
+      if (widget.returnAfterDelete) {
+        Get.back(
+          result: {
+            'deleted': true,
+            'deletedPostId': postId,
+          },
+        );
+      } else if (_hasClassController) {
+        _classController!.removePostOptimistic(postId);
+        await _classController!.fetchPosts(keepScroll: true);
+      } else {
+        // When deleting from CommentPage, return to ClassDetail with delete result.
+        Get.back(
+          result: {
+            'deleted': true,
+            'deletedPostId': postId,
+          },
+        );
       }
 
       DialogHelper.showNotification(
@@ -1090,6 +1109,31 @@ Text('$scoreText คะแนน');
         type: NotificationType.error,
       );
     }
+  }
+
+  Future<void> _openCommentPage() async {
+    final result = await Get.toNamed(
+      AppRoutes.comment,
+      arguments: {
+        'postId': widget.post.postId,
+        'postContentId': widget.post.postContentId,
+        'post': widget.post,
+      },
+    );
+
+    if (!_hasClassController || result is! Map) return;
+
+    final deleted = result['deleted'] == true;
+    final deletedPostId = result['deletedPostId'];
+    if (!deleted || deletedPostId == null) return;
+
+    final parsedDeletedPostId = deletedPostId is int
+        ? deletedPostId
+        : int.tryParse(deletedPostId.toString());
+    if (parsedDeletedPostId == null) return;
+
+    _classController!.removePostOptimistic(parsedDeletedPostId);
+    await _classController!.fetchPosts(keepScroll: true);
   }
 
   Widget _buildFileIcon(String fileType) {

@@ -153,7 +153,7 @@ class CreatePostCommunityController extends GetxController {
         await _simulateUpload(previewIndex);
       }
     } catch (e) {
-      AppLogger.info('[community]Add files error: $e');
+      appLog.info('[community]Add files error: $e');
     }
   }
 
@@ -300,7 +300,7 @@ class CreatePostCommunityController extends GetxController {
       userProfileImage.value = profile.profilePic ?? '';
       userFullName.value = "${profile.firstName} ${profile.lastName}";
     } catch (e) {
-      AppLogger.info("[community]Upload file successful: $e");
+      appLog.info("[community]Upload file successful: $e");
     }
   }
 

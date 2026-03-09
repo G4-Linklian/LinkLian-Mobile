@@ -72,7 +72,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
   @override
   void initState() {
     super.initState();
-    AppLogger.info(
+    appLog.info(
       "CARD DATA -> postId: ${widget.post.postId}, "
       "communityId: ${widget.post.communityId}",
     );
@@ -90,7 +90,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         _isBookmarked = status;
       });
     } catch (e) {
-      AppLogger.info("[community]Bookmark load error: $e");
+      appLog.info("[community]Bookmark load error: $e");
     }
   }
 
@@ -605,13 +605,13 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         defaultPage: 0,
         fitPolicy: FitPolicy.BOTH,
         onRender: (pages) {
-          AppLogger.info('[community]PDF rendered: $pages pages');
+          appLog.info('[community]PDF rendered: $pages pages');
         },
         onError: (error) {
-          AppLogger.info('[community]PDF error: $error');
+          appLog.info('[community]PDF error: $error');
         },
         onPageError: (page, error) {
-          AppLogger.info('[community]PDF page error: $page | $error');
+          appLog.info('[community]PDF page error: $page | $error');
         },
       ),
     );
@@ -668,7 +668,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         });
       }
     } catch (e) {
-      AppLogger.info('[community]PDF download error: $e');
+      appLog.info('[community]PDF download error: $e');
       if (mounted) {
         setState(() {
           _isPdfLoading = false;
@@ -829,8 +829,8 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
   }
 
   void _onDeletePost() async {
-    AppLogger.info("[community]DELETE POST ID: ${widget.post.postId}");
-    AppLogger.info(
+    appLog.info("[community]DELETE POST ID: ${widget.post.postId}");
+    appLog.info(
       "[community]DELETE COMMUNITY ID: ${widget.post.communityId}",
     );
     final confirm = await Get.dialog<bool>(
@@ -1222,7 +1222,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           setState(() {
             _totalPages = pages ?? 0;
           });
-          AppLogger.info('[community]PDF rendered: $pages pages');
+          appLog.info('[community]PDF rendered: $pages pages');
         },
         onPageChanged: (page, total) {
           setState(() {
@@ -1231,7 +1231,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           });
         },
         onError: (error) {
-          AppLogger.info('[community]PDF error: $error');
+          appLog.info('[community]PDF error: $error');
         },
       );
     }
@@ -1368,7 +1368,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
           return;
         }
       } catch (e) {
-        AppLogger.info('[community]platformDefault failed: $e');
+        appLog.info('[community]platformDefault failed: $e');
       }
 
       // Try 2: External application
@@ -1379,7 +1379,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
             return;
           }
         } catch (e) {
-          AppLogger.info('[community]externalApplication failed: $e');
+          appLog.info('[community]externalApplication failed: $e');
         }
       }
 
@@ -1391,7 +1391,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
             return;
           }
         } catch (e) {
-          AppLogger.info('[community]inAppBrowserView failed: $e');
+          appLog.info('[community]inAppBrowserView failed: $e');
         }
       }
 

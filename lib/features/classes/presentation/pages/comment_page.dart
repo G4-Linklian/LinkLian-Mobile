@@ -94,7 +94,11 @@ class CommentPage extends StatelessWidget {
               horizontal: AppSizes.md,
               vertical: AppSizes.sm,
             ),
-            child: CardPost(post: controller.post!, onSelectForAI: null),
+            child: CardPost(
+              post: controller.post!,
+              onSelectForAI: null,
+              returnAfterDelete: true,
+            ),
           );
         }
 

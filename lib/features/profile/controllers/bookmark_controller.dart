@@ -192,9 +192,9 @@ class BookmarkController extends GetxController {
       communityBookmarks.assignAll(result);
       sortCommunityBookmarks();
 
-      AppLogger.info("[Bookmark]Loaded ${result.length} community bookmarks");
+      appLog.info("[Bookmark]Loaded ${result.length} community bookmarks");
     } catch (e) {
-      AppLogger.info("[Bookmark]Error loading community bookmarks: $e");
+      appLog.info("[Bookmark]Error loading community bookmarks: $e");
     } finally {
       loading.value = false;
     }

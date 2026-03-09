@@ -337,7 +337,11 @@ class _ClassAssignmentPageState extends State<ClassAssignmentPage> {
                         onTap: () {
                           Get.toNamed(
                             AppRoutes.assignmentSubmission,
-                            arguments: {'postId': assignment.postId},
+                            arguments: {
+                              'postId': assignment.postId,
+                              'subjectNameTh': controller.subjectName,
+                              'className': controller.className,
+                            },
                           );
                         },
                       );

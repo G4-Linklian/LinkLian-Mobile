@@ -1,6 +1,5 @@
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:get/get.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../../../shared/models/post_model.dart';
@@ -9,19 +8,19 @@ import '../../../auth/controller/auth_controller.dart';
 import '../../../../core/services/api_client.dart';
 import 'class_feed_controller.dart';
 
-enum CreatePostSource { 
-  classFeed,        
-  assignmentFeed,   
-  classDetail,      
-  classAssignment,  
+enum CreatePostSource {
+  classFeed,
+  assignmentFeed,
+  classDetail,
+  classAssignment,
 }
 
 enum CreatePostMode { create, edit }
 
 enum ClosePostAction {
-  closeImmediately, 
-  confirmDiscardEdit, 
-  confirmDiscardCreate, 
+  closeImmediately,
+  confirmDiscardEdit,
+  confirmDiscardCreate,
 }
 
 class CreatePostController extends GetxController {
@@ -33,6 +32,10 @@ class CreatePostController extends GetxController {
   late final ClassFeedController classFeedController;
   final RxBool isPostTypeLocked = false.obs;
   final RxBool isUploading = false.obs;
+  bool _isSubmittingMutex = false;
+  final RxBool hasSubmittedStudents = false.obs;
+  final RxBool isCheckingSubmissionStatus = false.obs;
+  int? editingAssignmentId;
 
   CreatePostSource source = CreatePostSource.classFeed;
 
@@ -57,7 +60,7 @@ class CreatePostController extends GetxController {
 
   final RxBool isLoading = false.obs;
   final isSectionLocked = false.obs;
-  final RxList<String> uploadWarnings = <String>[].obs; 
+  final RxList<String> uploadWarnings = <String>[].obs;
 
   List<int> get effectiveSectionIds {
     if (selectedSectionIds.isEmpty) {
@@ -122,6 +125,15 @@ class CreatePostController extends GetxController {
         isGroup.value != _originalIsGroup;
   }
 
+  bool get canChangeAssignmentType {
+    if (mode.value != CreatePostMode.edit) return true;
+    if (postType.value != 'assignment') return true;
+    return !hasSubmittedStudents.value;
+  }
+
+  String get assignmentTypeLockReason =>
+      'ไม่สามารถเปลี่ยนประเภทงานได้ เนื่องจากมีนักเรียนส่งงานแล้ว';
+
   @override
   void onInit() {
     super.onInit();
@@ -152,25 +164,32 @@ class CreatePostController extends GetxController {
       return;
     }
 
-    if (args != null) {
-      if (args['postType'] != null) {
-        postType.value = args['postType'] as String;
-        appLog.info('[Create Post Controller] Post type from args', data: {'postType': postType.value});
-      }
+    if (args['postType'] != null) {
+      postType.value = args['postType'] as String;
+      appLog.info(
+        '[Create Post Controller] Post type from args',
+        data: {'postType': postType.value},
+      );
+    }
 
-      if (args['lockPostType'] == true) {
-        isPostTypeLocked.value = true;
-        appLog.info('[Create Post Controller] Post type locked');
-      }
+    if (args['lockPostType'] == true) {
+      isPostTypeLocked.value = true;
+      appLog.info('[Create Post Controller] Post type locked');
     }
     // Override source if provided in arguments
     if (args['source'] != null) {
       source = args['source'] as CreatePostSource;
-      appLog.info('[Create Post Controller] Source from args', data: {'source': source});
+      appLog.info(
+        '[Create Post Controller] Source from args',
+        data: {'source': source},
+      );
     }
 
     fromSectionId = args['sectionId'] as int?;
-    appLog.info('[Create Post Controller] fromSectionId', data: {'fromSectionId': fromSectionId});
+    appLog.info(
+      '[Create Post Controller] fromSectionId',
+      data: {'fromSectionId': fromSectionId},
+    );
 
     // CREATE MODE
     final presetIds = args['presetSectionIds'];
@@ -211,6 +230,8 @@ class CreatePostController extends GetxController {
         _originalDueDate = post.dueDate;
         _originalMaxScore = post.maxScore ?? 100.0;
         _originalIsGroup = post.isGroup ?? false;
+
+        _checkSubmittedStudentsForEditing(post.postId);
       }
 
       attachments.assignAll(
@@ -320,15 +341,18 @@ class CreatePostController extends GetxController {
               attachments[i] = {...attachment, 'file_size': fileSize};
 
               appLog.info(
-                '[Create Post Controller] File size fetched', data: {'fileName': attachment['file_name'], 'fileSize': fileSize},
+                '[Create Post Controller] File size fetched',
+                data: {
+                  'fileName': attachment['file_name'],
+                  'fileSize': fileSize,
+                },
               );
             }
           }
         } catch (e) {
           appLog.info(
-            '[Create Post Controller] Failed to fetch size' , data: {
-              'fileName': attachment['file_name'],
-            },
+            '[Create Post Controller] Failed to fetch size',
+            data: {'fileName': attachment['file_name']},
           );
         }
       }
@@ -340,9 +364,21 @@ class CreatePostController extends GetxController {
   }
 
   Future<Map<String, dynamic>> submitPost() async {
+    if (_isSubmittingMutex || isLoading.value) {
+      return {
+        'success': false,
+        'ignored': true,
+        'message': 'กำลังโพสต์อยู่ กรุณารอสักครู่',
+      };
+    }
+
     try {
+      _isSubmittingMutex = true;
       isLoading.value = true;
-      appLog.info('[Create Post Controller] Submitting post', data: {'mode': mode.value});
+      appLog.info(
+        '[Create Post Controller] Submitting post',
+        data: {'mode': mode.value},
+      );
 
       Map<String, dynamic> result;
       if (mode.value == CreatePostMode.edit) {
@@ -357,59 +393,158 @@ class CreatePostController extends GetxController {
       appLog.info('[Create Post Controller] Submit error: $e');
       rethrow;
     } finally {
+      _isSubmittingMutex = false;
       isLoading.value = false;
     }
   }
 
-  Future<Map<String, dynamic>> _createPost() async {
-    final isTeacher =
-        auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
+Future<Map<String, dynamic>> _createPost() async {
+  final post = await postRepository.createPost(
+    sectionIds: effectiveSectionIds,
+    title: title.value.trim(),
+    content: content.value,
+    postType: postType.value,
+    isAnonymous: isAnonymous.value,
+    attachments: attachments,
+    dueDate: dueDate.value?.toIso8601String(),
+    maxScore: maxScore.value,
+    isGroup: isGroup.value,
+    groups: groups.toList(),
+  );
 
-    String effectiveTitle;
-    if (isTeacher) {
-      effectiveTitle = title.value.trim();
-    } else {
-      effectiveTitle = content.value.trim();
-    }
-
-    return postRepository.createPost(
-      sectionIds: effectiveSectionIds,
-      title: effectiveTitle,
-      content: content.value,
-      postType: postType.value,
-      isAnonymous: isAnonymous.value,
-      attachments: attachments,
-      dueDate: dueDate.value?.toIso8601String(),
-      maxScore: maxScore.value,
-      isGroup: isGroup.value,
-      groups: groups.toList(),
-    );
+  if (post == null) {
+    return {
+      'success': false,
+      'message': 'Create post failed',
+    };
   }
 
-  Future<Map<String, dynamic>> _updatePost() async {
-    try {
-      final isTeacher =
-          auth.roleName.value == 'teacher' ||
-          auth.roleName.value == 'instructor';
+  return {
+    'success': true,
+    'data': post,
+  };
+}
 
-      return await postRepository.updatePost(
-        postContentId: editingPostContentId!,
-        title: title.value,
-        content: content.value,
-        attachments: attachments.toList(),
-        dueDate: isTeacher && postType.value == 'assignment'
-            ? dueDate.value?.toIso8601String()
-            : null,
-        maxScore: isTeacher && postType.value == 'assignment'
-            ? maxScore.value
-            : null,
-        isGroup: isTeacher && postType.value == 'assignment'
-            ? isGroup.value
-            : null,
-      );
+Future<Map<String, dynamic>> _updatePost() async {
+  try {
+    final isTeacher =
+        auth.roleName.value == 'teacher' ||
+        auth.roleName.value == 'instructor';
+
+      if (isTeacher &&
+          postType.value == 'assignment' &&
+          hasSubmittedStudents.value &&
+          isGroup.value != _originalIsGroup) {
+        return {'success': false, 'message': assignmentTypeLockReason};
+      }
+
+      final success = await postRepository.updatePost(
+  postContentId: editingPostContentId!,
+  title: title.value,
+  content: content.value,
+  attachments: attachments.toList(),
+  dueDate: dueDate.value?.toIso8601String(),
+  maxScore: maxScore.value,
+  isGroup: isGroup.value,
+  groups: groups.toList(),
+);
+
+return {
+  'success': true,
+};
     } catch (e) {
       rethrow;
     }
+  }
+
+  void setAssignmentIsGroup(bool value) {
+    if (!canChangeAssignmentType) return;
+    if (isGroup.value == value) return;
+    isGroup.value = value;
+    // Reset local group draft when switching type.
+    groups.clear();
+  }
+
+  Future<void> _checkSubmittedStudentsForEditing(int postId) async {
+    isCheckingSubmissionStatus.value = true;
+    try {
+      final assignmentRes = await apiClient.get<Map<String, dynamic>>(
+        '/assignment/post',
+        queryParameters: {
+          'post_id': postId,
+          'role': auth.roleName.value ?? 'teacher',
+        },
+      );
+
+      final assignmentId = _extractAssignmentId(assignmentRes.data);
+      editingAssignmentId = assignmentId;
+      if (assignmentId == null) {
+        hasSubmittedStudents.value = false;
+        return;
+      }
+
+      final statusRes = await apiClient.get<Map<String, dynamic>>(
+        '/assignment/submission/students/$assignmentId',
+      );
+
+      final data = statusRes.data?['data'];
+      if (data is! List) {
+        hasSubmittedStudents.value = false;
+        return;
+      }
+
+      hasSubmittedStudents.value = data.any((e) {
+        if (e is! Map) return false;
+        final raw = Map<String, dynamic>.from(e);
+        final sid = _toNullableInt(raw['submission_id']);
+        if (sid != null) return true;
+        if (raw['submitted_at'] != null) return true;
+        final status = (raw['submission_status'] ?? '')
+            .toString()
+            .toLowerCase();
+        return status == 'submitted' ||
+            status == 'graded' ||
+            status == 'marked';
+      });
+    } catch (e) {
+      appLog.warning(
+        '[Create Post Controller] check submitted students failed: $e',
+      );
+      hasSubmittedStudents.value = false;
+    } finally {
+      isCheckingSubmissionStatus.value = false;
+    }
+  }
+
+  int? _extractAssignmentId(Map<String, dynamic>? response) {
+    if (response == null) return null;
+    final data = response['data'];
+    if (data is! Map) return null;
+    final map = Map<String, dynamic>.from(data);
+
+    final direct = _toNullableInt(map['assignment_id']);
+    if (direct != null) return direct;
+
+    final assignment = map['assignment'];
+    if (assignment is Map) {
+      final id = _toNullableInt(assignment['assignment_id']);
+      if (id != null) return id;
+    }
+
+    final post = map['post'];
+    if (post is Map) {
+      final id = _toNullableInt(post['assignment_id']);
+      if (id != null) return id;
+    }
+    return null;
+  }
+
+  int? _toNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   @override

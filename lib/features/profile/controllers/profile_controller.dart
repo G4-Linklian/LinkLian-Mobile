@@ -37,7 +37,7 @@ class ProfileController extends GetxController {
   /// Helper: Debug logging
   void _log(String message) {
     assert(() {
-      AppLogger.info(message);
+      appLog.info(message);
       return true;
     }());
   }
@@ -176,7 +176,7 @@ class ProfileController extends GetxController {
         );
       }
     } catch (e) {
-      AppLogger.info('[Profile]Failed to load teaching schedule: $e');
+      appLog.info('[Profile]Failed to load teaching schedule: $e');
       teachingSchedules.clear();
     } finally {
       loadingSchedule.value = false;

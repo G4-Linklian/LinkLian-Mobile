@@ -39,7 +39,8 @@ import '../features/classes/presentation/controllers/search_post_controller.dart
 import '../features/assignment/presentation/pages/search_assignment_page.dart';
 import '../features/assignment/presentation/controllers/search_assignment_controller.dart';
 import '../features/assignment/data/repositories/assignment_repository.dart';
-
+import '../features/assignment/presentation/pages/student_assignment_detail_page.dart';
+import '../features/assignment/presentation/bindings/teacher_submission_binding.dart';
 class AppRouter {
   static final routes = [
     GetPage(name: AppRoutes.authGate, page: () => const AuthGate()),
@@ -160,5 +161,11 @@ class AppRouter {
   }),
   transition: Transition.rightToLeft,
 ),
+    GetPage(
+      name: AppRoutes.studentAssignmentDetail,
+      page: () => const StudentAssignmentDetailPage(),
+      binding: TeacherSubmissionBinding(),
+      transition: Transition.rightToLeft,
+    ),
   ];
 }
