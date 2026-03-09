@@ -1,4 +1,4 @@
-import 'package:LinkLian/features/community/controllers/community_controller.dart';
+import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
 import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/features/assignment/data/repositories/assignment_repository.dart';
 import 'package:LinkLian/features/assignment/presentation/controllers/class_assignment_controller.dart';
@@ -99,6 +99,15 @@ class NavigationController extends GetxController {
   void hideCommunityDetail() {
     isShowingCommunityDetail.value = false;
     communityDetailArgs.value = null;
+    if (Get.isRegistered<CommunityController>()) {
+      final controller = Get.find<CommunityController>();
+
+      controller.loadCommunities(
+        keyword: controller.searchKeyword.value.isEmpty
+            ? null
+            : controller.searchKeyword.value,
+      );
+    }
   }
 
   // Class Assignment (Tab 0 sub-page)
@@ -151,5 +160,14 @@ class NavigationController extends GetxController {
     }
     isShowingClassAssignment.value = false;
     classAssignmentArgs.value = null;
+
+    // Delete ClassAssignmentController to clear stale state on role change
+    if (Get.isRegistered<ClassAssignmentController>()) {
+      Get.delete<ClassAssignmentController>(force: true);
+    }
+
+    if (Get.isRegistered<CommunityController>()) {
+      Get.delete<CommunityController>(force: true);
+    }
   }
 }

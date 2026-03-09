@@ -1,20 +1,21 @@
 import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/services/api_client.dart';
-import 'package:LinkLian/data/repository/community_member_repository.dart';
-import 'package:LinkLian/data/repository/community_post_repository.dart';
-import 'package:LinkLian/data/repository/community_repository.dart';
-import 'package:LinkLian/data/repository/profile_repository.dart';
-import 'package:LinkLian/data/repository/teaching_schedule_repository.dart';
-import 'package:LinkLian/features/community/controllers/community_detail_controller.dart';
-import 'package:LinkLian/features/community/pages/community_detail_page.dart';
-import 'package:LinkLian/features/profile/controllers/profile_controller.dart';
+import 'package:LinkLian/features/community/data/repositories/community_member_repository.dart';
+import 'package:LinkLian/features/community/data/repositories/community_post_repository.dart';
+import 'package:LinkLian/features/community/data/repositories/community_repository.dart';
+import 'package:LinkLian/features/shared/repositories/profile_repository.dart';
+import 'package:LinkLian/features/profile/data/repositories/teaching_schedule_repository.dart';
+import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
+import 'package:LinkLian/features/community/presentation/controllers/community_detail_controller.dart';
+import 'package:LinkLian/features/community/presentation/pages/community_detail_page.dart';
+import 'package:LinkLian/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../features/assignment/presentation/pages/assignment_page.dart';
 import '../../../features/assignment/presentation/pages/class_assignment_page.dart';
 import '../../classes/presentation/pages/classes_page.dart';
-import '../../community/pages/community_page.dart';
-import '../../profile/pages/profile_page.dart';
+import '../../community/presentation/pages/community_page.dart';
+import '../../profile/presentation/pages/profile_page.dart';
 import '../../../../core/constants/linklian-icon.dart';
 import '../../../core/constants/strings.dart';
 import '../../../core/constants/sizes.dart';
@@ -154,6 +155,12 @@ class _MainPageState extends State<MainPage> {
           Get.find<CommunityPostRepository>(),
           Get.find<CommunityMemberRepository>(),
         ),
+        permanent: true,
+      );
+    }
+    if (!Get.isRegistered<CommunityController>()) {
+      Get.put(
+        CommunityController(Get.find<CommunityRepository>()),
         permanent: true,
       );
     }

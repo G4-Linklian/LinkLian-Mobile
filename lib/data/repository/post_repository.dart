@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/features/shared/models/post_model.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/services/api_client.dart';
 import '../../features/shared/models/post_model.dart';
