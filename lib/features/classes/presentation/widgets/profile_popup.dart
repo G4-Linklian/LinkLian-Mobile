@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/chat_navigation_helper.dart';
 import 'package:LinkLian/features/auth/controller/auth_controller.dart';
 import 'package:LinkLian/features/shared/models/profile_model.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,8 @@ class ProfilePopup extends StatelessWidget {
     final auth = Get.find<AuthController>();
     final viewerRole = auth.roleName.value?.toLowerCase();
 
-    final viewerIsTeacher = viewerRole == 'teacher' || viewerRole == 'instructor';
+    final viewerIsTeacher =
+        viewerRole == 'teacher' || viewerRole == 'instructor';
 
     final targetIsTeacher = profile.isTeacher;
 
@@ -128,7 +130,11 @@ class ProfilePopup extends StatelessWidget {
                     /// MESSAGE BUTTON
                     if (canSendMessage)
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () async {
+                          Get.back();
+
+                          await openChatWithUser(profile);
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryPalette[600],
                           shape: RoundedRectangleBorder(

@@ -256,18 +256,6 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              TablerIcons.dots_vertical,
-              color: Colors.black,
-              size: 20,
-            ),
-            onPressed: () {
-              // Show options menu
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
