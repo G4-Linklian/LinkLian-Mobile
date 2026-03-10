@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:palette_generator/palette_generator.dart';
-import 'dart:ui';
 
 import '../../../../config/app_routes.dart';
 import '../../../../core/constants/colors.dart';
@@ -418,14 +417,14 @@ class _ClassAssignmentHeaderState extends State<_ClassAssignmentHeader> {
               ? [
                   Shadow(
                     blurRadius: 16,
-                    color: const Color.fromARGB(255, 81, 81, 81).withOpacity(0.75),
+                    color: const Color.fromARGB(255, 81, 81, 81).withValues(alpha: 0.75),
                     offset: const Offset(0, 1),
                   ),
                 ]
               : [
                   Shadow(
                     blurRadius: 8,
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.white.withValues(alpha: 0.25),
                     offset: const Offset(0, 1),
                   ),
                 ];
@@ -437,9 +436,24 @@ class _ClassAssignmentHeaderState extends State<_ClassAssignmentHeader> {
   }
 
   Color _blendColor(Color src, Color dst, double dstOpacity) {
-    final r = (src.red * (1 - dstOpacity) + dst.red * dstOpacity).round().clamp(0, 255);
-    final g = (src.green * (1 - dstOpacity) + dst.green * dstOpacity).round().clamp(0, 255);
-    final b = (src.blue * (1 - dstOpacity) + dst.blue * dstOpacity).round().clamp(0, 255);
+    final srcR = src.r * 255;
+    final srcG = src.g * 255;
+    final srcB = src.b * 255;
+    final dstR = dst.r * 255;
+    final dstG = dst.g * 255;
+    final dstB = dst.b * 255;
+    final r = (srcR * (1 - dstOpacity) + dstR * dstOpacity).round().clamp(
+      0,
+      255,
+    );
+    final g = (srcG * (1 - dstOpacity) + dstG * dstOpacity).round().clamp(
+      0,
+      255,
+    );
+    final b = (srcB * (1 - dstOpacity) + dstB * dstOpacity).round().clamp(
+      0,
+      255,
+    );
     return Color.fromARGB(255, r, g, b);
   }
 
@@ -468,9 +482,9 @@ class _ClassAssignmentHeaderState extends State<_ClassAssignmentHeader> {
               end: Alignment.bottomCenter,
               colors: [
                 AppColors.white,
-                AppColors.primaryPalette[100]!.withOpacity(0.75),
-                AppColors.primaryPalette[200]!.withOpacity(0.5),
-                AppColors.primaryPalette[700]!.withOpacity(0.25),
+                AppColors.primaryPalette[100]!.withValues(alpha: 0.75),
+                AppColors.primaryPalette[200]!.withValues(alpha: 0.5),
+                AppColors.primaryPalette[700]!.withValues(alpha: 0.25),
               ],
             ),
           ),
@@ -571,7 +585,7 @@ class _ClassAssignmentHeaderState extends State<_ClassAssignmentHeader> {
                         style: TextStyle(
                           fontSize: sectionFontSize,
                           fontWeight: FontWeight.w500,
-                          color: _textColor.withOpacity(0.85),
+                          color: _textColor.withValues(alpha: 0.85),
                           shadows: _textShadow,
                         ),
                         maxLines: 1,
@@ -588,7 +602,7 @@ class _ClassAssignmentHeaderState extends State<_ClassAssignmentHeader> {
                               'ครูผู้สอน ',
                               style: TextStyle(
                                 fontSize: teacherFontSize,
-                                color: _textColor.withOpacity(0.75),
+                                color: _textColor.withValues(alpha: 0.75),
                                 shadows: _textShadow,
                               ),
                             ),

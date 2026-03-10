@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:LinkLian/data/model/chat.model.dart';
 import 'package:LinkLian/features/chat/controllers/chat.message.controller.dart';
 import 'package:LinkLian/features/chat/widgets/chat.message.widget.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 class ChatMessagePage extends StatefulWidget {
@@ -67,7 +66,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
           onPressed: () => Navigator.pop(context),
@@ -223,7 +222,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                     }
 
                     return Column(
-                      key: ValueKey('message_${message.messageId}_${index}'),
+                      key: ValueKey('message_${message.messageId}_$index'),
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (showDateSeparator)

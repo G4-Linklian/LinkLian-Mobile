@@ -2,7 +2,6 @@ import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/shared/models/post_model.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/services/api_client.dart';
-import '../../features/shared/models/post_model.dart';
 import 'dart:io';
 
 class PostRepository {
@@ -136,9 +135,7 @@ class PostRepository {
     if (isGroup != null) body['is_group'] = isGroup;
 
     // Build attachments array - always send (even if empty) to allow clearing
-    final List<Map<String, String>>? attachmentsList = attachments != null
-        ? attachments
-              .map((a) {
+    final List<Map<String, String>>? attachmentsList = attachments?.map((a) {
                 final map = {
                   'file_url': a['file_url']?.toString() ?? '',
                   'file_type': a['file_type']?.toString() ?? '',
@@ -149,8 +146,7 @@ class PostRepository {
                 return map;
               })
               .where((a) => a['file_url']!.isNotEmpty)
-              .toList()
-        : null;
+              .toList();
 
     // Build the full request body
     final requestBody = <String, dynamic>{

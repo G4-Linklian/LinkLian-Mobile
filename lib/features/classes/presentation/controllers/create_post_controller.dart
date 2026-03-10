@@ -327,8 +327,9 @@ class CreatePostController extends GetxController {
         final fileUrl = attachment['file_url'] as String?;
 
         if (fileUrl == null || fileUrl.isEmpty) continue;
-        if (attachment['file_size'] != null && attachment['file_size'] > 0)
+        if (attachment['file_size'] != null && attachment['file_size'] > 0) {
           continue;
+        }
 
         try {
           final response = await http.head(Uri.parse(fileUrl));
@@ -438,20 +439,20 @@ Future<Map<String, dynamic>> _updatePost() async {
         return {'success': false, 'message': assignmentTypeLockReason};
       }
 
-      final success = await postRepository.updatePost(
-  postContentId: editingPostContentId!,
-  title: title.value,
-  content: content.value,
-  attachments: attachments.toList(),
-  dueDate: dueDate.value?.toIso8601String(),
-  maxScore: maxScore.value,
-  isGroup: isGroup.value,
-  groups: groups.toList(),
-);
+      await postRepository.updatePost(
+        postContentId: editingPostContentId!,
+        title: title.value,
+        content: content.value,
+        attachments: attachments.toList(),
+        dueDate: dueDate.value?.toIso8601String(),
+        maxScore: maxScore.value,
+        isGroup: isGroup.value,
+        groups: groups.toList(),
+      );
 
-return {
-  'success': true,
-};
+      return {
+        'success': true,
+      };
     } catch (e) {
       rethrow;
     }
@@ -547,8 +548,4 @@ return {
     return null;
   }
 
-  @override
-  void onClose() {
-    super.onClose();
-  }
 }

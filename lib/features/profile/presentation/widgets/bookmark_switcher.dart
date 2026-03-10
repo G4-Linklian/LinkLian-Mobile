@@ -1,5 +1,3 @@
-import 'package:LinkLian/core/constants/linklian-icon.dart';
-import 'package:LinkLian/features/community/presentation/widgets/community_card_post.dart';
 import 'package:LinkLian/features/shared/presentations/bookmark_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

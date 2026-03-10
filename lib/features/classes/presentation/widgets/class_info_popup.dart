@@ -178,8 +178,8 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
     ClassScheduleModel schedule,
   ) {
     final dayOfWeek = Formatter.dayOfWeekToText(schedule.dayOfWeek);
-    final startTime = controller.formatTime(schedule.startTime ?? '');
-    final endTime = controller.formatTime(schedule.endTime ?? '');
+    final startTime = controller.formatTime(schedule.startTime);
+    final endTime = controller.formatTime(schedule.endTime);
     final room = schedule.room;
     final building = schedule.building;
     final roomNumber = room?.roomNumber ?? '';
@@ -309,9 +309,9 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
   }
 
   Widget _buildEducatorItem(SectionEducatorModel educator) {
-    final displayName = educator.displayName ?? 'ไม่ระบุชื่อ';
+    final displayName = educator.displayName;
     final profilePic = educator.profilePic;
-    final isMainTeacher = educator.isMainTeacher ?? false;
+    final isMainTeacher = educator.isMainTeacher;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

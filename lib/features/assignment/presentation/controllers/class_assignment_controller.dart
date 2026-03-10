@@ -121,7 +121,7 @@ void reinitialise(Map<String, dynamic> args) {
         sectionId: sectionId,
       );
 
-      if (result != null && result.isNotEmpty) {
+      if (result.isNotEmpty) {
         final teacherDisplayName = result.first.fullName.isNotEmpty
             ? result.first.fullName
             : 'ไม่ระบุ';

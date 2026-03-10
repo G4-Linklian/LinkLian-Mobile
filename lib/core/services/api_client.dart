@@ -37,7 +37,7 @@ class ApiClient {
       if (Get.isRegistered<AuthController>()) {
         return Get.find<AuthController>().userId.value;
       }
-    } catch (e, stack) {
+    } catch (e) {
       appLog.warning(
         'Cannot get userId',
         actionPage: 'ApiClient',
@@ -51,7 +51,6 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final extra = options.extra;
           final requiresAuth = options.extra['requiresAuth'] as bool? ?? true;
 
           if (requiresAuth) {

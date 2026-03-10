@@ -27,7 +27,7 @@ class AssignmentCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryPalette[800]!.withOpacity(0.05),
+              color: AppColors.primaryPalette[800]!.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -52,7 +52,7 @@ class AssignmentCard extends StatelessWidget {
               Container(
                 width: double.infinity,
                 height: isTeacher ? 140 : 150,
-                color: AppColors.primaryPalette[200]!.withOpacity(0.05),
+                color: AppColors.primaryPalette[200]!.withValues(alpha: 0.05),
               ),
               // Gradient overlay (top to bottom)
               Container(
@@ -63,8 +63,8 @@ class AssignmentCard extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.primaryPalette[300]!.withOpacity(0.2),
-                      AppColors.primaryPalette[300]!.withOpacity(0.5),
+                      AppColors.primaryPalette[300]!.withValues(alpha: 0.2),
+                      AppColors.primaryPalette[300]!.withValues(alpha: 0.5),
                     ],
                   ),
                 ),
@@ -102,7 +102,7 @@ class AssignmentCard extends StatelessWidget {
                 preferBelow: false,
                 textStyle: TextStyle(fontSize: 14, color: AppColors.primaryPalette[900]),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryPalette[200]!.withOpacity(0.85),
+                  color: AppColors.primaryPalette[200]!.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

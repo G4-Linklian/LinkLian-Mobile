@@ -1105,7 +1105,7 @@ class _SubmittedDropdownButtonState extends State<_SubmittedDropdownButton> {
                             shrinkWrap: true,
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             itemCount: itemCount,
-                            separatorBuilder: (_, __) => Divider(
+                            separatorBuilder: (_, _) => Divider(
                               height: 1,
                               color: Colors.grey.shade100,
                               indent: 48,

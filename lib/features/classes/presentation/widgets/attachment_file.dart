@@ -24,7 +24,7 @@ class AttachmentTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6),
         ],
       ),
       child: Row(
@@ -159,7 +159,7 @@ class _CompactLinkAttachmentTileState extends State<_CompactLinkAttachmentTile> 
           border: Border.all(color: AppColors.primaryPalette[200]!),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryPalette[100]!.withOpacity(0.3),
+              color: AppColors.primaryPalette[100]!.withValues(alpha: 0.3),
               blurRadius: 4,
               offset: const Offset(0, 1),
             ),
@@ -183,7 +183,7 @@ class _CompactLinkAttachmentTileState extends State<_CompactLinkAttachmentTile> 
                           child: Image.network(
                             _metadata!.image!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
+                            errorBuilder: (_, _, _) => Center(
                               child: Icon(Icons.link, size: 28, color: AppColors.primaryPalette[300]),
                             ),
                           ),

@@ -2,7 +2,6 @@ import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'dart:ui';
 import 'package:get/get.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'dart:io';
@@ -14,7 +13,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
 import '../../../shared/models/post_model.dart';
 import '../../../../core/constants/colors.dart';
-import '../../../../core/constants/sizes.dart';
 import 'package:intl/intl.dart';
 import '../controllers/class_detail_controller.dart';
 import '../../../../config/app_routes.dart';
@@ -120,7 +118,7 @@ class _CardPostState extends State<CardPost> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.22),
+              color: AppColors.black.withValues(alpha: 0.22),
               blurRadius: 8,
               spreadRadius: 1,
               offset: const Offset(0, 0),
@@ -186,7 +184,7 @@ class _CardPostState extends State<CardPost> {
                                 _getRoleLabel(widget.post.roleName!),
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.black.withOpacity(0.5),
+                                  color: AppColors.black.withValues(alpha: 0.5),
                                 ),
                               ),
                           ],
@@ -223,7 +221,7 @@ class _CardPostState extends State<CardPost> {
                         Icon(
                           Icons.access_time,
                           size: 16,
-                          color: AppColors.black.withOpacity(0.5),
+                          color: AppColors.black.withValues(alpha: 0.5),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
@@ -231,7 +229,7 @@ class _CardPostState extends State<CardPost> {
                             _formatDateTime(widget.post.createdAt),
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.black.withOpacity(0.5),
+                              color: AppColors.black.withValues(alpha: 0.5),
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -387,7 +385,7 @@ class _CardPostState extends State<CardPost> {
       // No URLs, show plain text
       return Text(
         content,
-        style: TextStyle(fontSize: 15, color: AppColors.black.withOpacity(0.8)),
+        style: TextStyle(fontSize: 15, color: AppColors.black.withValues(alpha: 0.8)),
         maxLines: maxLines,
         overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
       );
@@ -405,7 +403,7 @@ class _CardPostState extends State<CardPost> {
             text: content.substring(lastEnd, match.start),
             style: TextStyle(
               fontSize: 15,
-              color: AppColors.black.withOpacity(0.8),
+              color: AppColors.black.withValues(alpha: 0.8),
             ),
           ),
         );
@@ -459,7 +457,7 @@ class _CardPostState extends State<CardPost> {
           text: content.substring(lastEnd),
           style: TextStyle(
             fontSize: 15,
-            color: AppColors.black.withOpacity(0.8),
+            color: AppColors.black.withValues(alpha: 0.8),
           ),
         ),
       );
@@ -498,7 +496,7 @@ class _CardPostState extends State<CardPost> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -543,7 +541,7 @@ class _CardPostState extends State<CardPost> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
+          color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -567,7 +565,7 @@ class _CardPostState extends State<CardPost> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
+          color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -591,7 +589,7 @@ class _CardPostState extends State<CardPost> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
+          color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -633,14 +631,14 @@ class _CardPostState extends State<CardPost> {
                 ? AppColors.primaryPalette[600]
                 : canSelect
                 ? AppColors.primaryPalette[100]
-                : AppColors.gray.withOpacity(0.3),
+                : AppColors.gray.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
                   ? AppColors.primaryPalette[600]!
                   : canSelect
                   ? AppColors.primaryPalette[400]!
-                  : AppColors.gray.withOpacity(0.5),
+                  : AppColors.gray.withValues(alpha: 0.5),
               width: 1.5,
             ),
           ),
@@ -784,7 +782,7 @@ class _CardPostState extends State<CardPost> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.black.withOpacity(0.7),
+                    color: AppColors.black.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -889,7 +887,7 @@ class _CardPostState extends State<CardPost> {
       icon: Icon(icon),
       color: AppColors.white,
       style: IconButton.styleFrom(
-        backgroundColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
       ),
     );
   }
@@ -900,7 +898,7 @@ class _CardPostState extends State<CardPost> {
         file.fileUrl,
         fit: BoxFit.cover,
         width: double.infinity,
-        errorBuilder: (_, __, ___) {
+        errorBuilder: (_, _, _) {
           return _buildFileIcon(file.fileType);
         },
       );
@@ -1161,10 +1159,12 @@ class _CardPostState extends State<CardPost> {
     if (type.contains('image')) return Icons.image;
     if (type.contains('video')) return Icons.video_file;
     if (type.contains('word') || type.contains('doc')) return Icons.description;
-    if (type.contains('excel') || type.contains('xls'))
+    if (type.contains('excel') || type.contains('xls')) {
       return Icons.table_chart;
-    if (type.contains('powerpoint') || type.contains('ppt'))
+    }
+    if (type.contains('powerpoint') || type.contains('ppt')) {
       return Icons.slideshow;
+    }
     return Icons.insert_drive_file;
   }
 
@@ -1440,7 +1440,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
     return Scaffold(
       backgroundColor: AppColors.primaryPalette[200],
       appBar: AppBar(
-        backgroundColor: AppColors.primaryPalette[500]!.withOpacity(0.8),
+        backgroundColor: AppColors.primaryPalette[500]!.withValues(alpha: 0.8),
         leading: IconButton(
           icon: Icon(LinkLianIcon.close, color: AppColors.dangerPalette[700]),
           onPressed: () => Get.back(),
@@ -1480,7 +1480,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           child: Image.network(
             widget.file.fileUrl,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) =>
+            errorBuilder: (_, _, _) =>
                 _buildErrorState('ไม่สามารถโหลดรูปภาพได้'),
           ),
         ),
@@ -1536,13 +1536,13 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: AppColors.white.withOpacity(0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             message,
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -1559,13 +1559,13 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Icon(
             Icons.insert_drive_file,
             size: 64,
-            color: AppColors.white.withOpacity(0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             'ไม่รองรับการดูไฟล์ประเภทนี้',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -1573,7 +1573,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Text(
             'กรุณาดาวน์โหลดเพื่อเปิดดู',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.5),
+              color: AppColors.white.withValues(alpha: 0.5),
               fontSize: 14,
             ),
           ),
@@ -1722,7 +1722,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
               border: Border.all(color: AppColors.primaryPalette[200]!),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryPalette[100]!.withOpacity(0.3),
+                  color: AppColors.primaryPalette[100]!.withValues(alpha: 0.3),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -1752,7 +1752,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                           child: Image.network(
                             _metadata!.image!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildLinkIcon(),
+                            errorBuilder: (_, _, _) => _buildLinkIcon(),
                           ),
                         )
                       : _buildLinkIcon(),

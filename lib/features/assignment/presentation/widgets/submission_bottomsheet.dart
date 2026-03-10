@@ -402,7 +402,7 @@ class _GroupTab extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               padding: EdgeInsets.zero,
               itemCount: group.members.length,
-              separatorBuilder: (_, __) => Divider(
+              separatorBuilder: (_, _) => Divider(
                 height: 1,
                 thickness: 1,
                 color: Colors.grey[300],
@@ -593,7 +593,7 @@ class _GroupTab extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.zero,
                 itemCount: controller.filteredStudents.length,
-                separatorBuilder: (_, __) => Divider(
+                separatorBuilder: (_, _) => Divider(
                   height: 1,
                   thickness: 1,
                   color: Colors.grey[300],
@@ -624,7 +624,7 @@ class _GroupTab extends StatelessWidget {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryPalette[100]?.withOpacity(0.5),
+                        color: AppColors.primaryPalette[100]?.withValues(alpha: 0.5),
                       ),
                       child: Row(
                         children: [
@@ -1477,11 +1477,11 @@ class _TeacherGroupTab extends StatelessWidget {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               );
-            }).toList(),
+            }),
             const SizedBox(height: 80),
           ],
         ),

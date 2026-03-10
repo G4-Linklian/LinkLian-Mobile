@@ -6,8 +6,6 @@ import '../../../shared/repositories/class_feed_repository.dart';
 import 'class_feed_controller.dart';
 import '../../../shared/models/post_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/animation.dart';
-import '../../../../core/utils/dialog_helper.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 
 class ClassDetailController extends GetxController {
@@ -41,7 +39,6 @@ class ClassDetailController extends GetxController {
   final ScrollController scrollController = ScrollController();
   // เพิ่ม fields เหล่านี้ใน ClassDetailController
   DateTime? _lastFetchTime;
-  int? _lastKnownPostCount;
   static const _refreshThresholdSeconds = 30; // โหลดใหม่ถ้าผ่านไป 30 วิ
   List<int> get effectiveSectionIds {
     return [if (sectionId.value != null) sectionId.value!];
@@ -130,7 +127,6 @@ class ClassDetailController extends GetxController {
       // เปลี่ยน section — reset ทุกอย่าง
       selectedFilter.value = ClassPostFilter.all;
       _lastFetchTime = null;
-      _lastKnownPostCount = null;
       posts.clear();
       hasMore.value = true;
       _offset = 0;
@@ -231,7 +227,7 @@ class ClassDetailController extends GetxController {
         sectionId: sectionId.value!,
       );
 
-      if (result != null && result.isNotEmpty) {
+      if (result.isNotEmpty) {
         final teacherDisplayName = result.first.fullName.isNotEmpty
             ? result.first.fullName
             : 'ไม่ระบุ';
@@ -362,7 +358,6 @@ class ClassDetailController extends GetxController {
 
       if (!loadMore) {
         _lastFetchTime = DateTime.now();
-        _lastKnownPostCount = result.length;
       }
 
       if (result.length < _limit) {

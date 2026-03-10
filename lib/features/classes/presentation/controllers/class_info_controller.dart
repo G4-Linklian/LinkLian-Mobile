@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 import '../../../shared/repositories/class_feed_repository.dart';
-import '../../../shared/models/class_info_model.dart';
 import '../../../classes/data/models/class_schedule_model.dart';
 import '../../../shared/models/section_educator_model.dart';
 
@@ -52,8 +51,8 @@ class ClassInfoController extends GetxController {
     final locations = <String>{};
 
     for (final schedule in schedules) {
-      final roomNumber = schedule.room?.roomNumber?.toString() ?? '';
-      final buildingName = schedule.building?.buildingName?.toString() ?? '';
+      final roomNumber = schedule.room?.roomNumber.toString() ?? '';
+      final buildingName = schedule.building?.buildingName.toString() ?? '';
 
       if (roomNumber.isNotEmpty || buildingName.isNotEmpty) {
         locations.add(

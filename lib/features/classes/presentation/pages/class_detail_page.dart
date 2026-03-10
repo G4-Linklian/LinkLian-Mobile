@@ -7,7 +7,6 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/sizes.dart';
 import '../../../../core/constants/linklian-icon.dart';
 import '../../../../core/constants/linklian-bg.dart';
-import '../../../../core/utils/dialog_helper.dart';
 import '../controllers/class_detail_controller.dart';
 import '../controllers/class_detail_filter.dart';
 import '../../../../config/app_routes.dart';
@@ -284,14 +283,14 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                       81,
                       81,
                       81,
-                    ).withOpacity(0.75),
+                    ).withValues(alpha: 0.75),
                     offset: const Offset(0, 1),
                   ),
                 ]
               : [
                   Shadow(
                     blurRadius: 8,
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.white.withValues(alpha: 0.25),
                     offset: const Offset(0, 1),
                   ),
                 ];
@@ -304,14 +303,20 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
 
   /// Alpha compositing: dst ทับบน src ด้วย opacity ของ dst
   Color _blendColor(Color src, Color dst, double dstOpacity) {
-    final r = (src.red * (1 - dstOpacity) + dst.red * dstOpacity).round().clamp(
+    final srcR = src.r * 255;
+    final srcG = src.g * 255;
+    final srcB = src.b * 255;
+    final dstR = dst.r * 255;
+    final dstG = dst.g * 255;
+    final dstB = dst.b * 255;
+    final r = (srcR * (1 - dstOpacity) + dstR * dstOpacity).round().clamp(
       0,
       255,
     );
-    final g = (src.green * (1 - dstOpacity) + dst.green * dstOpacity)
+    final g = (srcG * (1 - dstOpacity) + dstG * dstOpacity)
         .round()
         .clamp(0, 255);
-    final b = (src.blue * (1 - dstOpacity) + dst.blue * dstOpacity)
+    final b = (srcB * (1 - dstOpacity) + dstB * dstOpacity)
         .round()
         .clamp(0, 255);
     return Color.fromARGB(255, r, g, b);
@@ -342,9 +347,9 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
               end: Alignment.bottomCenter,
               colors: [
                 AppColors.white,
-                AppColors.primaryPalette[100]!.withOpacity(0.75),
-                AppColors.primaryPalette[200]!.withOpacity(0.5),
-                AppColors.primaryPalette[700]!.withOpacity(0.25),
+                AppColors.primaryPalette[100]!.withValues(alpha: 0.75),
+                AppColors.primaryPalette[200]!.withValues(alpha: 0.5),
+                AppColors.primaryPalette[700]!.withValues(alpha: 0.25),
               ],
             ),
           ),
@@ -440,7 +445,7 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                           style: TextStyle(
                             fontSize: sectionFontSize,
                             fontWeight: FontWeight.w500,
-                            color: _textColor.withOpacity(0.85),
+                            color: _textColor.withValues(alpha: 0.85),
                             shadows: _textShadow, 
                           ),
                           maxLines: 1,
@@ -458,9 +463,7 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                               'ครูผู้สอน ',
                               style: TextStyle(
                                 fontSize: teacherFontSize,
-                                color: _textColor.withOpacity(
-                                  0.75,
-                                ), 
+                                color: _textColor.withValues(alpha: 0.75),
                                 shadows: _textShadow,
                               ),
                             ),
@@ -535,15 +538,15 @@ class BlurIconButton extends StatelessWidget {
             width: buttonSize,
             height: buttonSize,
             decoration: BoxDecoration(
-              color: AppColors.primaryPalette[800]!.withOpacity(0.25),
+              color: AppColors.primaryPalette[800]!.withValues(alpha: 0.25),
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withOpacity(0.20),
+                color: Colors.white.withValues(alpha: 0.20),
                 width: 0.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
+                  color: Colors.black.withValues(alpha: 0.25),
                   blurRadius: 8,
                   spreadRadius: 16,
                   offset: const Offset(0, 2),

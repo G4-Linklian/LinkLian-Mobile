@@ -206,7 +206,7 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       itemCount: filteredGroups.length,
-      separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey[200]),
+      separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey[200]),
       itemBuilder: (_, index) {
         final group = filteredGroups[index];
         return _GroupTile(
@@ -242,7 +242,7 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       itemCount: _tc.filteredStudents.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           Divider(height: 1, color: Colors.grey[200], indent: 64),
       itemBuilder: (_, index) {
         final student = _tc.filteredStudents[index];
@@ -517,7 +517,7 @@ class _StatusChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? color.withOpacity(0.15) : Colors.grey[100],
+          color: selected ? color.withValues(alpha: 0.15) : Colors.grey[100],
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? color : Colors.grey[300]!,

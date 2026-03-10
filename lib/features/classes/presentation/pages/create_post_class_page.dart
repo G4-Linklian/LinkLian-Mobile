@@ -1,6 +1,5 @@
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
@@ -113,13 +112,15 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
     final isTeacher =
         auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: !controller.hasContent,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
         if (controller.hasContent) {
           await _handleClose(controller);
-          return false;
+        } else {
+          Get.back();
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: AppColors.white,
@@ -334,8 +335,9 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                       ),
                     ),
                     Obx(() {
-                      if (controller.attachments.isEmpty)
+                      if (controller.attachments.isEmpty) {
                         return const SizedBox();
+                      }
                       return Container(
                         constraints: const BoxConstraints(maxHeight: 180),
                         decoration: const BoxDecoration(
@@ -556,7 +558,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     ? 'ชื่อการบ้าน'
                     : 'ชื่อประกาศ',
                 hintStyle: TextStyle(
-                  color: AppColors.gray.withOpacity(0.6),
+                  color: AppColors.gray.withValues(alpha: 0.6),
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
@@ -901,12 +903,12 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.buttonPalette[100]
-              : AppColors.gray.withOpacity(0.2),
+              : AppColors.gray.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? AppColors.buttonPalette[300]!
-                : AppColors.gray.withOpacity(0.5),
+                : AppColors.gray.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -915,7 +917,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
           style: TextStyle(
             color: isSelected
                 ? AppColors.buttonPalette[700]
-                : AppColors.black.withOpacity(0.5),
+                : AppColors.black.withValues(alpha: 0.5),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -980,7 +982,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                   color: AppColors.primaryPalette[900],
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.1),
+                      color: AppColors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -1240,7 +1242,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     appLog.info(
                       '[CreatePost Class page] Edit mode: Going back',
                     );
-                    Navigator.of(context).pop({
+                    Get.back(result: {
                       'success': true,
                       'edited': true,
                       'post': {
@@ -1268,9 +1270,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     appLog.info(
                       '[CreatePost Class page] From classAssignment: pop + refresh',
                     );
-                    Navigator.of(
-                      context,
-                    ).pop({'success': true, 'refresh': true});
+                    Get.back(result: {'success': true, 'refresh': true});
                     await Future.delayed(const Duration(milliseconds: 200));
                     if (Get.isRegistered<ClassAssignmentController>()) {
                       Get.find<ClassAssignmentController>()
@@ -1284,9 +1284,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     appLog.info(
                       '[CreatePost Class page] From classDetail: pop + refresh',
                     );
-                    Navigator.of(
-                      context,
-                    ).pop({'success': true, 'refresh': true});
+                    Get.back(result: {'success': true, 'refresh': true});
                     await Future.delayed(const Duration(milliseconds: 200));
                     if (Get.isRegistered<ClassDetailController>()) {
                       final detailController =
@@ -1320,7 +1318,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
 
                     final navController = Get.find<NavigationController>();
                     navController.showClassDetailFromRedirect(detailArgs);
-                    Navigator.of(context).pop();
+                    Get.back();
                     return;
                   }
 
