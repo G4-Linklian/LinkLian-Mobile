@@ -1,5 +1,10 @@
 import 'package:LinkLian/core/constants/linklian-icon.dart';
+import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/core/utils/profile_popup_helper.dart';
+import 'package:LinkLian/features/classes/presentation/widgets/profile_popup.dart';
+import 'package:LinkLian/features/shared/models/profile_model.dart';
+import 'package:LinkLian/features/shared/repositories/profile_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'dart:ui';
@@ -172,19 +177,45 @@ class _CardPostState extends State<CardPost> {
                   const SizedBox(height: 12),
 
                   // ===== PROFILE ROW =====
+                  // Row(
+                  //   children: [
+                  //     _buildProfileAvatar(),
                   Row(
                     children: [
-                      _buildProfileAvatar(),
+                      GestureDetector(
+                        onTap: () {
+                          final auth = Get.find<AuthController>();
+
+                          if (widget.post.userSysId == auth.userId.value) {
+                            return;
+                          }
+
+                          _openProfilePopup();
+                        },
+                        child: _buildProfileAvatar(),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              widget.post.displayName ?? 'ไม่ทราบชื่อ',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                            GestureDetector(
+                              onTap: () {
+                                final auth = Get.find<AuthController>();
+
+                                if (widget.post.userSysId ==
+                                    auth.userId.value) {
+                                  return;
+                                }
+
+                                _openProfilePopup();
+                              },
+                              child: Text(
+                                widget.post.displayName ?? 'ไม่ทราบชื่อ',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                             if (!widget.post.isAnonymous &&
@@ -544,14 +575,14 @@ class _CardPostState extends State<CardPost> {
     }
 
     // Get max score - default to 0 if null
-final maxScore = widget.post.maxScore;
-final scoreText = maxScore == null
-    ? '0'
-    : maxScore % 1 == 0
+    final maxScore = widget.post.maxScore;
+    final scoreText = maxScore == null
+        ? '0'
+        : maxScore % 1 == 0
         ? maxScore.toInt().toString()
         : maxScore.toString();
 
-Text('$scoreText คะแนน');
+    Text('$scoreText คะแนน');
     return [
       // Due Date Tag
       Container(
@@ -613,7 +644,7 @@ Text('$scoreText คะแนน');
       final isSelected = _classController!.selectedPostIdsForAI.contains(
         widget.post.postId,
       );
-      
+
       // Check if can select this post (either already selected or has room)
       final canSelect = _classController!.canSelectForAI(widget.post.postId);
 
@@ -626,18 +657,18 @@ Text('$scoreText คะแนน');
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: isSelected 
-                ? AppColors.primaryPalette[600] 
-                : canSelect 
-                    ? AppColors.primaryPalette[100]
-                    : AppColors.gray.withOpacity(0.3),
+            color: isSelected
+                ? AppColors.primaryPalette[600]
+                : canSelect
+                ? AppColors.primaryPalette[100]
+                : AppColors.gray.withOpacity(0.3),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected 
+              color: isSelected
                   ? AppColors.primaryPalette[600]!
-                  : canSelect 
-                      ? AppColors.primaryPalette[400]!
-                      : AppColors.gray.withOpacity(0.5),
+                  : canSelect
+                  ? AppColors.primaryPalette[400]!
+                  : AppColors.gray.withOpacity(0.5),
               width: 1.5,
             ),
           ),
@@ -647,11 +678,11 @@ Text('$scoreText คะแนน');
               Icon(
                 Icons.auto_awesome,
                 size: 14,
-                color: isSelected 
-                    ? Colors.white 
-                    : canSelect 
-                        ? AppColors.primaryPalette[600]
-                        : AppColors.gray,
+                color: isSelected
+                    ? Colors.white
+                    : canSelect
+                    ? AppColors.primaryPalette[600]
+                    : AppColors.gray,
               ),
               const SizedBox(width: 4),
               Text(
@@ -659,11 +690,11 @@ Text('$scoreText คะแนน');
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isSelected 
-                      ? Colors.white 
-                      : canSelect 
-                          ? AppColors.primaryPalette[600]
-                          : AppColors.gray,
+                  color: isSelected
+                      ? Colors.white
+                      : canSelect
+                      ? AppColors.primaryPalette[600]
+                      : AppColors.gray,
                 ),
               ),
             ],
@@ -1104,6 +1135,36 @@ Text('$scoreText คะแนน');
         ),
       ),
     );
+  }
+
+  Future<void> _openProfilePopup() async {
+    if (widget.post.isAnonymous) return;
+    if (widget.post.userSysId == null) return;
+
+    final auth = Get.find<AuthController>();
+
+    if (auth.userId.value == widget.post.userSysId) {
+      return;
+    }
+
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      final repo = ProfileRepository(ApiClient());
+
+      final profile = await repo.getProfile(widget.post.userSysId!);
+
+      Get.back();
+
+      showProfilePopup(profile);
+    } catch (e) {
+      if (Get.isDialogOpen ?? false) Get.back();
+
+      Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลโปรไฟล์ได้');
+    }
   }
 
   String _formatDateTime(DateTime dt) {
