@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
 
 part 'post_model.g.dart';
 
@@ -85,7 +86,7 @@ class PostModel {
       title: json['title'] ?? '',
       content: json['content'] ?? '',
       postType: _stringFromJson(json['post_type']),
-      isAnonymous: json['is_anonymous'] ?? false,
+      isAnonymous: _parseBool(json['is_anonymous']),
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
@@ -105,7 +106,7 @@ class PostModel {
               ? json['max_score']
               : double.tryParse(json['max_score'].toString()))
           : null,
-      isGroup: json['is_group'] as bool?,
+      isGroup: _parseBoolNullable(json['is_group']),
       sectionId: _parseIntNullable(json['section_id']),
     );
   }
@@ -113,6 +114,7 @@ class PostModel {
   static int _parseInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
+    if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
   }
@@ -120,15 +122,44 @@ class PostModel {
   static int? _parseIntNullable(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
+    if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value);
     return null;
   }
 
+  static bool _parseBool(dynamic value, {bool fallback = false}) {
+    if (value == null) return fallback;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return fallback;
+  }
+
+  static bool? _parseBoolNullable(dynamic value) {
+    if (value == null) return null;
+    return _parseBool(value);
+  }
+
   static List<PostAttachmentModel>? _parseAttachments(dynamic attachments) {
     if (attachments == null) return null;
-    if (attachments is! List) return null;
-    if (attachments.isEmpty) return [];
-    return attachments
+    dynamic normalized = attachments;
+    if (normalized is String) {
+      try {
+        normalized = jsonDecode(normalized);
+      } catch (_) {
+        return null;
+      }
+    }
+    if (normalized is Map<String, dynamic>) {
+      normalized = [normalized];
+    }
+    if (normalized is! List) return null;
+    if (normalized.isEmpty) return [];
+    return normalized
         .where((a) => a != null && a is Map<String, dynamic>)
         .map((a) => PostAttachmentModel.fromJson(a as Map<String, dynamic>))
         .toList();

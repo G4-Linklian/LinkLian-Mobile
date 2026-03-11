@@ -5,8 +5,27 @@ part 'submission_model.g.dart';
 int _intFromJson(dynamic value) {
   if (value == null) return 0;
   if (value is int) return value;
+  if (value is num) return value.toInt();
   if (value is String) return int.tryParse(value) ?? 0;
   return 0;
+}
+
+double? _doubleNullableFromJson(dynamic value) {
+  if (value == null) return null;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value);
+  return null;
+}
+
+bool _boolFromJson(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == 'true' || normalized == '1';
+  }
+  return false;
 }
 
 DateTime? _dateTimeFromJson(dynamic value) {
@@ -36,13 +55,16 @@ class SubmissionModel {
   @JsonKey(name: 'marked_at', fromJson: _dateTimeFromJson)
   final DateTime? markedAt;
 
-  @JsonKey(name: 'score', fromJson: _intFromJson)
-  final int? score;
+  @JsonKey(name: 'score', fromJson: _doubleNullableFromJson)
+  final double? score;
 
   final String? feedback;
 
   @JsonKey(name: 'attachments')
   final List<Map<String, dynamic>> attachments;
+
+  @JsonKey(name: 'is_group', fromJson: _boolFromJson, defaultValue: false)
+  final bool isGroup;
 
   const SubmissionModel({
     required this.submissionId,
@@ -54,6 +76,7 @@ class SubmissionModel {
     this.score,
     this.feedback,
     this.attachments = const [],
+    this.isGroup = false,
   });
 
   factory SubmissionModel.fromJson(Map<String, dynamic> json) =>

@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 import '../../../shared/repositories/class_feed_repository.dart';
+import '../../../classes/data/models/class_schedule_model.dart';
+import '../../../shared/models/section_educator_model.dart';
 
 class ClassInfoController extends GetxController {
   final int sectionId;
@@ -11,9 +13,9 @@ class ClassInfoController extends GetxController {
   final isLoading = false.obs;
   final error = ''.obs;
 
-  final schedules = <Map<String, dynamic>>[].obs;
+  final schedules = <ClassScheduleModel>[].obs;
   final members = <Map<String, dynamic>>[].obs;
-  final educators = <Map<String, dynamic>>[].obs;
+  final educators = <SectionEducatorModel>[].obs;
 
   @override
   void onInit() {
@@ -32,16 +34,11 @@ class ClassInfoController extends GetxController {
         error.value = 'ไม่พบข้อมูล';
         return;
       }
+      final result = data;
 
-      schedules.assignAll(
-        List<Map<String, dynamic>>.from(data['schedules'] ?? []),
-      );
-      members.assignAll(
-        List<Map<String, dynamic>>.from(data['members'] ?? []),
-      );
-      educators.assignAll(
-        List<Map<String, dynamic>>.from(data['educators'] ?? []),
-      );
+      schedules.assignAll(result.schedules);
+      members.assignAll(result.members);
+      educators.assignAll(result.educators);
     } catch (e) {
       error.value = 'ไม่สามารถโหลดข้อมูลได้';
     } finally {
@@ -54,17 +51,16 @@ class ClassInfoController extends GetxController {
     final locations = <String>{};
 
     for (final schedule in schedules) {
-      final room = schedule['room'] as Map<String, dynamic>?;
-      final building = schedule['building'] as Map<String, dynamic>?;
-
-      final roomNumber = room?['room_number']?.toString() ?? '';
-      final buildingName = building?['building_name']?.toString() ?? '';
+      final roomNumber = schedule.room?.roomNumber.toString() ?? '';
+      final buildingName = schedule.building?.buildingName.toString() ?? '';
 
       if (roomNumber.isNotEmpty || buildingName.isNotEmpty) {
-        locations.add([
-          if (buildingName.isNotEmpty) buildingName,
-          if (roomNumber.isNotEmpty) 'ห้อง $roomNumber',
-        ].join(' '));
+        locations.add(
+          [
+            if (buildingName.isNotEmpty) buildingName,
+            if (roomNumber.isNotEmpty) 'ห้อง $roomNumber',
+          ].join(' '),
+        );
       }
     }
 

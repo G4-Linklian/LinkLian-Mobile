@@ -38,8 +38,11 @@ class ApiClient {
         return Get.find<AuthController>().userId.value;
       }
     } catch (e) {
-      // ✅ ใช้ appLog แทน AppLogger.warning(...)
-      appLog.warning('Cannot get userId: $e', actionPage: 'ApiClient');
+      appLog.warning(
+        'Cannot get userId',
+        actionPage: 'ApiClient',
+        data: {"error": e.toString()},
+      );
     }
     return null;
   }
@@ -48,8 +51,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final extra = options.extra;
-          final requiresAuth = extra['requiresAuth'] ?? true;
+          final requiresAuth = options.extra['requiresAuth'] as bool? ?? true;
 
           if (requiresAuth) {
             final token = await LocalStorage.getToken();
@@ -60,7 +62,7 @@ class ApiClient {
               appLog.warning(
                 'Missing token — request will be sent without Authorization',
                 actionPage: 'ApiClient',
-                url: options.path,
+                data: 'url: ${options.path}',
               );
             }
 
@@ -75,11 +77,10 @@ class ApiClient {
 
           options.extra['_startTime'] = DateTime.now().millisecondsSinceEpoch;
 
-          // ✅ Log request เริ่มต้น (ยังไม่มี statusCode, ใช้ info แทน)
           appLog.info(
             '${options.method} request sent',
-            url: options.path,
             actionPage: 'ApiClient',
+            data: 'url : ${options.path}',
           );
 
           handler.next(options);
@@ -91,7 +92,6 @@ class ApiClient {
               ? DateTime.now().millisecondsSinceEpoch - (startTime as int)
               : 0;
 
-          // ✅ ใช้ appLog.http สำหรับ response สำเร็จ
           appLog.http(
             method: response.requestOptions.method,
             url: response.requestOptions.path,
@@ -112,7 +112,6 @@ class ApiClient {
 
           final statusCode = error.response?.statusCode ?? 0;
 
-          // ✅ ใช้ appLog.http สำหรับ error response
           appLog.http(
             method: error.requestOptions.method,
             url: error.requestOptions.path,
@@ -215,7 +214,7 @@ extension MultipartApi on ApiClient {
     required String fieldName,
     Map<String, dynamic>? fields,
     bool requiresAuth = true,
-    String? actionPage, // ✅ รับ actionPage เพื่อ log ให้ตรงกับ page ที่เรียก
+    String? actionPage, 
   }) async {
     final formData = FormData();
 
@@ -227,11 +226,10 @@ extension MultipartApi on ApiClient {
 
       final fileSize = await file.length();
 
-      // ✅ ใช้ appLog.info พร้อม actionPage
       appLog.info(
         'Uploading file → name=$fileName, size=$fileSize bytes',
         actionPage: actionPage ?? 'ApiClient',
-        url: path,
+        data: 'url: $path',
       );
 
       formData.files.add(
@@ -258,12 +256,6 @@ extension MultipartApi on ApiClient {
       extra: {'requiresAuth': requiresAuth},
     );
 
-    appLog.info(('📤 Upload multipart → $path'));
-
-    return _dio.request(
-      path,
-      data: formData,
-      options: options,
-    );
+    return _dio.post(path, data: formData, options: options);
   }
 }

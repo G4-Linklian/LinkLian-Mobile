@@ -105,7 +105,7 @@ class ChatMessageBubble extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.04),
+                      color: AppColors.black.withValues(alpha: 0.04),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -130,7 +130,7 @@ class ChatMessageBubble extends StatelessWidget {
                       _timeText,
                       style: TextStyle(
                         color: isMe
-                            ? AppColors.black.withOpacity(0.7)
+                            ? AppColors.black.withValues(alpha: 0.7)
                             : Colors.grey[500],
                         fontSize: 11,
                       ),
@@ -147,7 +147,7 @@ class ChatMessageBubble extends StatelessWidget {
 
   static String _formatTime(DateTime? dateTime) {
     if (dateTime == null) return '';
-    return DateFormat('HH:mm').format(dateTime);
+    return _Formatters.timeFormat.format(dateTime);
   }
 
   static String _getInitials(String? firstName, String? lastName) {
@@ -246,7 +246,7 @@ class ChatInputArea extends StatelessWidget {
         color: AppColors.white,
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.05),
+            color: AppColors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

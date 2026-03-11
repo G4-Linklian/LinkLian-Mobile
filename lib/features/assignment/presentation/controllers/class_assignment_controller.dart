@@ -109,7 +109,7 @@ void reinitialise(Map<String, dynamic> args) {
   filteredAssignments.clear();
   errorMessage.value = '';
 
-  appLog.screenEnter('ClassAssignmentScreen ($newSectionId)');
+  appLog.info('ClassAssignmentScreen ($newSectionId)');
 
   _fetchTeacherName();
   fetchAssignments();
@@ -121,9 +121,11 @@ void reinitialise(Map<String, dynamic> args) {
         sectionId: sectionId,
       );
 
-      if (result != null && result.isNotEmpty) {
-        teacherName.value = result[0]['display_name'] ?? 'ไม่ระบุ';
-        appLog.info('👨‍🏫 Teacher name set: ${teacherName.value}');
+      if (result.isNotEmpty) {
+        final teacherDisplayName = result.first.fullName.isNotEmpty
+            ? result.first.fullName
+            : 'ไม่ระบุ';
+        teacherName.value = teacherDisplayName;
       } else {
         teacherName.value = 'ไม่พบผู้สอนหลัก';
       }

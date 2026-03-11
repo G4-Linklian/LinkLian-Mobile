@@ -26,7 +26,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _loadChats() async {
     try {
       final chats = await _chatController.getChat();
-      appLog.info('Loaded chats count: ${chats.length}');
+      appLog.info('[ChatPage] | Loaded chats count: ${chats.length}');
 
       // Sort by last_sent (most recent first)
       chats.sort((a, b) {
@@ -75,7 +75,7 @@ class _ChatPageState extends State<ChatPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
           onPressed: () => Navigator.pop(context),

@@ -14,12 +14,14 @@ SubmissionModel _$SubmissionModelFromJson(Map<String, dynamic> json) =>
       groupName: json['group_name'] as String?,
       submittedAt: _dateTimeFromJson(json['submitted_at']),
       markedAt: _dateTimeFromJson(json['marked_at']),
-      score: _intFromJson(json['score']),
+      score: _doubleNullableFromJson(json['score']),
       feedback: json['feedback'] as String?,
       attachments: (json['attachments'] as List<dynamic>?)
               ?.map((e) => e as Map<String, dynamic>)
               .toList() ??
           const [],
+      isGroup:
+          json['is_group'] == null ? false : _boolFromJson(json['is_group']),
     );
 
 Map<String, dynamic> _$SubmissionModelToJson(SubmissionModel instance) =>
@@ -33,4 +35,5 @@ Map<String, dynamic> _$SubmissionModelToJson(SubmissionModel instance) =>
       'score': instance.score,
       'feedback': instance.feedback,
       'attachments': instance.attachments,
+      'is_group': instance.isGroup,
     };

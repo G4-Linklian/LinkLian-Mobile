@@ -49,8 +49,8 @@ class ChatRepository {
         return chats;
       } catch (e, stack) {
         appLog.error('❌ Error parsing chats');
-        appLog.error('${e}');
-        appLog.error('${stack}');
+        appLog.error('$e');
+        appLog.error('$stack');
         rethrow;
       }
     }

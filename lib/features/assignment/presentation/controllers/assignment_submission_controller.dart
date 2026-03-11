@@ -1,10 +1,12 @@
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/repositories/assignment_repository.dart';
 import '../../data/repositories/submission_repository.dart';
 import '../../data/models/group_model.dart';
 import '../../data/models/submission_model.dart';
 import '../../data/models/assignment_submission_info.dart';
+import 'class_assignment_controller.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../../../core/utils/dialog_helper.dart';
 import '../../../../core/utils/logger.dart';
@@ -29,6 +31,7 @@ class AssignmentSubmissionController extends GetxController {
   final isLoadingGroups = false.obs;
 
   final currentTab = 0.obs;
+  final sheetExtent = 0.55.obs;
   final post = Rxn<dynamic>();
   final isStudentLoading = false.obs;
 
@@ -39,14 +42,20 @@ class AssignmentSubmissionController extends GetxController {
   final allGroups = <GroupModel>[].obs;
 
   final students = <ProfileModel>[].obs;
-final filteredStudents = <ProfileModel>[].obs;
+  final filteredStudents = <ProfileModel>[].obs;
 
   final selectedStudentIds = <int>[].obs;
 
   final isEditingGroup = false.obs;
+  final isEditingSubmission = false.obs;
   final groupName = ''.obs;
 
   final uploadedFiles = <Map<String, dynamic>>[].obs;
+
+  // Subject name for display
+  final subjectNameTh = RxnString();
+  final ImagePicker _imagePicker = ImagePicker();
+  int _localUploadSeed = 0;
 
   // ================= GETTERS =================
 
@@ -62,16 +71,27 @@ final filteredStudents = <ProfileModel>[].obs;
       selectedStudentIds.isNotEmpty &&
       !isSubmittingGroup.value;
 
+  bool get canModifySubmissionFiles =>
+      submission.value == null || isEditingSubmission.value;
+
+  bool get hasUploadingFiles =>
+      uploadedFiles.any((f) => f['is_uploading'] == true);
+
   // ================= INIT =================
 
   @override
   void onInit() {
     super.onInit();
-   final args = Get.arguments as Map<String, dynamic>?;
+    final args = Get.arguments as Map<String, dynamic>?;
 
-if (args != null && args['postId'] != null) {
-  fetchAssignment(args['postId']);
-}
+    if (args != null) {
+      if (args['subjectNameTh'] != null) {
+        subjectNameTh.value = args['subjectNameTh'] as String;
+      }
+      if (args['postId'] != null) {
+        fetchAssignment(args['postId']);
+      }
+    }
   }
 
   // ================= FETCH ASSIGNMENT =================
@@ -90,25 +110,22 @@ if (args != null && args['postId'] != null) {
       post.value = result.post;
       assignmentInfo.value = result.assignment;
       submission.value = result.submission;
+      isEditingSubmission.value = false;
 
-      appLog.info('📋 Submission: ${result.submission != null ? 'exists (id=${result.submission!.submissionId})' : 'null'}');
-      appLog.info('📎 Submission attachments count: ${result.submission?.attachments.length ?? 0}');
-      appLog.info('📎 Submission attachments raw: ${result.submission?.attachments}');
+      appLog.info(
+        '📋 Submission: ${result.submission != null ? 'exists (id=${result.submission!.submissionId})' : 'null'}',
+      );
+      appLog.info(
+        '📎 Submission attachments count: ${result.submission?.attachments.length ?? 0}',
+      );
+      appLog.info(
+        '📎 Submission attachments raw: ${result.submission?.attachments}',
+      );
 
       // Populate uploadedFiles from existing submission attachments
-      if (result.submission != null && result.submission!.attachments.isNotEmpty) {
-        uploadedFiles.assignAll(
-          result.submission!.attachments.map<Map<String, dynamic>>((att) {
-            final a = att is Map<String, dynamic> ? att : <String, dynamic>{};
-            return {
-              'file_url': a['file_url'] ?? '',
-              'original_name': a['original_name'] ?? 'unknown',
-              'file_type': a['file_type'] ?? '',
-              'file_size': a['file_size'] ?? 0,
-              'is_uploading': false,
-            };
-          }).toList(),
-        );
+      if (result.submission != null &&
+          result.submission!.attachments.isNotEmpty) {
+        _hydrateUploadedFilesFromSubmission(result.submission!);
         appLog.info('📎 Loaded ${uploadedFiles.length} existing attachments');
       } else {
         uploadedFiles.clear();
@@ -127,6 +144,23 @@ if (args != null && args['postId'] != null) {
       isLoading.value = false;
     }
   }
+
+  void _hydrateUploadedFilesFromSubmission(SubmissionModel submissionModel) {
+    uploadedFiles.assignAll(
+      submissionModel.attachments.map<Map<String, dynamic>>((att) {
+        final fileUrl = att['file_url']?.toString() ?? '';
+        final fileType = (att['file_type']?.toString() ?? '').toLowerCase();
+        return {
+          'file_url': fileUrl,
+          'original_name': att['original_name'] ?? fileUrl,
+          'file_type': fileType,
+          'file_size': att['file_size'] ?? 0,
+          'is_uploading': false,
+          'is_link': fileType == 'link',
+        };
+      }).toList(),
+    );
+  }
   // ================= GROUP =================
 
   Future<void> _loadStudents() async {
@@ -144,10 +178,14 @@ if (args != null && args['postId'] != null) {
 
     // Filter out inactive users — only show Active students
     final activeList = list.where((s) {
-  return s.roleName.toLowerCase().contains('student');
-}).toList();
+      final roleOk = s.roleName.toLowerCase().contains('student');
+      final active = (s.userStatus ?? '').toLowerCase() == 'active';
+      return roleOk && active;
+    }).toList();
 
-    appLog.info('👥 _loadStudents: got ${list.length} students, ${activeList.length} active');
+    appLog.info(
+      '👥 _loadStudents: got ${list.length} students, ${activeList.length} active',
+    );
     for (final s in activeList) {
       appLog.info(
         '  → user_sys_id=${s.userSysId} | '
@@ -194,13 +232,17 @@ if (args != null && args['postId'] != null) {
   }
 
   void toggleStudent(int userId) {
-    appLog.info('🔄 toggleStudent: userId=$userId, currently selected=${selectedStudentIds.toList()}');
+    appLog.info(
+      '🔄 toggleStudent: userId=$userId, currently selected=${selectedStudentIds.toList()}',
+    );
     if (selectedStudentIds.contains(userId)) {
       selectedStudentIds.remove(userId);
     } else {
       selectedStudentIds.add(userId);
     }
-    appLog.info('🔄 toggleStudent: after toggle, selected=${selectedStudentIds.toList()}');
+    appLog.info(
+      '🔄 toggleStudent: after toggle, selected=${selectedStudentIds.toList()}',
+    );
   }
 
   bool isStudentSelected(int userId) {
@@ -228,23 +270,28 @@ if (args != null && args['postId'] != null) {
       final assignmentId = assignmentInfo.value?.assignmentId;
       if (assignmentId == null) return;
 
+      final userId = authController.userId.value;
+      if (userId == null) return;
+
+      final members = {...selectedStudentIds, userId}.whereType<int>().toList();
+
       bool success;
 
       if (group.value != null) {
         final groupId = group.value?.groupId;
-        if (groupId == null) return; // 🔐 ป้องกัน null
+        if (groupId == null) return;
 
         success = await repo.updateGroup(
           assignmentId: assignmentId,
           groupId: groupId,
           groupName: groupName.value,
-          memberIds: selectedStudentIds,
+          memberIds: members,
         );
       } else {
         success = await repo.createGroup(
           assignmentId: assignmentId,
           groupName: groupName.value,
-          memberIds: selectedStudentIds,
+          memberIds: members,
         );
       }
 
@@ -256,49 +303,140 @@ if (args != null && args['postId'] != null) {
       isSubmittingGroup.value = false;
     }
   }
+
+  void startEditingSubmission() {
+    if (submission.value == null) return;
+    isEditingSubmission.value = true;
+
+    if (uploadedFiles.isEmpty) {
+      _hydrateUploadedFilesFromSubmission(submission.value!);
+    }
+  }
+
+  void cancelEditingSubmission() {
+    isEditingSubmission.value = false;
+    if (submission.value != null) {
+      _hydrateUploadedFilesFromSubmission(submission.value!);
+    }
+  }
   // ================= FILE =================
 
-  Future<void> pickFiles() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+  Future<void> pickFiles({
+    FileType fileType = FileType.any,
+    List<String>? allowedExtensions,
+  }) async {
+    if (!canModifySubmissionFiles) return;
+
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: fileType,
+      allowedExtensions: allowedExtensions,
+    );
 
     if (result == null) return;
 
     for (final file in result.files) {
       if (file.path == null) continue;
-
-      final entry = {
-        'original_name': file.name,
-        'file_type': file.extension ?? '',
-        'file_size': file.size,
-        'file_url': '',
-        'is_uploading': true,
-      };
-
-      uploadedFiles.add(entry);
-      final index = uploadedFiles.length - 1;
-
-      final uploadResult = await submissionRepo.uploadSubmissionFile(
+      await _uploadLocalFile(
         filePath: file.path!,
         fileName: file.name,
+        fileSize: file.size,
+        fileType: file.extension ?? '',
       );
-
-      if (uploadResult != null) {
-        uploadedFiles[index] = {
-          ...entry,
-          'file_url': uploadResult['file_url'],
-          'is_uploading': false,
-        };
-        uploadedFiles.refresh();
-      }
     }
   }
 
+  Future<void> _uploadLocalFile({
+    required String filePath,
+    required String fileName,
+    required int fileSize,
+    required String fileType,
+  }) async {
+    final localId = ++_localUploadSeed;
+    final entry = {
+      'local_id': localId,
+      'original_name': fileName,
+      'file_type': fileType,
+      'file_size': fileSize,
+      'file_url': '',
+      'is_uploading': true,
+    };
+
+    uploadedFiles.add(entry);
+
+    final uploadResult = await submissionRepo.uploadSubmissionFile(
+      filePath: filePath,
+      fileName: fileName,
+    );
+
+    final index = uploadedFiles.indexWhere((f) => f['local_id'] == localId);
+    if (index < 0) {
+      // User may remove file while uploading; ignore stale upload result.
+      return;
+    }
+
+    if (uploadResult != null) {
+      uploadedFiles[index] = {
+        ...entry,
+        'file_url': uploadResult['file_url'],
+        'is_uploading': false,
+      };
+      uploadedFiles.refresh();
+    } else {
+      uploadedFiles.removeAt(index);
+    }
+  }
+
+  Future<void> pickImageFiles() async {
+    if (!canModifySubmissionFiles) return;
+
+    final images = await _imagePicker.pickMultiImage(imageQuality: 95);
+    if (images.isEmpty) return;
+
+    for (final image in images) {
+      final name = image.name;
+      final extIndex = name.lastIndexOf('.');
+      final ext = extIndex >= 0 ? name.substring(extIndex + 1) : 'jpg';
+      await _uploadLocalFile(
+        filePath: image.path,
+        fileName: name,
+        fileSize: await image.length(),
+        fileType: ext,
+      );
+    }
+  }
+
+  void addLinkAttachment(String link) {
+    if (!canModifySubmissionFiles) return;
+
+    final trimmed = link.trim();
+    final uri = Uri.tryParse(trimmed);
+    if (trimmed.isEmpty || uri == null || !uri.hasScheme || !uri.hasAuthority) {
+      return;
+    }
+
+    uploadedFiles.add({
+      'original_name': trimmed,
+      'file_type': 'link',
+      'file_size': 0,
+      'file_url': trimmed,
+      'is_uploading': false,
+      'is_link': true,
+    });
+  }
+
   Future<void> removeFile(int index) async {
+    if (!canModifySubmissionFiles) return;
     if (index < 0 || index >= uploadedFiles.length) return;
+    if (uploadedFiles[index]['is_uploading'] == true) {
+      uploadedFiles.removeAt(index);
+      return;
+    }
     final fileUrl = uploadedFiles[index]['file_url'];
+    final isLink = uploadedFiles[index]['is_link'] == true;
     uploadedFiles.removeAt(index);
 
-    if (fileUrl != null && fileUrl.isNotEmpty) {
+    if (!isLink && fileUrl != null && fileUrl.isNotEmpty) {
       await submissionRepo.deleteBlob(fileUrl: fileUrl);
     }
   }
@@ -324,33 +462,82 @@ if (args != null && args['postId'] != null) {
           )
           .toList();
 
-SubmissionModel? result;
+      SubmissionModel? result;
       // If submission already exists → update, otherwise → create
-      
-if (submission.value != null) {
-  result = await submissionRepo.updateSubmission(
-    submissionId: submission.value!.submissionId,
-    assignmentId: assignmentId,
-    groupId: group.value?.groupId,
-    files: files,
-  );
-} else {
-  result = await submissionRepo.createSubmission(
-    assignmentId: assignmentId,
-    groupId: group.value?.groupId,
-    files: files,
-  );
-}
 
-if (result != null) {
-  submission.value = result;
+      if (submission.value != null) {
+        result = await submissionRepo.updateSubmission(
+          submissionId: submission.value!.submissionId,
+          assignmentId: assignmentId,
+          groupId: group.value?.groupId,
+          files: files,
+        );
+      } else {
+        result = await submissionRepo.createSubmission(
+          assignmentId: assignmentId,
+          groupId: group.value?.groupId,
+          files: files,
+        );
+      }
 
-  DialogHelper.showNotification(
-    title: 'สำเร็จ',
-    message: 'ส่งงานเรียบร้อยแล้ว',
-    type: NotificationType.success,
-  );
-}
+      if (result != null) {
+        // Some backend routes may return submission without attachments.
+        // Keep current uploaded files in UI to avoid losing visible submitted files.
+        final fallbackAttachments = uploadedFiles
+            .where((f) => f['file_url'] != null && f['file_url'] != '')
+            .map<Map<String, dynamic>>(
+              (f) => {
+                'file_url': f['file_url'],
+                'original_name': f['original_name'],
+                'file_type': f['file_type'],
+                if (f['file_size'] != null) 'file_size': f['file_size'],
+              },
+            )
+            .toList();
+
+        final resolvedAttachments = result.attachments.isNotEmpty
+            ? result.attachments
+            : fallbackAttachments;
+
+        submission.value = SubmissionModel(
+          submissionId: result.submissionId,
+          assignmentId: result.assignmentId,
+          groupId: result.groupId,
+          groupName: result.groupName,
+          submittedAt: result.submittedAt,
+          markedAt: result.markedAt,
+          score: result.score,
+          feedback: result.feedback,
+          attachments: resolvedAttachments,
+          isGroup: result.isGroup,
+        );
+
+        uploadedFiles.assignAll(
+          resolvedAttachments.map<Map<String, dynamic>>((att) {
+            final fileType = (att['file_type'] ?? '').toString().toLowerCase();
+            return {
+              'file_url': att['file_url'] ?? '',
+              'original_name': att['original_name'] ?? 'unknown',
+              'file_type': fileType,
+              'file_size': att['file_size'] ?? 0,
+              'is_uploading': false,
+              'is_link': fileType == 'link',
+            };
+          }).toList(),
+        );
+
+        isEditingSubmission.value = false;
+
+        DialogHelper.showNotification(
+          title: 'สำเร็จ',
+          message: 'ส่งงานเรียบร้อยแล้ว',
+          type: NotificationType.success,
+        );
+
+        if (Get.isRegistered<ClassAssignmentController>()) {
+          Get.find<ClassAssignmentController>().refreshAssignments();
+        }
+      }
     } finally {
       isSubmittingWork.value = false;
     }

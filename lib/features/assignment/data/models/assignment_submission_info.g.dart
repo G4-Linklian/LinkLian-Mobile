@@ -11,8 +11,8 @@ AssignmentSubmissionInfo _$AssignmentSubmissionInfoFromJson(
     AssignmentSubmissionInfo(
       assignmentId: _intFromJson(json['assignment_id']),
       dueDate: _dateTimeFromJson(json['due_date']),
-      maxScore: _intFromJson(json['max_score']),
-      isGroup: json['is_group'] as bool,
+      maxScore: _doubleFromJson(json['max_score']),
+      isGroup: _boolFromJson(json['is_group']),
     );
 
 Map<String, dynamic> _$AssignmentSubmissionInfoToJson(
