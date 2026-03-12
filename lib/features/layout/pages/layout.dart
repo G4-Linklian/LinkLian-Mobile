@@ -230,9 +230,12 @@ class _MainPageState extends State<MainPage> {
                               },
                             );
                           } else if (_selectedIndex == 1) {
-                            Get.to(
-                              () => const CreatePostClassPage(),
-                              binding: CreatePostBinding(),
+                            Get.toNamed(
+                              AppRoutes.createPost,
+                              arguments: {
+                                'mode': CreatePostMode.create,
+                                'source': CreatePostSource.classFeed,
+                              },
                             );
                           } else if (_selectedIndex == 2) {
                             Get.toNamed(AppRoutes.createCommunity);

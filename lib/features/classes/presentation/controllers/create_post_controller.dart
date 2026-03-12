@@ -399,6 +399,26 @@ class CreatePostController extends GetxController {
     }
   }
 
+  void markCurrentStateAsSaved() {
+    _originalTitle = title.value;
+    _originalContent = content.value;
+    _originalAttachments = List<Map<String, dynamic>>.from(attachments);
+    _originalDueDate = dueDate.value;
+    _originalMaxScore = maxScore.value;
+    _originalIsGroup = isGroup.value;
+  }
+
+  void clearDraftState() {
+    title.value = '';
+    content.value = '';
+    attachments.clear();
+    dueDate.value = null;
+    maxScore.value = 100.0;
+    isGroup.value = false;
+    groups.clear();
+    uploadWarnings.clear();
+  }
+
 Future<Map<String, dynamic>> _createPost() async {
   final post = await postRepository.createPost(
     sectionIds: effectiveSectionIds,

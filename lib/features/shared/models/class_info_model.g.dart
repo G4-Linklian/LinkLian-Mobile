@@ -15,6 +15,10 @@ ClassInfoModel _$ClassInfoModelFromJson(Map<String, dynamic> json) =>
       studentCount: json['student_count'] == null
           ? 0
           : _intFromJson(json['student_count']),
+      roomLocation: _stringFromJson(json['room_location']),
+      schedules: _schedulesFromJson(json['schedules']),
+      members: _membersFromJson(json['members']),
+      educators: _educatorsFromJson(json['educators']),
     );
 
 Map<String, dynamic> _$ClassInfoModelToJson(ClassInfoModel instance) =>
@@ -24,4 +28,8 @@ Map<String, dynamic> _$ClassInfoModelToJson(ClassInfoModel instance) =>
       'subject_name': instance.subjectName,
       'semester': instance.semester,
       'student_count': instance.studentCount,
+      'room_location': instance.roomLocation,
+      'schedules': instance.schedules,
+      'members': instance.members,
+      'educators': instance.educators,
     };
