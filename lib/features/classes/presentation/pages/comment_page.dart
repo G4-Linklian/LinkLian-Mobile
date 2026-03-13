@@ -1,3 +1,5 @@
+import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
+import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -94,7 +96,25 @@ class CommentPage extends StatelessWidget {
               horizontal: AppSizes.md,
               vertical: AppSizes.sm,
             ),
-            child: CardPost(post: controller.post!, onSelectForAI: null),
+            child: CardPost(
+              post: controller.post!,
+              onSelectForAI: (postId) async {
+                final repo = AIChatRepository();
+
+                final result = await repo.generateSummary(postId);
+
+                Get.to(
+                  () => AIChatDetailPage(
+                    title: result["title"],
+                    aiChatId: result["ai_chat_id"],
+                    summary: result["summary"],
+                    content: result["content"],
+                    attachments: result["attachments"],
+                    // className: controller.post?.effectiveClassName ?? "",
+                  ),
+                );
+              },
+            ),
           );
         }
 

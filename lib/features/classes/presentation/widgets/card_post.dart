@@ -642,7 +642,7 @@ class _CardPostState extends State<CardPost> {
       }
 
       final isSelected = _classController!.selectedPostIdsForAI.contains(
-        widget.post.postId,
+        widget.post.postContentId,
       );
 
       // Check if can select this post (either already selected or has room)
@@ -651,7 +651,7 @@ class _CardPostState extends State<CardPost> {
       return GestureDetector(
         onTap: () {
           if (canSelect && widget.onSelectForAI != null) {
-            widget.onSelectForAI!(widget.post.postId);
+            widget.onSelectForAI!(widget.post.postContentId);
           }
         },
         child: Container(

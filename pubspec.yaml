@@ -54,6 +54,7 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
 
   profile_picture: ^1.0.0
+  dropdown_button2: ^2.3.9
   
   # State Management and Storage
   shared_preferences: ^2.2.2

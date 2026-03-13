@@ -1,4 +1,6 @@
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
+import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:get/get.dart';
 import 'class_detail_filter.dart';
 import '../../../shared/repositories/post_repository.dart';
@@ -446,8 +448,8 @@ class ClassDetailController extends GetxController {
 
   /// Check if a post can be selected for AI
   /// Returns true if the post is already selected OR there's room for more selections
-  bool canSelectForAI(int postId) {
-    return selectedPostIdsForAI.contains(postId) ||
+  bool canSelectForAI(int postContentId) {
+    return selectedPostIdsForAI.contains(postContentId) ||
         selectedPostIdsForAI.length < maxAISelectCount;
   }
 
@@ -457,18 +459,35 @@ class ClassDetailController extends GetxController {
   }
 
   Future<void> generateAISummary() async {
-    if (selectedPostIdsForAI.isEmpty) {
-      Get.snackbar('แจ้งเตือน', 'กรุณาเลือกโพสต์อย่างน้อย 1 โพสต์');
-      return;
-    }
+    if (selectedPostIdsForAI.isEmpty) return;
 
     try {
-      Get.snackbar(
-        'กำลังสรุป',
-        'กำลังสรุปโพสต์ ${selectedPostIdsForAI.length} รายการ...',
+      final repo = AIChatRepository();
+
+      final postContentId = selectedPostIdsForAI.first;
+
+      final result = await repo.generateSummary(postContentId);
+
+      final aiChatId = result["ai_chat_id"];
+      final summary = result["summary"];
+      final title = result["title"];
+      final content = result["content"];
+      final attachments = result["attachments"] ?? [];
+
+      selectedPostIdsForAI.clear();
+
+      Get.to(
+        () => AIChatDetailPage(
+          title: title ?? "AI Chat",
+          aiChatId: aiChatId,
+          summary: summary,
+          content: content ?? "",
+          attachments: attachments,
+          // className: effectiveClassName.value,
+        ),
       );
     } catch (e) {
-      Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถสรุปเนื้อหาได้');
+      Get.snackbar("Error", "ไม่สามารถสร้าง AI Chat ได้");
     }
   }
 

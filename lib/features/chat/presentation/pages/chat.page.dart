@@ -1,10 +1,14 @@
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/core/services/local_storage.dart';
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/features/auth/controller/auth_controller.dart';
+import 'package:LinkLian/features/chat/presentation/pages/ai_chat_list.page.dart';
 import 'package:flutter/material.dart';
 import 'package:LinkLian/features/chat/presentation/controllers/chat.controller.dart';
 import 'package:LinkLian/features/chat/presentation/pages/chat.message.page.dart';
 import 'package:LinkLian/features/chat/data/models/chat.model.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
@@ -86,6 +90,8 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final list = _isSearching ? _searchUsers : _chats;
+    final auth = Get.find<AuthController>();
+    final viewerRole = auth.roleName.value?.toLowerCase();
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -108,6 +114,33 @@ class _ChatPageState extends State<ChatPage> {
             fontSize: 18,
           ),
         ),
+        actions: [
+  if (viewerRole == "high school student" || viewerRole == "uni student")
+    Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Container(
+        // decoration: BoxDecoration(
+        //   color: AppColors.primaryPalette[100],
+        //   shape: BoxShape.circle,
+        // ),
+        child: IconButton(
+          icon: Icon(
+            Icons.auto_awesome,
+            color: AppColors.primaryPalette[600],
+            size: 22,
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AIChatListPage(),
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+],
       ),
       body: Column(
         children: [

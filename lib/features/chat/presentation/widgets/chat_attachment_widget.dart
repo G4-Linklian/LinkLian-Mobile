@@ -38,8 +38,12 @@ class ChatAttachmentWidget {
   }
 
   static Widget buildAttachment(BuildContext context, dynamic file) {
-    final type = file['type'];
-    final url = file['url'];
+    final type = file['type'] ?? file['file_type'];
+    final url = file['url'] ?? file['file_url'];
+    final name =
+    file['name'] ??
+    file['original_name'] ??
+    extractFileName(url);
 
     if (url == null) return const SizedBox();
 
@@ -78,7 +82,7 @@ class ChatAttachmentWidget {
         children: [
           const Icon(Icons.picture_as_pdf),
           const SizedBox(width: 8),
-          Expanded(child: Text(file['original_name'] ?? "PDF File")),
+          Expanded(child: Text(name)),
         ],
       );
     }
@@ -88,7 +92,7 @@ class ChatAttachmentWidget {
         children: [
           const Icon(Icons.description, color: Colors.blue),
           const SizedBox(width: 8),
-          Expanded(child: Text(file['original_name'] ?? "Word File")),
+          Expanded(child: Text(name)),
         ],
       );
     }
@@ -98,7 +102,7 @@ class ChatAttachmentWidget {
         children: [
           const Icon(Icons.table_chart, color: Colors.green),
           const SizedBox(width: 8),
-          Expanded(child: Text(file['original_name'] ?? "Excel File")),
+          Expanded(child: Text(name)),
         ],
       );
     }
@@ -108,7 +112,7 @@ class ChatAttachmentWidget {
         children: [
           const Icon(Icons.slideshow, color: Colors.orange),
           const SizedBox(width: 8),
-          Expanded(child: Text(file['original_name'] ?? "PowerPoint File")),
+          Expanded(child: Text(name)),
         ],
       );
     }
@@ -117,7 +121,7 @@ class ChatAttachmentWidget {
       children: [
         const Icon(Icons.insert_drive_file),
         const SizedBox(width: 8),
-        Expanded(child: Text(file['original_name'] ?? "File")),
+        Expanded(child: Text(name)),
       ],
     );
   }
@@ -172,8 +176,9 @@ class ChatAttachmentWidget {
               children: [
                 if (!isPdf && data?.image != null)
                   ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(12)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
                     child: Image.network(
                       data!.image!,
                       height: 120,
