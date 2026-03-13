@@ -1034,7 +1034,7 @@ class _CardPostState extends State<CardPost> {
 
     if (result?['success'] == true && result?['edited'] == true) {
       debugPrint('📝 Refreshing posts after edit...');
-      await _classController!.fetchPosts();
+      await _classController!.fetchPosts(keepScroll: true);
       DialogHelper.showNotification(
         title: 'แก้ไขโพสต์สำเร็จ',
         message: 'โพสต์ของคุณถูกอัปเดตแล้ว',

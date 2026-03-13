@@ -97,10 +97,10 @@ class ClassFeedRepository {
   /// =========================
   /// SECTION EDUCATORS
   /// =========================
-  Future<List<SectionEducatorModel>> getSectionEducators({
+Future<List<SectionEducatorModel>> getSectionEducators({
   required int sectionId,
 }) async {
-  final response = await _apiClient.get<Map<String, dynamic>>(
+  final response = await _apiClient.get<dynamic>(
     '/social-feed/section-educators/$sectionId',
   );
 
