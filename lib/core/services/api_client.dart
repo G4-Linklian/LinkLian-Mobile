@@ -313,6 +313,10 @@ extension MultipartApi on ApiClient {
       extra: {'requiresAuth': requiresAuth},
     );
 
-    return _dio.post(path, data: formData, options: options);
+    return _dio.request(
+      path,
+      data: formData,
+      options: options,
+    );
   }
 }
