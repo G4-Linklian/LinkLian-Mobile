@@ -12,11 +12,24 @@ class CommunityCommentInputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final detailController = Get.find<CommunityDetailController>();
-
-    if (!detailController.canInteract()) {
+    if (!Get.isRegistered<CommunityDetailController>()) {
       return const SizedBox.shrink();
     }
+
+    final detailController = Get.find<CommunityDetailController>();
+
+    return Obx(() {
+      if (!detailController.canInteract()) {
+        return const SizedBox.shrink();
+      }
+      return _buildInputBar(context, detailController);
+    });
+  }
+
+  Widget _buildInputBar(
+    BuildContext context,
+    CommunityDetailController detailController,
+  ) {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.white,

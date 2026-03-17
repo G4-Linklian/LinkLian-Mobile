@@ -80,13 +80,65 @@ class ClassFeedModel {
   String get effectiveClassName => displayClassName ?? sectionName;
 
   static int _intFromJson(dynamic value) {
+    if (value == null) return 0;
     if (value is int) return value;
-    if (value is String) return int.parse(value);
-    throw Exception('Invalid int value: $value');
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
-  factory ClassFeedModel.fromJson(Map<String, dynamic> json) =>
-      _$ClassFeedModelFromJson(json);
+  static String _stringFromJson(dynamic value, {String fallback = ''}) {
+    if (value == null) return fallback;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  static int? _nullableIntFromJson(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static List<ClassScheduleModel> _schedulesFromJson(dynamic value) {
+    if (value is! List) return const <ClassScheduleModel>[];
+    return value.whereType<Map>().map((e) {
+      try {
+        return ClassScheduleModel.fromJson(Map<String, dynamic>.from(e));
+      } catch (_) {
+        return const ClassScheduleModel(
+          dayOfWeek: 0,
+          startTime: '',
+          endTime: '',
+          room: null,
+          building: null,
+        );
+      }
+    }).where((e) => e.dayOfWeek != 0 || e.startTime.isNotEmpty || e.endTime.isNotEmpty).toList();
+  }
+
+  factory ClassFeedModel.fromJson(Map<String, dynamic> json) {
+    return ClassFeedModel(
+      sectionId: _intFromJson(json['section_id']),
+      sectionName: _stringFromJson(json['section_name']),
+      subjectCode: _stringFromJson(json['subject_code']),
+      subjectNameTh: _stringFromJson(json['subject_name_th']),
+      subjectNameEn: _stringFromJson(json['subject_name_en']),
+      learningAreaName: json['learning_area_name']?.toString(),
+      semester: _stringFromJson(json['semester']),
+      studentCount: _intFromJson(json['student_count']),
+      schedules: _schedulesFromJson(json['schedules']),
+      displayClassName: json['display_class_name']?.toString(),
+      position: json['position']?.toString(),
+      eduType: json['edu_type']?.toString(),
+      levelNum: _nullableIntFromJson(json['level_num']),
+      levelName: json['level_name']?.toString(),
+      className: json['class_name']?.toString(),
+      programType: json['program_type']?.toString(),
+      studyPlanName: json['study_plan_name']?.toString(),
+    );
+  }
 
   Map<String, dynamic> toJson() => _$ClassFeedModelToJson(this);
 

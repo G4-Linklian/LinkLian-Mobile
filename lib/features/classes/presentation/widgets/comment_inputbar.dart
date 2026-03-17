@@ -80,7 +80,7 @@ class CommentInputBar extends StatelessWidget {
                             replyingComment.commentText,
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.gray.withOpacity(0.7),
+                              color: AppColors.gray.withValues(alpha: 0.7),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -136,7 +136,7 @@ class CommentInputBar extends StatelessWidget {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.black.withOpacity(0.08),
+                            color: AppColors.black.withValues(alpha: 0.08),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -154,7 +154,7 @@ class CommentInputBar extends StatelessWidget {
                                   ? 'พิมพ์ข้อความตอบกลับ...'
                                   : 'แสดงความคิดเห็น...',
                               hintStyle: TextStyle(
-                                color: AppColors.gray.withOpacity(0.5),
+                                color: AppColors.gray.withValues(alpha: 0.5),
                                 fontSize: 14,
                               ),
                               filled: false,
@@ -277,7 +277,7 @@ class CommentInputBar extends StatelessWidget {
                   color: AppColors.primaryPalette[900],
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.1),
+                      color: AppColors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),

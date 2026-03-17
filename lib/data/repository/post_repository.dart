@@ -135,9 +135,7 @@ class PostRepository {
     if (isGroup != null) body['is_group'] = isGroup;
 
     // Build attachments array - always send (even if empty) to allow clearing
-    final List<Map<String, String>>? attachmentsList = attachments != null
-        ? attachments
-              .map((a) {
+    final List<Map<String, String>>? attachmentsList = attachments?.map((a) {
                 final map = {
                   'file_url': a['file_url']?.toString() ?? '',
                   'file_type': a['file_type']?.toString() ?? '',
@@ -148,8 +146,7 @@ class PostRepository {
                 return map;
               })
               .where((a) => a['file_url']!.isNotEmpty)
-              .toList()
-        : null;
+              .toList();
 
     // Build the full request body
     final requestBody = <String, dynamic>{

@@ -114,7 +114,7 @@ class _LocationChip extends StatelessWidget {
           Icon(LinkLianIcon.location, size: AppSizes.iconSm),
           const SizedBox(width: AppSizes.xs),
           Text(
-            '${roomNumber ?? 'ไม่ระบุ'}',
+            roomNumber,
             style: AppTextStyles.descriptionMedium,
           ),
         ],
@@ -184,9 +184,9 @@ class _ClassCardState extends State<ClassCard> {
                 end: Alignment.topCenter,
                 stops: const [0.0, 0.65, 1.0],
                 colors: [
-                  AppColors.primaryPalette[500]!.withOpacity(0.2),
-                  AppColors.primaryPalette[300]!.withOpacity(0.13),
-                  AppColors.primaryPalette[100]!.withOpacity(0.0),
+                  AppColors.primaryPalette[500]!.withValues(alpha: 0.2),
+                  AppColors.primaryPalette[300]!.withValues(alpha: 0.13),
+                  AppColors.primaryPalette[100]!.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -213,7 +213,7 @@ class _ClassCardState extends State<ClassCard> {
                             ? widget.data.subjectNameTh
                             : widget.data.effectiveClassName,
                         style: AppTextStyles.descriptionRegular.copyWith(
-                          color: AppColors.black.withOpacity(0.6),
+                          color: AppColors.black.withValues(alpha: 0.6),
                         ),
                       ),
 

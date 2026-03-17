@@ -74,7 +74,7 @@ class ClassFeedController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = null;
-      print('🚀 [ClassFeed] Loading initial data for instId: ${auth.instId.value}');
+      appLog.info('🚀 [ClassFeed] Loading initial data for instId: ${auth.instId.value}');
 
       await fetchSemesters();
     } finally {
@@ -85,12 +85,17 @@ class ClassFeedController extends GetxController {
   /// FETCH SEMESTER
   Future<void> fetchSemesters() async {
     try {
-      appLog.info('📅 [ClassFeed] Fetching semesters for instId: ${auth.instId.value}');
+      appLog.info('[ClassFeed] Fetching semesters for instId: ${auth.instId.value}', data: {
+        'instId': auth.instId.value,
+      });
       final result = await semesterRepository.getSemesters(
         instId: auth.instId.value!,
       );
 
-      appLog.info('📅 [ClassFeed] Got ${result.length} semesters');
+      appLog.info('[ClassFeed] Got ${result.length} semesters', data: {
+        'instId': auth.instId.value,
+        'semesterCount': result.length,
+      });
       
       semesters.assignAll(result);
 
@@ -101,32 +106,29 @@ class ClassFeedController extends GetxController {
       selectedSemesterId.value =
           openSemester?.semesterId ?? (semesters.isNotEmpty ? semesters.first.semesterId : null);
 
-      print('📅 [ClassFeed] Selected semester: ${selectedSemesterId.value}');
+      appLog.info('[ClassFeed] Selected semester', data: {
+        'selectedSemesterId': selectedSemesterId.value,
+      });
 
       if (selectedSemesterId.value != null) {
         await fetchClassFeed();
       } else {
-        print('⚠️ [ClassFeed] No semester selected, skipping fetchClassFeed');
       }
     } catch (e) {
-      print('❌ [ClassFeed] Error fetching semesters: $e');
       errorMessage.value = e.toString();
     }
   }
 
   Future<void> fetchClassFeed({bool loadMore = false}) async {
     if (selectedSemesterId.value == null) {
-      print('⚠️ [ClassFeed] selectedSemesterId is null, skipping');
       return;
     }
 
     if (loadMore && !hasMore.value) {
-      print('⚠️ [ClassFeed] No more classes to load');
       return;
     }
 
     if (loadMore && isLoadingMore.value) {
-      print('⚠️ [ClassFeed] Already loading more');
       return;
     }
 
@@ -142,7 +144,7 @@ class ClassFeedController extends GetxController {
 
       errorMessage.value = null;
 
-      print('🏫 [ClassFeed] Fetching class feed for semester: ${selectedSemesterId.value}, offset: $_offset, limit: $_limit');
+      appLog.info('🏫 [ClassFeed] Fetching class feed for semester: ${selectedSemesterId.value}, offset: $_offset, limit: $_limit');
 
       final result = await classFeedRepository.getClassFeed(
         semesterId: selectedSemesterId.value!,
@@ -150,11 +152,15 @@ class ClassFeedController extends GetxController {
         limit: _limit,
       );
 
-      print('🏫 [ClassFeed] Got ${result.length} classes');
+      appLog.info('[ClassFeed] Fetched ${result.length} classes', data: {
+        'semesterId': selectedSemesterId.value,
+        'offset': _offset,
+        'limit': _limit,
+        'fetchedCount': result.length,
+      });
 
       if (result.length < _limit) {
         hasMore.value = false;
-        print('✅ [ClassFeed] No more classes to load');
       }
 
       if (loadMore) {
@@ -166,7 +172,6 @@ class ClassFeedController extends GetxController {
       _offset += result.length;
 
     } catch (e) {
-      print('❌ [ClassFeed] Error fetching class feed: $e');
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;

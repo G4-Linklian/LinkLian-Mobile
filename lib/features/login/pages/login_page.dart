@@ -10,7 +10,6 @@ import '../../../core/constants/sizes.dart';
 import '../../../core/constants/linklian-icon.dart';
 import '../../../core/constants/strings.dart';
 import '../controllers/login_controller.dart';
-import '../../auth/controller/auth_controller.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});

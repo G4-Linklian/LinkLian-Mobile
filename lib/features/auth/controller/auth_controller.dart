@@ -90,8 +90,6 @@ class AuthController extends GetxController {
         return;
       }
 
-      final data = res['data'];
-
       final int tokenUserId = int.parse(res['data']['user_id'].toString());
 
       if (tokenUserId != storedUserId) {

@@ -27,7 +27,7 @@ class AssignmentCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryPalette[800]!.withOpacity(0.05),
+              color: AppColors.primaryPalette[800]!.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -52,7 +52,7 @@ class AssignmentCard extends StatelessWidget {
               Container(
                 width: double.infinity,
                 height: isTeacher ? 140 : 150,
-                color: AppColors.primaryPalette[200]!.withOpacity(0.05),
+                color: AppColors.primaryPalette[200]!.withValues(alpha: 0.05),
               ),
               // Gradient overlay (top to bottom)
               Container(
@@ -63,8 +63,8 @@ class AssignmentCard extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.primaryPalette[300]!.withOpacity(0.2),
-                      AppColors.primaryPalette[300]!.withOpacity(0.5),
+                      AppColors.primaryPalette[300]!.withValues(alpha: 0.2),
+                      AppColors.primaryPalette[300]!.withValues(alpha: 0.5),
                     ],
                   ),
                 ),
@@ -102,7 +102,7 @@ class AssignmentCard extends StatelessWidget {
                 preferBelow: false,
                 textStyle: TextStyle(fontSize: 14, color: AppColors.primaryPalette[900]),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryPalette[200]!.withOpacity(0.85),
+                  color: AppColors.primaryPalette[200]!.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -147,7 +147,10 @@ class AssignmentCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _pill(assignment.assignmentType, AppColors.primaryPalette[700]!),
-            _pill(assignment.studentStatus, assignment.statusColor),
+            _pill(
+              _displayStudentStatus(assignment.studentStatus),
+              _statusColorForDisplay(assignment.studentStatus),
+            ),
           ],
         ),
       ],
@@ -254,15 +257,20 @@ class AssignmentCard extends StatelessWidget {
 
   Widget _pill(String text, Color color) {
     final isSubmitted = text == 'ส่งแล้ว';
-    final isWarning = color == AppColors.warningPalette[500];
+    final isNotSubmitted = text == 'ยังไม่ส่ง';
+    final isOverdue = color == AppColors.dangerPalette[500];
 
     final bgColor = isSubmitted
         ? AppColors.successPalette[500]!
-        : color;
+        : isNotSubmitted
+            ? AppColors.gray
+            : color;
     final textColor = isSubmitted
         ? AppColors.successPalette[900]!
-        : isWarning
-            ? AppColors.primaryPalette[800]!
+        : isNotSubmitted
+            ? const Color.fromARGB(255, 157, 157, 157)
+        : isOverdue
+            ? AppColors.white
             : AppColors.white;
 
     return Container(
@@ -289,5 +297,29 @@ class AssignmentCard extends StatelessWidget {
     final yearShort = (buddhistYear % 100).toString().padLeft(2, '0');
     final time = DateFormat('HH:mm').format(date);
     return '$day/$month/$yearShort $time น.';
+  }
+
+  String _displayStudentStatus(String rawStatus) {
+    switch (rawStatus) {
+      case 'ยังไม่ส่งเกินกำหนด':
+      case 'ส่งแล้วเกินกำหนด':
+        return 'เกินกำหนดส่ง';
+      default:
+        return rawStatus;
+    }
+  }
+
+  Color _statusColorForDisplay(String rawStatus) {
+    switch (rawStatus) {
+      case 'ยังไม่ส่ง':
+        return AppColors.gray;
+      case 'ยังไม่ส่งเกินกำหนด':
+      case 'ส่งแล้วเกินกำหนด':
+        return AppColors.dangerPalette[500]!;
+      case 'ส่งแล้ว':
+        return AppColors.successPalette[500]!;
+      default:
+        return assignment.statusColor;
+    }
   }
 }

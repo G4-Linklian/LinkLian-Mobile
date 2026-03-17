@@ -27,6 +27,7 @@ class ChatMessageController {
 
     if (_currentUserId == null) {
       appLog.error('User ID not found');
+      appLog.error('User ID not found');
       return;
     }
 
@@ -52,9 +53,9 @@ class ChatMessageController {
       _messages = messages;
       // Direct update for initial load (no debounce needed)
       _messagesController.add(List.unmodifiable(_messages));
-      appLog.info('Loaded ${messages.length} messages for chat $_currentChatId');
+      appLog.info('[ChatMessageController] | Loaded ${messages.length} messages for chat $_currentChatId');
     } catch (e) {
-      appLog.error('Failed to load messages: $e');
+      appLog.error('[ChatMessageController] | Failed to load messages: $e');
     }
   }
 
@@ -69,7 +70,7 @@ class ChatMessageController {
         }
       }
     } catch (e) {
-      appLog.error('Error parsing chat message: $e');
+      appLog.error('[ChatMessageController] | Error parsing chat message: $e');
     }
   }
   
@@ -98,10 +99,15 @@ class ChatMessageController {
       _messages.add(newMessage);
       // Use direct update for user messages (immediate feedback)
       _messagesController.add(List.unmodifiable(_messages));
-      
-      appLog.info('Message sent successfully');
+
+      appLog.info('[ChatMessageController] | Message sent successfully', 
+      data: {
+        'chatId': _currentChatId,
+        'senderId': _currentUserId,
+        'content': content,
+      });
     } catch (e) {
-      appLog.error('Failed to send message: $e');
+      appLog.error('[ChatMessageController] | Failed to send message: $e');
     }
 
     // Socket functionality

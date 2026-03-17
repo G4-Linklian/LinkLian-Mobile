@@ -3,8 +3,6 @@ import 'package:get/get.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/sizes.dart';
 import '../../../../core/constants/linklian-icon.dart';
-import '../../../../core/services/api_client.dart';
-import '../../../shared/models/post_model.dart';
 import '../widgets/card_post.dart';
 import '../controllers/search_post_controller.dart';
 
@@ -17,15 +15,10 @@ class SearchPostPage extends StatefulWidget {
 
 class _SearchPostPageState extends State<SearchPostPage> {
   final TextEditingController _searchController = TextEditingController();
-  final ApiClient _apiClient = ApiClient();
 
   int? _sectionId;
   String _subjectName = '';
-  bool _isLoading = false;
-  List<PostModel> _results = [];
-  String? _error;
-  String _keyword = '';
-late final SearchPostController controller;
+  late final SearchPostController controller;
 
   @override
   void initState() {
