@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:LinkLian/core/constants/colors.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 
 class AIQuizPopup extends StatefulWidget {
   final Function(String difficulty, int questionCount) onGenerate;
@@ -12,14 +12,53 @@ class AIQuizPopup extends StatefulWidget {
 }
 
 class _AIQuizPopupState extends State<AIQuizPopup> {
-  String difficulty = "medium";
-  double questionCount = 5;
+  double difficultyLevel = 2;
+  int questionCount = 5;
+  late final TextEditingController _questionController;
 
-  final List<Map<String, String>> difficultyItems = [
-    {"value": "easy", "text": "ง่าย"},
-    {"value": "medium", "text": "ปานกลาง"},
-    {"value": "hard", "text": "ยาก"},
-  ];
+  final Map<int, String> difficultyValueMap = {
+    1: "easy",
+    2: "medium",
+    3: "hard",
+  };
+
+  final Map<int, String> difficultyTextMap = {
+    1: "ง่าย",
+    2: "ปานกลาง",
+    3: "ยาก",
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _questionController = TextEditingController(text: questionCount.toString());
+  }
+
+  @override
+  void dispose() {
+    _questionController.dispose();
+    super.dispose();
+  }
+
+  void _updateQuestionCount(int value) {
+    final clamped = value.clamp(1, 10);
+    setState(() {
+      questionCount = clamped;
+      _questionController.text = clamped.toString();
+      _questionController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _questionController.text.length),
+      );
+    });
+  }
+
+  void _onQuestionChanged(String value) {
+    if (value.isEmpty) return;
+
+    final parsed = int.tryParse(value);
+    if (parsed == null) return;
+
+    _updateQuestionCount(parsed);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +66,7 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
 
       title: const Text(
-        "สร้างแบบทดสอบด้วย AI",
+        "สร้างแบบทดสอบ",
         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
       ),
 
@@ -44,121 +83,104 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
             ),
 
             const SizedBox(height: 8),
-            DropdownButtonHideUnderline(
-              child: DropdownButton2<String>(
-                value: difficulty,
-                isExpanded: true,
-
-                items: difficultyItems.map((item) {
-                  return DropdownMenuItem<String>(
-                    value: item["value"],
-
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(item["text"]!),
-                    ),
-                  );
-                }).toList(),
-
-                onChanged: (value) {
-                  setState(() {
-                    difficulty = value!;
-                  });
-                },
-
-                buttonStyleData: ButtonStyleData(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primaryPalette[500]!,
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-
-                iconStyleData: const IconStyleData(
-                  icon: Icon(Icons.keyboard_arrow_down),
-                ),
-
-                dropdownStyleData: DropdownStyleData(
-                  maxHeight: 200,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.white,
-                    boxShadow: const [
-                      BoxShadow(blurRadius: 10, color: Colors.black12),
-                    ],
-                  ),
-                ),
-
-                menuItemStyleData: const MenuItemStyleData(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  height: 40,
-                ),
+            Text(
+              difficultyTextMap[difficultyLevel.toInt()] ?? "ปานกลาง",
+              style: TextStyle(
+                color: AppColors.primaryPalette[700],
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 20),
-
-            Text(
-              "จำนวนข้อ (${questionCount.toInt()} ข้อ)",
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-
             const SizedBox(height: 6),
-
-            // SliderTheme(
-            //   data: SliderTheme.of(context).copyWith(
-            //     trackHeight: 8,
-
-            //     thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-
-            //     overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
-
-            //     activeTrackColor: AppColors.primaryPalette[500],
-            //     inactiveTrackColor: AppColors.primaryPalette[100],
-
-            //     thumbColor: AppColors.primaryPalette[500],
-            //   ),
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 trackHeight: 6,
-
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-
                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
-
                 activeTrackColor: AppColors.primaryPalette[500],
                 inactiveTrackColor: AppColors.primaryPalette[100],
-
                 thumbColor: AppColors.primaryPalette[500],
-
-                /// สีพื้นหลังเลข
                 valueIndicatorColor: AppColors.primaryPalette[500],
-
-                /// สีตัวเลข
                 valueIndicatorTextStyle: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               child: Slider(
-                value: questionCount,
+                value: difficultyLevel,
                 min: 1,
-                max: 10,
-                divisions: 9,
-
-                label: questionCount.toInt().toString(),
-
+                max: 3,
+                divisions: 2,
+                label: difficultyTextMap[difficultyLevel.toInt()],
                 onChanged: (value) {
                   setState(() {
-                    questionCount = value;
+                    difficultyLevel = value;
                   });
                 },
               ),
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              "จำนวนข้อ (สูงสุด 10 ข้อ)",
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: questionCount > 1
+                      ? () => _updateQuestionCount(questionCount - 1)
+                      : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                  color: AppColors.primaryPalette[500],
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _questionController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(2),
+                    ],
+                    decoration: InputDecoration(
+                      hintText: "1 - 10",
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      filled: true,
+                      fillColor: AppColors.primaryPalette[100],
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.primaryPalette[500]!,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.primaryPalette[600]!,
+                          width: 1.8,
+                        ),
+                      ),
+                    ),
+                    onChanged: _onQuestionChanged,
+                    onEditingComplete: () {
+                      final parsed =
+                          int.tryParse(_questionController.text) ?? 1;
+                      _updateQuestionCount(parsed);
+                      FocusScope.of(context).unfocus();
+                    },
+                  ),
+                ),
+                IconButton(
+                  onPressed: questionCount < 10
+                      ? () => _updateQuestionCount(questionCount + 1)
+                      : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                  color: AppColors.primaryPalette[500],
+                ),
+              ],
             ),
           ],
         ),
@@ -174,16 +196,17 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
 
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryPalette[500],
+            backgroundColor: AppColors.primaryPalette[400],
+            foregroundColor: AppColors.primaryPalette[800],
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
 
           onPressed: () {
-            widget.onGenerate(difficulty, questionCount.toInt());
-
-            Navigator.pop(context);
+            final selectedDifficulty =
+                difficultyValueMap[difficultyLevel.toInt()] ?? "medium";
+            widget.onGenerate(selectedDifficulty, questionCount);
           },
 
           child: const Text("สร้างแบบทดสอบ"),

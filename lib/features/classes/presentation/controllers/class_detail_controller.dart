@@ -1,5 +1,6 @@
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
+import 'package:LinkLian/features/chat/presentation/services/ai_summary_notification_service.dart';
 import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:get/get.dart';
 import 'class_detail_filter.dart';
@@ -25,15 +26,9 @@ class ClassDetailController extends GetxController {
   final RxList<PostModel> posts = <PostModel>[].obs;
   final RxSet<int> selectedPostIdsForAI = <int>{}.obs;
 
-  // Maximum posts that can be selected for AI summary
-  // Currently 1, but can be increased in future for multi-select flow
   static const int maxAISelectCount = 1;
 
-  // final isLoadingClassInfo = false.obs;
-  // final RxString classInfoError = ''.obs;
   final schedules = <Map<String, dynamic>>[].obs;
-  // final members = <Map<String, dynamic>>[].obs;
-  // final educators = <Map<String, dynamic>>[].obs;
 
   int _offset = 0;
   final int _limit = 10;
@@ -41,10 +36,10 @@ class ClassDetailController extends GetxController {
   final PostRepository _postRepository = PostRepository();
   final ClassFeedRepository _classFeedRepository = ClassFeedRepository();
   final ScrollController scrollController = ScrollController();
-  // เพิ่ม fields เหล่านี้ใน ClassDetailController
+
   DateTime? _lastFetchTime;
   int? _lastKnownPostCount;
-  static const _refreshThresholdSeconds = 30; // โหลดใหม่ถ้าผ่านไป 30 วิ
+  static const _refreshThresholdSeconds = 30; 
   List<int> get effectiveSectionIds {
     return [if (sectionId.value != null) sectionId.value!];
   }
@@ -79,38 +74,37 @@ class ClassDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    appLog.info('📝 [ClassDetail] onInit called');
+    appLog.info('[ClassDetail] onInit called');
   }
 
   @override
   void onReady() {
     super.onReady();
-    appLog.info('📝 [ClassDetail] onReady called');
+    appLog.info('[ClassDetail] onReady called');
 
-    // Try to initialize from NavigationController if not already initialized
     if (sectionId.value == null) {
       try {
         final navController = Get.find<NavigationController>();
         final args = navController.classDetailArgs.value;
 
         appLog.info(
-          '📝 [ClassDetail] onReady - args from NavigationController: $args',
+          '[ClassDetail] onReady - args from NavigationController: $args',
         );
 
         if (args != null) {
           appLog.info(
-            '📝 [ClassDetail] Initializing from NavigationController in onReady',
+            '[ClassDetail] Initializing from NavigationController in onReady',
           );
           initializeWithArgs(args);
         } else {
-          appLog.info('⚠️ [ClassDetail] No args available in onReady');
+          appLog.info('[ClassDetail] No args available in onReady');
         }
       } catch (e) {
-        appLog.info('❌ [ClassDetail] Error in onReady: $e');
+        appLog.info('[ClassDetail] Error in onReady: $e');
       }
     } else {
       appLog.info(
-        '📝 [ClassDetail] Already initialized with sectionId: ${sectionId.value}',
+        '[ClassDetail] Already initialized with sectionId: ${sectionId.value}',
       );
     }
   }
@@ -126,7 +120,6 @@ class ClassDetailController extends GetxController {
     final isNewSection = sectionId.value != newSectionId;
 
     if (isNewSection) {
-      // ✅ เปลี่ยน section — reset ทุกอย่าง
       selectedFilter.value = ClassPostFilter.all;
       _lastFetchTime = null;
       _lastKnownPostCount = null;
@@ -134,7 +127,7 @@ class ClassDetailController extends GetxController {
       hasMore.value = true;
       _offset = 0;
       appLog.info(
-        '🔄 New section → reset & reload',
+        'New section - reset & reload',
         actionPage: 'ClassDetailScreen',
       );
     }
@@ -145,8 +138,6 @@ class ClassDetailController extends GetxController {
 
     fetchClassDetailFromFeed();
 
-    // ✅ โหลดโพสต์เสมอ ไม่ว่าจะ section ใหม่หรือเดิม
-    // แต่ใช้ refreshIfNeeded() เพื่อไม่โหลดซ้ำถ้าข้อมูลยังใหม่
     if (isNewSection) {
       fetchPosts();
     } else {
@@ -154,13 +145,11 @@ class ClassDetailController extends GetxController {
     }
   }
 
-  /// เรียกเมื่อกลับมาที่หน้านี้จากหน้าอื่น (เช่น หลังโพสต์)
   Future<void> refreshIfNeeded() async {
     if (sectionId.value == null) return;
 
-    // ✅ ถ้าไม่มีโพสต์เลย — โหลดเสมอ
     if (posts.isEmpty) {
-      appLog.info('🔄 No posts — fetching', actionPage: 'ClassDetailScreen');
+      appLog.info('No posts - fetching', actionPage: 'ClassDetailScreen');
       await fetchPosts();
       return;
     }
@@ -168,7 +157,7 @@ class ClassDetailController extends GetxController {
     final lastFetch = _lastFetchTime;
     if (lastFetch == null) {
       appLog.info(
-        '🔄 Never loaded — fetching',
+        'Never loaded - fetching',
         actionPage: 'ClassDetailScreen',
       );
       await fetchPosts();
@@ -179,7 +168,7 @@ class ClassDetailController extends GetxController {
 
     if (secondsSinceFetch >= _refreshThresholdSeconds) {
       appLog.info(
-        '🔄 Data stale (${secondsSinceFetch}s) — refreshing',
+        'Data stale (${secondsSinceFetch}s) - refreshing',
         actionPage: 'ClassDetailScreen',
       );
       await fetchPosts();
@@ -187,23 +176,23 @@ class ClassDetailController extends GetxController {
     }
 
     appLog.info(
-      '✅ Data fresh (${secondsSinceFetch}s ago) — skip',
+      'Data fresh (${secondsSinceFetch}s ago) - skip',
       actionPage: 'ClassDetailScreen',
     );
   }
 
   void fetchClassDetailFromFeed() {
     try {
-      appLog.info('📝 [ClassDetail] fetchClassDetailFromFeed called');
+      appLog.info('[ClassDetail] fetchClassDetailFromFeed called');
 
       if (sectionId.value == null) {
-        appLog.info('⚠️ [ClassDetail] sectionId is null, skipping fetch');
+        appLog.info('[ClassDetail] sectionId is null, skipping fetch');
         return;
       }
 
       if (!Get.isRegistered<ClassFeedController>()) {
         appLog.info(
-          '⚠️ [ClassDetail] ClassFeedController not registered, using fallback',
+          '[ClassDetail] ClassFeedController not registered, using fallback',
         );
         _fetchClassDetailFallback();
         return;
@@ -216,7 +205,7 @@ class ClassDetailController extends GetxController {
       );
 
       if (classDetail != null) {
-        appLog.info('✅ [ClassDetail] Found class detail in feed controller');
+        appLog.info('[ClassDetail] Found class detail in feed controller');
         subjectNameTh.value = classDetail.subjectNameTh;
         effectiveClassName.value = classDetail.effectiveClassName;
 
@@ -228,23 +217,23 @@ class ClassDetailController extends GetxController {
         _fetchTeacherName();
       } else {
         appLog.info(
-          '⚠️ [ClassDetail] Class detail not found in feed, using fallback',
+          '[ClassDetail] Class detail not found in feed, using fallback',
         );
         _fetchClassDetailFallback();
       }
     } catch (e) {
-      appLog.info('❌ [ClassDetail] Error in fetchClassDetailFromFeed: $e');
+      appLog.info('[ClassDetail] Error in fetchClassDetailFromFeed: $e');
       _fetchClassDetailFallback();
     }
   }
 
   Future<void> _fetchTeacherName() async {
     try {
-      appLog.info('📝 [ClassDetail] _fetchTeacherName called');
+      appLog.info('[ClassDetail] _fetchTeacherName called');
 
       if (sectionId.value == null) {
         appLog.info(
-          '⚠️ [ClassDetail] sectionId is null, skipping teacher fetch',
+          '[ClassDetail] sectionId is null, skipping teacher fetch',
         );
         return;
       }
@@ -256,13 +245,13 @@ class ClassDetailController extends GetxController {
       if (result != null && result.isNotEmpty) {
         final teacherDisplayName = result[0]['display_name'] ?? 'ไม่ระบุ';
         teacherName.value = teacherDisplayName;
-        appLog.info('✅ [ClassDetail] Teacher name set: ${teacherName.value}');
+        appLog.info('[ClassDetail] Teacher name set: ${teacherName.value}');
       } else {
         teacherName.value = 'ไม่พบผู้สอนหลัก';
-        appLog.info('⚠️ [ClassDetail] No teacher found');
+        appLog.info('[ClassDetail] No teacher found');
       }
     } catch (e) {
-      appLog.info('❌ [ClassDetail] Error fetching teacher name: $e');
+      appLog.info('[ClassDetail] Error fetching teacher name: $e');
       teacherName.value = 'ไม่พบผู้สอนหลัก';
     }
   }
@@ -295,10 +284,10 @@ class ClassDetailController extends GetxController {
 
   Future<void> _fetchClassDetailFallback() async {
     try {
-      appLog.info('📝 [ClassDetail] _fetchClassDetailFallback called');
+      appLog.info('[ClassDetail] _fetchClassDetailFallback called');
 
       if (sectionId.value == null) {
-        appLog.info('⚠️ [ClassDetail] sectionId is null in fallback');
+        appLog.info('[ClassDetail] sectionId is null in fallback');
         return;
       }
 
@@ -312,16 +301,16 @@ class ClassDetailController extends GetxController {
         subjectNameTh.value = classDetail.subjectNameTh;
         effectiveClassName.value = classDetail.effectiveClassName;
 
-        appLog.info('✅ [ClassDetail] Fallback success:');
+        appLog.info('[ClassDetail] Fallback success:');
         appLog.info('  - subjectNameTh: ${subjectNameTh.value}');
         appLog.info('  - effectiveClassName: ${effectiveClassName.value}');
       } else {
         subjectNameTh.value = 'ไม่ระบุ';
         effectiveClassName.value = 'ไม่ระบุ';
-        appLog.info('⚠️ [ClassDetail] Fallback returned null');
+        appLog.info('[ClassDetail] Fallback returned null');
       }
     } catch (e) {
-      appLog.info('❌ [ClassDetail] Fallback error: $e');
+      appLog.info('[ClassDetail] Fallback error: $e');
       subjectNameTh.value = 'ไม่ระบุ';
       effectiveClassName.value = 'ไม่ระบุ';
     } finally {
@@ -334,18 +323,17 @@ class ClassDetailController extends GetxController {
     bool keepScroll = false,
   }) async {
     if (loadMore && !hasMore.value) {
-      appLog.info('⚠️ [ClassDetail] No more posts to load');
+      appLog.info('[ClassDetail] No more posts to load');
       return;
     }
 
     if (loadMore && isLoadingMore.value) {
-      appLog.info('⚠️ [ClassDetail] Already loading more');
+      appLog.info('[ClassDetail] Already loading more');
       return;
     }
 
-    // ป้องกันโหลดซ้ำขณะที่กำลังโหลดอยู่
     if (!loadMore && isLoading.value) {
-      appLog.info('⚠️ [ClassDetail] Already loading');
+      appLog.info('[ClassDetail] Already loading');
       return;
     }
 
@@ -358,7 +346,6 @@ class ClassDetailController extends GetxController {
       if (loadMore) {
         isLoadingMore.value = true;
       } else {
-        // ✅ reset สำหรับ fresh load
         isLoading.value = true;
         _offset = 0;
         posts.clear();
@@ -381,7 +368,6 @@ class ClassDetailController extends GetxController {
         limit: _limit,
       );
 
-      // ✅ บันทึกเวลาที่โหลดสำเร็จ (เฉพาะ fresh load)
       if (!loadMore) {
         _lastFetchTime = DateTime.now();
         _lastKnownPostCount = result.length;
@@ -389,13 +375,13 @@ class ClassDetailController extends GetxController {
 
       if (result.length < _limit) {
         hasMore.value = false;
-        appLog.info('✅ [ClassDetail] No more posts to load');
+        appLog.info('[ClassDetail] No more posts to load');
       }
 
       if (loadMore) {
         posts.addAll(result);
         appLog.info(
-          '📝 [ClassDetail] Added ${result.length} posts, total: ${posts.length}',
+          '[ClassDetail] Added ${result.length} posts, total: ${posts.length}',
         );
       } else {
         posts.assignAll(result);
@@ -410,7 +396,7 @@ class ClassDetailController extends GetxController {
       }
 
       _offset += result.length;
-      appLog.info('📝 [ClassDetail] New offset: $_offset');
+      appLog.info('[ClassDetail] New offset: $_offset');
     } catch (e) {
       appLog.error('fetchPosts failed: $e', actionPage: 'ClassDetailScreen');
       Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดโพสต์ได้');
@@ -435,25 +421,21 @@ class ClassDetailController extends GetxController {
 
   void togglePostSelection(int postId) {
     if (selectedPostIdsForAI.contains(postId)) {
-      // Deselect
       selectedPostIdsForAI.remove(postId);
     } else {
-      // Check if can select more (respects maxAISelectCount limit)
       if (selectedPostIdsForAI.length < maxAISelectCount) {
         selectedPostIdsForAI.add(postId);
       }
-      // If already at max, do nothing (UI should prevent this)
+
     }
   }
 
-  /// Check if a post can be selected for AI
-  /// Returns true if the post is already selected OR there's room for more selections
+ 
   bool canSelectForAI(int postContentId) {
     return selectedPostIdsForAI.contains(postContentId) ||
         selectedPostIdsForAI.length < maxAISelectCount;
   }
 
-  /// Clear all AI selections (useful when returning from AI flow)
   void clearAISelections() {
     selectedPostIdsForAI.clear();
   }
@@ -463,31 +445,52 @@ class ClassDetailController extends GetxController {
 
     try {
       final repo = AIChatRepository();
-
       final postContentId = selectedPostIdsForAI.first;
+      final selectedPost = posts.firstWhereOrNull(
+        (post) => post.postContentId == postContentId,
+      );
+      final attachments =
+          selectedPost?.attachments
+              ?.map(
+                (attachment) => {
+                  "url": attachment.fileUrl,
+                  "type": attachment.fileType,
+                  "name": attachment.fileName,
+                  "original_name": attachment.originalName,
+                },
+              )
+              .toList() ??
+          const <Map<String, dynamic>>[];
+      final summaryFuture = repo.generateSummary(postContentId);
 
-      final result = await repo.generateSummary(postContentId);
-
-      final aiChatId = result["ai_chat_id"];
-      final summary = result["summary"];
-      final title = result["title"];
-      final content = result["content"];
-      final attachments = result["attachments"] ?? [];
+      AISummaryNotificationService.watchSummary(
+        summaryFuture: summaryFuture,
+        postContentId: postContentId,
+        fallbackPostTitle: (selectedPost?.title.isNotEmpty ?? false)
+            ? selectedPost!.title
+            : "AI Chat",
+        content: selectedPost?.content ?? "",
+        attachments: List<Map<String, dynamic>>.from(attachments),
+      );
 
       selectedPostIdsForAI.clear();
 
       Get.to(
         () => AIChatDetailPage(
-          title: title ?? "AI Chat",
-          aiChatId: aiChatId,
-          summary: summary,
-          content: content ?? "",
+          title: (selectedPost?.title.isNotEmpty ?? false)
+              ? selectedPost!.title
+              : "AI Chat",
+          documentTitle: 'AI Chat',
+          aiChatId: 0,
+          summary: "",
+          content: selectedPost?.content ?? "",
           attachments: attachments,
-          // className: effectiveClassName.value,
+          postContentId: postContentId,
+          initialSummaryFuture: summaryFuture,
         ),
       );
     } catch (e) {
-      Get.snackbar("Error", "ไม่สามารถสร้าง AI Chat ได้");
+      //Get.snackbar("Error", "ไม่สามารถสร้าง AI Chat ได้");
     }
   }
 

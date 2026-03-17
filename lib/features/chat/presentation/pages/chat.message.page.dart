@@ -24,6 +24,8 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
       ItemPositionsListener.create();
   int? _highlightMessageId;
   int? _jumpBackIndex;
+  bool _showScrollToLatestButton = false;
+  bool _suppressScrollToLatestButton = true;
   bool _initialScrollDone = false;
   DateTime? _jumpBackReadyTime;
   int _lastRenderedMessageCount = 0;
@@ -47,12 +49,35 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
   }
 
   void _onPositionsChanged() {
-    if (_jumpBackIndex == null) return;
-    if (_jumpBackReadyTime != null &&
-        DateTime.now().isBefore(_jumpBackReadyTime!))
-      return;
     final positions = _itemPositionsListener.itemPositions.value;
     if (positions.isEmpty) return;
+
+    if (_suppressScrollToLatestButton) {
+      if (_showScrollToLatestButton) {
+        setState(() {
+          _showScrollToLatestButton = false;
+        });
+      }
+      return;
+    }
+
+    final latestIndex = _controller.messages.length - 1;
+    if (latestIndex >= 0) {
+      final maxVisibleIndex = positions.map((p) => p.index).reduce(math.max);
+      final shouldShowLatestButton = (latestIndex - maxVisibleIndex) > 3;
+      if (shouldShowLatestButton != _showScrollToLatestButton) {
+        setState(() {
+          _showScrollToLatestButton = shouldShowLatestButton;
+        });
+      }
+    }
+
+    if (_jumpBackIndex == null) return;
+    if (_jumpBackReadyTime != null &&
+        DateTime.now().isBefore(_jumpBackReadyTime!)) {
+      return;
+    }
+
     final closestVisible = positions.reduce(
       (a, b) =>
           (a.index - _jumpBackIndex!).abs() < (b.index - _jumpBackIndex!).abs()
@@ -81,9 +106,14 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
       if (_itemScrollController.isAttached && _controller.messages.isNotEmpty) {
         _itemScrollController.scrollTo(
           index: _controller.messages.length - 1,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 520),
+          curve: Curves.easeOutCubic,
         );
+        if (_showScrollToLatestButton) {
+          setState(() {
+            _showScrollToLatestButton = false;
+          });
+        }
       }
     });
   }
@@ -119,9 +149,9 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     if (_itemScrollController.isAttached) {
       _itemScrollController.scrollTo(
         index: index,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        alignment: 0.3,
+        duration: const Duration(milliseconds: 620),
+        curve: Curves.easeInOutCubic,
+        alignment: 0.18,
       );
     }
 
@@ -145,9 +175,9 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     final backIndex = _jumpBackIndex!;
     _itemScrollController.scrollTo(
       index: backIndex,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-      alignment: 0.3,
+      duration: const Duration(milliseconds: 620),
+      curve: Curves.easeInOutCubic,
+      alignment: 0.18,
     );
 
     // Highlight the message we jumped back to
@@ -301,6 +331,12 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                       _initialScrollDone = true;
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _scrollToBottom();
+                        Future.delayed(const Duration(milliseconds: 450), () {
+                          if (!mounted || !_suppressScrollToLatestButton) return;
+                          setState(() {
+                            _suppressScrollToLatestButton = false;
+                          });
+                        });
                       });
                     } else if (hasNewMessages && wasNearBottom) {
                       // Keep view pinned to newest messages only when user
@@ -395,26 +431,53 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                     );
                   },
                 ),
-                if (_jumpBackIndex != null)
+                if (_jumpBackIndex != null || _showScrollToLatestButton)
                   Positioned(
                     bottom: 16,
                     right: 16,
-                    child: Material(
-                      elevation: 4,
-                      color: AppColors.primaryPalette[500],
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: _jumpBack,
-                        child: const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Icon(
-                            Icons.arrow_downward_rounded,
-                            color: Colors.white,
-                            size: 22,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (_jumpBackIndex != null)
+                          Material(
+                            elevation: 4,
+                            color: AppColors.primaryPalette[500],
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: _jumpBack,
+                              child: const Padding(
+                                padding: EdgeInsets.all(9),
+                                child: Icon(
+                                  Icons.arrow_downward_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        if (_jumpBackIndex != null && _showScrollToLatestButton)
+                          const SizedBox(height: 10),
+                        if (_showScrollToLatestButton)
+                          Material(
+                            elevation: 4,
+                            color: AppColors.primaryPalette[500],
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: _scrollToBottom,
+                              child: const Padding(
+                                padding: EdgeInsets.all(9),
+                                child: Icon(
+                                  Icons.arrow_downward_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
               ],

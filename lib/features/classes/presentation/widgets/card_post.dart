@@ -2,8 +2,10 @@ import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/core/utils/profile_popup_helper.dart';
+import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
 import 'package:LinkLian/features/classes/presentation/widgets/profile_popup.dart';
 import 'package:LinkLian/features/shared/models/profile_model.dart';
+import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:LinkLian/features/shared/repositories/profile_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -646,8 +648,8 @@ class _CardPostState extends State<CardPost> {
       );
 
       // Check if can select this post (either already selected or has room)
-      final canSelect = _classController!.canSelectForAI(widget.post.postId);
-
+      final canSelect = _classController!.canSelectForAI(widget.post.postContentId);
+ 
       return GestureDetector(
         onTap: () {
           if (canSelect && widget.onSelectForAI != null) {

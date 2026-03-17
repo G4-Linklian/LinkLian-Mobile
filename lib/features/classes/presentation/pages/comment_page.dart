@@ -1,4 +1,5 @@
 import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
+import 'package:LinkLian/features/chat/presentation/services/ai_summary_notification_service.dart';
 import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -100,16 +101,39 @@ class CommentPage extends StatelessWidget {
               post: controller.post!,
               onSelectForAI: (postId) async {
                 final repo = AIChatRepository();
+                final summaryFuture = repo.generateSummary(postId);
+                final post = controller.post!;
+                final attachments =
+                    post.attachments
+                        ?.map(
+                          (attachment) => {
+                            "url": attachment.fileUrl,
+                            "type": attachment.fileType,
+                            "name": attachment.fileName,
+                            "original_name": attachment.originalName,
+                          },
+                        )
+                        .toList() ??
+                    const <Map<String, dynamic>>[];
 
-                final result = await repo.generateSummary(postId);
+                AISummaryNotificationService.watchSummary(
+                  summaryFuture: summaryFuture,
+                  postContentId: postId,
+                  fallbackPostTitle: post.title,
+                  content: post.content,
+                  attachments: List<Map<String, dynamic>>.from(attachments),
+                );
 
                 Get.to(
                   () => AIChatDetailPage(
-                    title: result["title"],
-                    aiChatId: result["ai_chat_id"],
-                    summary: result["summary"],
-                    content: result["content"],
-                    attachments: result["attachments"],
+                    title: post.title,
+                    documentTitle: 'AI Chat',
+                    aiChatId: 0,
+                    summary: "",
+                    content: post.content,
+                    attachments: attachments,
+                    postContentId: postId,
+                    initialSummaryFuture: summaryFuture,
                     // className: controller.post?.effectiveClassName ?? "",
                   ),
                 );

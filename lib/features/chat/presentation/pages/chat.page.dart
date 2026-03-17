@@ -10,6 +10,7 @@ import 'package:LinkLian/features/chat/data/models/chat.model.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'dart:async';
 
 class ChatPage extends StatefulWidget {
@@ -124,10 +125,45 @@ class _ChatPageState extends State<ChatPage> {
         //   shape: BoxShape.circle,
         // ),
         child: IconButton(
-          icon: Icon(
-            Icons.auto_awesome,
-            color: AppColors.primaryPalette[600],
-            size: 22,
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(
+                // TablerIcons.message_circle,
+                //TablerIcons.brand_wechat,
+                TablerIcons.message_filled,
+                size: 28,
+                color: AppColors.primaryPalette[500],
+              ),
+              Positioned(
+                right: -6,
+                top: -6,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryPalette[500]!.withValues(alpha: 0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.auto_awesome,
+                      size: 22,
+                      color: AppColors.primaryPalette[700],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           onPressed: () {
             Navigator.push(
