@@ -70,6 +70,8 @@ dependencies:
   image_picker: ^0.8.9
   web_socket_channel: ^3.0.3
 
+  logger: any
+  http_parser: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -78,8 +80,7 @@ dev_dependencies:
   build_runner: ^2.4.7
   json_serializable: ^6.7.1
   flutter_launcher_icons: ^0.13.1
-  analyzer: ^5.13.0  
-  logger: ^2.4.0
+  analyzer: ^5.13.0
 
 flutter_icons:
   android: true

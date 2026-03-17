@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../../core/constants/colors.dart';
 import '../controllers/class_info_controller.dart';
 import '../../../../core/utils/formatter.dart';
+import '../../../classes/data/models/class_schedule_model.dart';
+import '../../../shared/models/section_educator_model.dart';
 
 class ClassInfoPopup extends StatefulWidget {
   final int sectionId;
@@ -59,20 +61,35 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (controller.error.value.isNotEmpty) {
-                return Center(
-                  child: Text(
-                    controller.error.value,
-                    style: TextStyle(color: AppColors.dangerPalette[500]),
-                  ),
-                );
-              }
-
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (controller.error.value.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryPalette[50],
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.primaryPalette[200]!,
+                          ),
+                        ),
+                        child: Text(
+                          controller.error.value,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.primaryPalette[700],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     _buildSectionTitle('สถานที่'),
                     const SizedBox(height: 8),
                     _buildLocationSection(controller),
@@ -173,15 +190,15 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
 
   Widget _buildScheduleItem(
     ClassInfoController controller,
-    Map<String, dynamic> schedule,
+    ClassScheduleModel schedule,
   ) {
-    final dayOfWeek = Formatter.dayOfWeekToText(schedule['day_of_week']);
-    final startTime = controller.formatTime(schedule['start_time'] ?? '');
-    final endTime = controller.formatTime(schedule['end_time'] ?? '');
-    final room = schedule['room'] as Map<String, dynamic>?;
-    final building = schedule['building'] as Map<String, dynamic>?;
-    final roomNumber = room?['room_number'] ?? '';
-    final buildingName = building?['building_name'] ?? '';
+    final dayOfWeek = Formatter.dayOfWeekToText(schedule.dayOfWeek);
+    final startTime = controller.formatTime(schedule.startTime);
+    final endTime = controller.formatTime(schedule.endTime);
+    final room = schedule.room;
+    final building = schedule.building;
+    final roomNumber = room?.roomNumber ?? '';
+    final buildingName = building?.buildingName ?? '';
 
     final locationText = [
       if (buildingName.isNotEmpty) buildingName,
@@ -306,10 +323,10 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
     });
   }
 
-  Widget _buildEducatorItem(Map<String, dynamic> educator) {
-    final displayName = educator['display_name'] ?? 'ไม่ระบุชื่อ';
-    final profilePic = educator['profile_pic'] as String?;
-    final isMainTeacher = educator['is_main_teacher'] as bool? ?? false;
+  Widget _buildEducatorItem(SectionEducatorModel educator) {
+    final displayName = educator.displayName;
+    final profilePic = educator.profilePic;
+    final isMainTeacher = educator.isMainTeacher;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

@@ -1,13 +1,15 @@
-import 'package:LinkLian/core/utils/logger.dart';
-import 'package:flutter/foundation.dart';
-import '../../../core/services/api_client.dart';
-import '../models/post_model.dart';
 import 'dart:io';
+
+import '../../../core/services/api_client.dart';
+import '../../../core/utils/api_response_parser.dart';
+import '../../../core/utils/logger.dart';
+import '../models/post_model.dart';
 
 class PostRepository {
   final ApiClient _apiClient = ApiClient();
 
-  Future<Map<String, dynamic>> createPost({
+  /// CREATE POST
+  Future<PostModel?> createPost({
     int? sectionId,
     List<int>? sectionIds,
     String? title,
@@ -29,18 +31,26 @@ class PostRepository {
 
     if (attachments != null && attachments.isNotEmpty) {
       final validAttachments = attachments
-          .where((a) =>
-              a['file_url'] != null &&
-              a['file_url'].toString().isNotEmpty &&
-              a['file_type'] != null &&
-              a['file_type'].toString().isNotEmpty)
-          .map((a) => {
-                'file_url': a['file_url'],
-                'file_type': a['file_type'],
-                if (a['original_name'] != null) 'original_name': a['original_name'],
-              })
+          .where(
+            (a) =>
+                a['file_url'] != null &&
+                a['file_url'].toString().isNotEmpty &&
+                a['file_type'] != null &&
+                a['file_type'].toString().isNotEmpty,
+          )
+          .map(
+            (a) => {
+              'file_url': a['file_url'],
+              'file_type': a['file_type'],
+              if (a['original_name'] != null)
+                'original_name': a['original_name'],
+            },
+          )
           .toList();
-      if (validAttachments.isNotEmpty) data['attachments'] = validAttachments;
+
+      if (validAttachments.isNotEmpty) {
+        data['attachments'] = validAttachments;
+      }
     }
 
     if (sectionIds != null && sectionIds.isNotEmpty) {
@@ -56,16 +66,22 @@ class PostRepository {
       if (groups != null && groups.isNotEmpty) data['groups'] = groups;
     }
 
-    debugPrint('📤 Creating post with data: $data');
-    final response = await _apiClient.post<dynamic>('/social-feed/post', data: data);
-    debugPrint('📥 Create post response: ${response.data}');
+    appLog.info('[PostRepository] Creating post with data:', data: data);
 
-    if (response.data is Map<String, dynamic>) {
-      return response.data as Map<String, dynamic>;
-    }
-    return {'success': true, 'data': response.data};
+    final response = await _apiClient.post<Map<String, dynamic>>(
+      '/social-feed/post',
+      data: data,
+    );
+
+    appLog.info('[PostRepository] Create post response:', data: response.data ?? 'No data');
+
+    return ApiResponseParser.parseObject(
+      response.data,
+      PostModel.fromJson,
+    );
   }
 
+  /// GET POSTS IN CLASS
   Future<List<PostModel>> getPostInClass({
     required int sectionId,
     String? filterType,
@@ -81,12 +97,17 @@ class PostRepository {
         'limit': limit,
       },
     );
+
     appLog.debug('GET POST RESPONSE RAW: ${response.data.runtimeType}');
-    final rawList = (response.data as Map<String, dynamic>)['data'] as List? ?? [];
-    return rawList.map<PostModel>((e) => PostModel.fromJson(e as Map<String, dynamic>)).toList();
+
+    return ApiResponseParser.parseList(
+      response.data,
+      PostModel.fromJson,
+    );
   }
 
-  Future<Map<String, dynamic>> updatePost({
+  /// UPDATE POST
+  Future<bool> updatePost({
     int? postId,
     required int postContentId,
     String? title,
@@ -95,43 +116,35 @@ class PostRepository {
     String? dueDate,
     double? maxScore,
     bool? isGroup,
+    List<Map<String, dynamic>>? groups,
   }) async {
-    final List<Map<String, String>>? attachmentsList = attachments != null
-        ? attachments
-            .map((a) {
-              final map = {
-                'file_url': a['file_url']?.toString() ?? '',
-                'file_type': a['file_type']?.toString() ?? '',
-              };
-              if (a['original_name'] != null) {
-                map['original_name'] = a['original_name']?.toString() ?? '';
-              }
-              return map;
-            })
-            .where((a) => a['file_url']!.isNotEmpty)
-            .toList()
-        : null;
-
     final requestBody = <String, dynamic>{
       'post_content_id': postContentId,
       if (title != null) 'title': title,
       if (content != null) 'content': content,
-      if (attachmentsList != null) 'attachments': attachmentsList,
+      if (attachments != null) 'attachments': attachments,
       if (dueDate != null) 'due_date': dueDate,
       if (maxScore != null) 'max_score': maxScore,
       if (isGroup != null) 'is_group': isGroup,
+      if (groups != null) 'groups': groups,
     };
 
-    debugPrint('📤 Update post body: $requestBody');
+    appLog.info('[PostRepository] Update post body:', data: requestBody);
 
-    if (postId != null && postId > 0) {
-      final res = await _apiClient.put<Map<String, dynamic>>('/social-feed/post/$postId', data: requestBody);
-      return res.data!;
-    }
-    final res = await _apiClient.put<Map<String, dynamic>>('/social-feed/post', data: requestBody);
-    return res.data!;
+    final res = postId != null && postId > 0
+        ? await _apiClient.put<Map<String, dynamic>>(
+            '/social-feed/post/$postId',
+            data: requestBody,
+          )
+        : await _apiClient.put<Map<String, dynamic>>(
+            '/social-feed/post',
+            data: requestBody,
+          );
+
+    return ApiResponseParser.parseSuccess(res.data);
   }
 
+  /// SEARCH POSTS
   Future<List<PostModel>> searchPosts({
     int? sectionId,
     required String keyword,
@@ -145,36 +158,66 @@ class PostRepository {
         'limit': limit,
       },
     );
-    appLog.debug('🔍 Search posts response: ${response.data.runtimeType}');
-    final rawList = (response.data as Map<String, dynamic>)['data'] as List? ?? [];
-    return rawList.map<PostModel>((e) => PostModel.fromJson(e as Map<String, dynamic>)).toList();
+
+    appLog.debug('Search posts response:', data: response.data ?? 'No data');
+
+    return ApiResponseParser.parseList(
+      response.data,
+      PostModel.fromJson,
+    );
   }
 
-  Future<List<Map<String, dynamic>>> uploadAttachments({required List<File> files}) async {
+  /// UPLOAD ATTACHMENTS
+  /// Returns list of uploaded file info with keys: file_url, file_type, original_name
+  /// no need to pass original_name, it will be extracted from the file if not provided
+  Future<List<Map<String, dynamic>>> uploadAttachments({
+    required List<File> files,
+  }) async {
     final res = await _apiClient.uploadMultipart(
       '/uploadFile/social-feed/fileattachment',
       files: files,
       fieldName: 'files',
     );
+
     final data = res.data;
+
     if (data == null) return [];
-    if (data is Map && data['files'] is List) return List<Map<String, dynamic>>.from(data['files']);
-    if (data is List) return List<Map<String, dynamic>>.from(data);
+
+    if (data is Map && data['files'] is List) {
+      return List<Map<String, dynamic>>.from(data['files']);
+    }
+
+    if (data is List) {
+      return List<Map<String, dynamic>>.from(data);
+    }
+
     return [];
   }
 
-  Future<void> deleteAttachmentBlob(String blobName) async {
-    await _apiClient.delete('/deleteFile/social-feed', data: {'fileNames': [blobName]});
+  /// DELETE ATTACHMENT
+  Future<bool> deleteAttachmentBlob(String blobName) async {
+    final res = await _apiClient.delete(
+      '/deleteFile/social-feed',
+      data: {
+        'fileNames': [blobName],
+      },
+    );
+
+    return ApiResponseParser.parseSuccess(res.data);
   }
 
-  Future<void> deletePost({int? postId, int? postContentId}) async {
-    if (postId != null && postId > 0) {
-      await _apiClient.delete('/social-feed/post/$postId');
-      return;
-    }
-    await _apiClient.delete('/social-feed/post', data: {
-      if (postId != null) 'post_id': postId,
-      if (postContentId != null) 'post_content_id': postContentId,
-    });
+  /// DELETE POST
+  Future<bool> deletePost({int? postId, int? postContentId}) async {
+    final res = postId != null && postId > 0
+        ? await _apiClient.delete('/social-feed/post/$postId')
+        : await _apiClient.delete(
+            '/social-feed/post',
+            data: {
+              if (postId != null) 'post_id': postId,
+              if (postContentId != null) 'post_content_id': postContentId,
+            },
+          );
+
+    return ApiResponseParser.parseSuccess(res.data);
   }
 }

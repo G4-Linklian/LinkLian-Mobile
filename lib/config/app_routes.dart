@@ -25,4 +25,5 @@ class AppRoutes {
   static const String communityComment = '/community-comment';
   static const communitySearch = '/community-search';
   static const String searchAssignment = '/search-assignment';
+  static const String studentAssignmentDetail = '/student-assignment-detail';
 }

@@ -48,15 +48,20 @@ class CommunityCommentController extends GetxController {
     post.value = args['post'];
     userSysId = args['userSysId'];
 
-    final int communityId = args['communityId'];
+    final int? communityId = args['communityId'] as int?;
+    if (communityId == null) {
+      DialogHelper.showErrorDialog(description: 'ไม่พบ communityId ของโพสต์นี้');
+      return;
+    }
 
     if (Get.isRegistered<CommunityDetailController>()) {
-  final detailController = Get.find<CommunityDetailController>();
+      final detailController = Get.find<CommunityDetailController>();
+      final currentDetailCommunityId = detailController.community.value?.communityId;
 
-  if (detailController.communityId != communityId) {
-    detailController.initFromOutside(communityId);
-  }
-}
+      if (currentDetailCommunityId != communityId) {
+        detailController.initFromOutside(communityId);
+      }
+    }
 
     loadComments();
   }

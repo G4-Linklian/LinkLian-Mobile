@@ -30,12 +30,14 @@ class CardPost extends StatefulWidget {
   final PostModel post;
   final Function(int postId)? onSelectForAI;
   final ClassDetailController? classDetailController;
+  final bool returnAfterDelete;
 
   const CardPost({
     super.key,
     required this.post,
     this.onSelectForAI,
     this.classDetailController,
+    this.returnAfterDelete = false,
   });
 
   @override
@@ -111,16 +113,7 @@ class _CardPostState extends State<CardPost> {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        Get.toNamed(
-          AppRoutes.comment,
-          arguments: {
-            'postId': widget.post.postId,
-            'postContentId': widget.post.postContentId,
-            'post': widget.post,
-          },
-        );
-      },
+      onTap: _openCommentPage,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16, top: 16),
         decoration: BoxDecoration(
@@ -128,7 +121,7 @@ class _CardPostState extends State<CardPost> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.22),
+              color: AppColors.black.withValues(alpha: 0.22),
               blurRadius: 8,
               spreadRadius: 1,
               offset: const Offset(0, 0),
@@ -220,7 +213,7 @@ class _CardPostState extends State<CardPost> {
                                 _getRoleLabel(widget.post.roleName!),
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.black.withOpacity(0.5),
+                                  color: AppColors.black.withValues(alpha: 0.5),
                                 ),
                               ),
                           ],
@@ -257,7 +250,7 @@ class _CardPostState extends State<CardPost> {
                         Icon(
                           Icons.access_time,
                           size: 16,
-                          color: AppColors.black.withOpacity(0.5),
+                          color: AppColors.black.withValues(alpha: 0.5),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
@@ -265,7 +258,7 @@ class _CardPostState extends State<CardPost> {
                             _formatDateTime(widget.post.createdAt),
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.black.withOpacity(0.5),
+                              color: AppColors.black.withValues(alpha: 0.5),
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -295,16 +288,7 @@ class _CardPostState extends State<CardPost> {
                     width: 40,
                     height: 40,
                     child: IconButton(
-                      onPressed: () {
-                        Get.toNamed(
-                          AppRoutes.comment,
-                          arguments: {
-                            'postId': widget.post.postId,
-                            'postContentId': widget.post.postContentId,
-                            'post': widget.post,
-                          },
-                        );
-                      },
+                      onPressed: _openCommentPage,
                       icon: LinkLianHugeIcon.comment(
                         size: 24,
                         color: AppColors.primaryPalette[700]!,
@@ -430,7 +414,7 @@ class _CardPostState extends State<CardPost> {
       // No URLs, show plain text
       return Text(
         content,
-        style: TextStyle(fontSize: 15, color: AppColors.black.withOpacity(0.8)),
+        style: TextStyle(fontSize: 15, color: AppColors.black.withValues(alpha: 0.8)),
         maxLines: maxLines,
         overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
       );
@@ -448,7 +432,7 @@ class _CardPostState extends State<CardPost> {
             text: content.substring(lastEnd, match.start),
             style: TextStyle(
               fontSize: 15,
-              color: AppColors.black.withOpacity(0.8),
+              color: AppColors.black.withValues(alpha: 0.8),
             ),
           ),
         );
@@ -467,7 +451,7 @@ class _CardPostState extends State<CardPost> {
           ),
           recognizer: TapGestureRecognizer()
             ..onTap = () async {
-              appLog.info('🔗 Tapped link in content: $url');
+              appLog.info('[Card Post widget] Tapped link in content: $url');
               try {
                 final uri = Uri.parse(url);
                 final launched = await launchUrl(
@@ -502,7 +486,7 @@ class _CardPostState extends State<CardPost> {
           text: content.substring(lastEnd),
           style: TextStyle(
             fontSize: 15,
-            color: AppColors.black.withOpacity(0.8),
+            color: AppColors.black.withValues(alpha: 0.8),
           ),
         ),
       );
@@ -541,7 +525,7 @@ class _CardPostState extends State<CardPost> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -577,14 +561,16 @@ class _CardPostState extends State<CardPost> {
         : maxScore % 1 == 0
         ? maxScore.toInt().toString()
         : maxScore.toString();
+    final assignmentTypeText = widget.post.isGroup == true
+        ? 'งานกลุ่ม'
+        : 'งานเดี่ยว';
 
-    Text('$scoreText คะแนน');
     return [
       // Due Date Tag
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
+          color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -608,7 +594,7 @@ class _CardPostState extends State<CardPost> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
+          color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -617,7 +603,7 @@ class _CardPostState extends State<CardPost> {
             Icon(Icons.star, size: 12, color: color),
             const SizedBox(width: 4),
             Text(
-              '$maxScore คะแนน',
+              '$scoreText คะแนน',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -625,6 +611,23 @@ class _CardPostState extends State<CardPost> {
               ),
             ),
           ],
+        ),
+      ),
+
+      // Assignment Type Tag
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          assignmentTypeText,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ),
     ];
@@ -657,14 +660,14 @@ class _CardPostState extends State<CardPost> {
                 ? AppColors.primaryPalette[600]
                 : canSelect
                 ? AppColors.primaryPalette[100]
-                : AppColors.gray.withOpacity(0.3),
+                : AppColors.gray.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
                   ? AppColors.primaryPalette[600]!
                   : canSelect
                   ? AppColors.primaryPalette[400]!
-                  : AppColors.gray.withOpacity(0.5),
+                  : AppColors.gray.withValues(alpha: 0.5),
               width: 1.5,
             ),
           ),
@@ -808,7 +811,7 @@ class _CardPostState extends State<CardPost> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.black.withOpacity(0.7),
+                    color: AppColors.black.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -913,7 +916,7 @@ class _CardPostState extends State<CardPost> {
       icon: Icon(icon),
       color: AppColors.white,
       style: IconButton.styleFrom(
-        backgroundColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
       ),
     );
   }
@@ -924,7 +927,7 @@ class _CardPostState extends State<CardPost> {
         file.fileUrl,
         fit: BoxFit.cover,
         width: double.infinity,
-        errorBuilder: (_, __, ___) {
+        errorBuilder: (_, _, _) {
           return _buildFileIcon(file.fileType);
         },
       );
@@ -1060,7 +1063,7 @@ class _CardPostState extends State<CardPost> {
 
     if (result?['success'] == true && result?['edited'] == true) {
       debugPrint('📝 Refreshing posts after edit...');
-      await _classController!.fetchPosts();
+      await _classController!.fetchPosts(keepScroll: true);
       DialogHelper.showNotification(
         title: 'แก้ไขโพสต์สำเร็จ',
         message: 'โพสต์ของคุณถูกอัปเดตแล้ว',
@@ -1101,8 +1104,24 @@ class _CardPostState extends State<CardPost> {
         postContentId: postContentId,
       );
 
-      if (_hasClassController) {
-        await _classController!.fetchPosts();
+      if (widget.returnAfterDelete) {
+        Get.back(
+          result: {
+            'deleted': true,
+            'deletedPostId': postId,
+          },
+        );
+      } else if (_hasClassController) {
+        _classController!.removePostOptimistic(postId);
+        await _classController!.fetchPosts(keepScroll: true);
+      } else {
+        // When deleting from CommentPage, return to ClassDetail with delete result.
+        Get.back(
+          result: {
+            'deleted': true,
+            'deletedPostId': postId,
+          },
+        );
       }
 
       DialogHelper.showNotification(
@@ -1117,6 +1136,31 @@ class _CardPostState extends State<CardPost> {
         type: NotificationType.error,
       );
     }
+  }
+
+  Future<void> _openCommentPage() async {
+    final result = await Get.toNamed(
+      AppRoutes.comment,
+      arguments: {
+        'postId': widget.post.postId,
+        'postContentId': widget.post.postContentId,
+        'post': widget.post,
+      },
+    );
+
+    if (!_hasClassController || result is! Map) return;
+
+    final deleted = result['deleted'] == true;
+    final deletedPostId = result['deletedPostId'];
+    if (!deleted || deletedPostId == null) return;
+
+    final parsedDeletedPostId = deletedPostId is int
+        ? deletedPostId
+        : int.tryParse(deletedPostId.toString());
+    if (parsedDeletedPostId == null) return;
+
+    _classController!.removePostOptimistic(parsedDeletedPostId);
+    await _classController!.fetchPosts(keepScroll: true);
   }
 
   Widget _buildFileIcon(String fileType) {
@@ -1174,10 +1218,12 @@ class _CardPostState extends State<CardPost> {
     if (type.contains('image')) return Icons.image;
     if (type.contains('video')) return Icons.video_file;
     if (type.contains('word') || type.contains('doc')) return Icons.description;
-    if (type.contains('excel') || type.contains('xls'))
+    if (type.contains('excel') || type.contains('xls')) {
       return Icons.table_chart;
-    if (type.contains('powerpoint') || type.contains('ppt'))
+    }
+    if (type.contains('powerpoint') || type.contains('ppt')) {
       return Icons.slideshow;
+    }
     return Icons.insert_drive_file;
   }
 
@@ -1453,7 +1499,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
     return Scaffold(
       backgroundColor: AppColors.primaryPalette[200],
       appBar: AppBar(
-        backgroundColor: AppColors.primaryPalette[500]!.withOpacity(0.8),
+        backgroundColor: AppColors.primaryPalette[500]!.withValues(alpha: 0.8),
         leading: IconButton(
           icon: Icon(LinkLianIcon.close, color: AppColors.dangerPalette[700]),
           onPressed: () => Get.back(),
@@ -1493,7 +1539,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           child: Image.network(
             widget.file.fileUrl,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) =>
+            errorBuilder: (_, _, _) =>
                 _buildErrorState('ไม่สามารถโหลดรูปภาพได้'),
           ),
         ),
@@ -1549,13 +1595,13 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: AppColors.white.withOpacity(0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             message,
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -1572,13 +1618,13 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Icon(
             Icons.insert_drive_file,
             size: 64,
-            color: AppColors.white.withOpacity(0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             'ไม่รองรับการดูไฟล์ประเภทนี้',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -1586,7 +1632,7 @@ class _FileViewerPageState extends State<_FileViewerPage> {
           Text(
             'กรุณาดาวน์โหลดเพื่อเปิดดู',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.5),
+              color: AppColors.white.withValues(alpha: 0.5),
               fontSize: 14,
             ),
           ),
@@ -1735,7 +1781,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
               border: Border.all(color: AppColors.primaryPalette[200]!),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryPalette[100]!.withOpacity(0.3),
+                  color: AppColors.primaryPalette[100]!.withValues(alpha: 0.3),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -1765,7 +1811,7 @@ class _LinkPreviewCardState extends State<_LinkPreviewCard> {
                           child: Image.network(
                             _metadata!.image!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildLinkIcon(),
+                            errorBuilder: (_, _, _) => _buildLinkIcon(),
                           ),
                         )
                       : _buildLinkIcon(),

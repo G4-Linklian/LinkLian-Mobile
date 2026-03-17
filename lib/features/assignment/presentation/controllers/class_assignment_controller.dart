@@ -41,7 +41,7 @@ class ClassAssignmentController extends GetxController {
 
   List<String> get filterOptions {
     if (isStudent) {
-      return ['ทั้งหมด', 'ส่งช้า', 'ยังไม่ส่ง', 'ส่งแล้ว'];
+      return ['ทั้งหมด', 'ส่งแล้ว', 'ยังไม่ส่ง', 'เกินกำหนดส่ง'];
     } else {
       return ['โพสต์ล่าสุด', 'โพสต์เก่าสุด'];
     }
@@ -109,7 +109,7 @@ void reinitialise(Map<String, dynamic> args) {
   filteredAssignments.clear();
   errorMessage.value = '';
 
-  appLog.screenEnter('ClassAssignmentScreen ($newSectionId)');
+  appLog.info('ClassAssignmentScreen ($newSectionId)');
 
   _fetchTeacherName();
   fetchAssignments();
@@ -121,9 +121,11 @@ void reinitialise(Map<String, dynamic> args) {
         sectionId: sectionId,
       );
 
-      if (result != null && result.isNotEmpty) {
-        teacherName.value = result[0]['display_name'] ?? 'ไม่ระบุ';
-        appLog.info('👨‍🏫 Teacher name set: ${teacherName.value}');
+      if (result.isNotEmpty) {
+        final teacherDisplayName = result.first.fullName.isNotEmpty
+            ? result.first.fullName
+            : 'ไม่ระบุ';
+        teacherName.value = teacherDisplayName;
       } else {
         teacherName.value = 'ไม่พบผู้สอนหลัก';
       }
@@ -248,18 +250,14 @@ Future<void> loadMoreAssignments() async {
 // helper แยก filter logic ออกมา
 List<AssignmentModel> _filterItems(List<AssignmentModel> items) {
   switch (currentFilter.value) {
-    case 'ส่งช้า':
+    case 'เกินกำหนดส่ง':
       return items.where((a) =>
         a.studentStatus == 'ส่งแล้วเกินกำหนด' ||
         a.studentStatus == 'ยังไม่ส่งเกินกำหนด').toList();
     case 'ยังไม่ส่ง':
-      return items.where((a) =>
-        a.studentStatus == 'ยังไม่ส่ง' ||
-        a.studentStatus == 'ยังไม่ส่งเกินกำหนด').toList();
+      return items.where((a) => a.studentStatus == 'ยังไม่ส่ง').toList();
     case 'ส่งแล้ว':
-      return items.where((a) =>
-        a.studentStatus == 'ส่งแล้ว' ||
-        a.studentStatus == 'ส่งแล้วเกินกำหนด').toList();
+      return items.where((a) => a.studentStatus == 'ส่งแล้ว').toList();
     default:
       return items;
   }

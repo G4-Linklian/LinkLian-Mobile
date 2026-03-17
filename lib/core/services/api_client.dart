@@ -15,6 +15,63 @@ class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
 
+MediaType _resolveMediaType(String fileName) {
+    final extension = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : '';
+
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+      case 'png':
+        return MediaType('image', 'png');
+      case 'gif':
+        return MediaType('image', 'gif');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'bmp':
+        return MediaType('image', 'bmp');
+      case 'svg':
+        return MediaType('image', 'svg+xml');
+      case 'pdf':
+        return MediaType('application', 'pdf');
+      case 'doc':
+        return MediaType('application', 'msword');
+      case 'docx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.wordprocessingml.document',
+        );
+      case 'xls':
+        return MediaType('application', 'vnd.ms-excel');
+      case 'xlsx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+      case 'ppt':
+        return MediaType('application', 'vnd.ms-powerpoint');
+      case 'pptx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.presentationml.presentation',
+        );
+      case 'txt':
+        return MediaType('text', 'plain');
+      case 'csv':
+        return MediaType('text', 'csv');
+      case 'mp4':
+        return MediaType('video', 'mp4');
+      case 'mov':
+        return MediaType('video', 'quicktime');
+      case 'mp3':
+        return MediaType('audio', 'mpeg');
+      default:
+        return MediaType('application', 'octet-stream');
+    }
+  }
+
   ApiClient._internal() {
     _dio = Dio(
       BaseOptions(
@@ -38,8 +95,11 @@ class ApiClient {
         return Get.find<AuthController>().userId.value;
       }
     } catch (e) {
-      // ✅ ใช้ appLog แทน AppLogger.warning(...)
-      appLog.warning('Cannot get userId: $e', actionPage: 'ApiClient');
+      appLog.warning(
+        'Cannot get userId',
+        actionPage: 'ApiClient',
+        data: {"error": e.toString()},
+      );
     }
     return null;
   }
@@ -48,8 +108,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final extra = options.extra;
-          final requiresAuth = extra['requiresAuth'] ?? true;
+          final requiresAuth = options.extra['requiresAuth'] as bool? ?? true;
 
           if (requiresAuth) {
             final token = await LocalStorage.getToken();
@@ -60,7 +119,7 @@ class ApiClient {
               appLog.warning(
                 'Missing token — request will be sent without Authorization',
                 actionPage: 'ApiClient',
-                url: options.path,
+                data: 'url: ${options.path}',
               );
             }
 
@@ -75,11 +134,10 @@ class ApiClient {
 
           options.extra['_startTime'] = DateTime.now().millisecondsSinceEpoch;
 
-          // ✅ Log request เริ่มต้น (ยังไม่มี statusCode, ใช้ info แทน)
           appLog.info(
             '${options.method} request sent',
-            url: options.path,
             actionPage: 'ApiClient',
+            data: 'url : ${options.path}',
           );
 
           handler.next(options);
@@ -91,7 +149,6 @@ class ApiClient {
               ? DateTime.now().millisecondsSinceEpoch - (startTime as int)
               : 0;
 
-          // ✅ ใช้ appLog.http สำหรับ response สำเร็จ
           appLog.http(
             method: response.requestOptions.method,
             url: response.requestOptions.path,
@@ -112,7 +169,6 @@ class ApiClient {
 
           final statusCode = error.response?.statusCode ?? 0;
 
-          // ✅ ใช้ appLog.http สำหรับ error response
           appLog.http(
             method: error.requestOptions.method,
             url: error.requestOptions.path,
@@ -215,7 +271,7 @@ extension MultipartApi on ApiClient {
     required String fieldName,
     Map<String, dynamic>? fields,
     bool requiresAuth = true,
-    String? actionPage, // ✅ รับ actionPage เพื่อ log ให้ตรงกับ page ที่เรียก
+    String? actionPage, 
   }) async {
     final formData = FormData();
 
@@ -227,11 +283,10 @@ extension MultipartApi on ApiClient {
 
       final fileSize = await file.length();
 
-      // ✅ ใช้ appLog.info พร้อม actionPage
       appLog.info(
         'Uploading file → name=$fileName, size=$fileSize bytes',
         actionPage: actionPage ?? 'ApiClient',
-        url: path,
+        data: 'url: $path',
       );
 
       formData.files.add(
@@ -240,7 +295,7 @@ extension MultipartApi on ApiClient {
           await MultipartFile.fromFile(
             file.path,
             filename: fileName,
-            contentType: MediaType('image', 'jpeg'),
+            contentType: _resolveMediaType(fileName),
           ),
         ),
       );
@@ -258,12 +313,6 @@ extension MultipartApi on ApiClient {
       extra: {'requiresAuth': requiresAuth},
     );
 
-    appLog.info(('📤 Upload multipart → $path'));
-
-    return _dio.request(
-      path,
-      data: formData,
-      options: options,
-    );
+    return _dio.post(path, data: formData, options: options);
   }
 }

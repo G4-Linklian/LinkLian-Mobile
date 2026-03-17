@@ -1,5 +1,3 @@
-import 'package:LinkLian/core/constants/linklian-icon.dart';
-import 'package:LinkLian/features/community/presentation/widgets/community_card_post.dart';
 import 'package:LinkLian/features/shared/presentations/bookmark_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -23,60 +21,41 @@ class BookmarkSwitcher extends GetView<BookmarkController> {
                 'บุ๊กมาร์ก',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
+
               Obx(() {
                 return PopupMenuButton<SortType>(
                   onSelected: controller.changeSort,
-                  itemBuilder: (context) => SortType.values.map((sort) {
-                    return PopupMenuItem<SortType>(
-                      value: sort,
-                      child: SizedBox(
-                        width: 85,
-                        child: Center(
-                          child: Text(
-                            _getSortLabel(sort),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.primaryPalette[900],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-
-                  offset: const Offset(0, 45),
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  color: AppColors.primaryPalette[300],
-
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: SortType.all, child: Text('ทั้งหมด')),
+                    PopupMenuItem(
+                      value: SortType.newest,
+                      child: Text('ล่าสุด'),
+                    ),
+                    PopupMenuItem(
+                      value: SortType.oldest,
+                      child: Text('เก่าสุด'),
+                    ),
+                  ],
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
+                      horizontal: 12,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryPalette[100],
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        const Icon(Icons.filter_list, size: 16),
+                        const SizedBox(width: 6),
                         Text(
                           _getSortLabel(controller.sortType.value),
-                          style: TextStyle(
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.primaryPalette[900],
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          LinkLianIcon.filterpost,
-                          size: 18,
-                          color: AppColors.primaryPalette[700],
                         ),
                       ],
                     ),
@@ -126,26 +105,13 @@ class BookmarkSwitcher extends GetView<BookmarkController> {
 
         Obx(() {
           if (controller.type.value == BookmarkType.community) {
-            if (controller.loading.value) {
-              return const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            if (controller.communityBookmarks.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: Text('ยังไม่มีบุ๊กมาร์ก')),
-              );
-            }
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Column(
-                children: controller.communityBookmarks
-                    .map((post) => CardPostCommunity(post: post,showMoreButton: false,))
-                    .toList(),
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(
+                child: Text(
+                  'ยังไม่รองรับบุ๊กมาร์กชุมชน',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
             );
           }

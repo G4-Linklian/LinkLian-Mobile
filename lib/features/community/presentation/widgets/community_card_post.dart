@@ -95,8 +95,8 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     }
   }
 
-  void _openComment() {
-    Get.toNamed(
+  void _openComment() async {
+    await Get.toNamed(
       AppRoutes.communityComment,
       arguments: {
         'postCommuId': widget.post.postId,
@@ -105,6 +105,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         'userSysId': Get.find<AuthController>().userId.value,
       },
     );
+    _loadBookmarkStatus();
   }
 
   @override

@@ -1,6 +1,5 @@
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
@@ -29,6 +28,8 @@ class CreatePostClassPage extends StatefulWidget {
 }
 
 class _CreatePostClassPageState extends State<CreatePostClassPage> {
+  DateTime? _lastPostTapAt;
+
   late TextEditingController _contentController;
   late TextEditingController _titleController;
   late TextEditingController _maxScoreController;
@@ -111,13 +112,15 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
     final isTeacher =
         auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: !controller.hasContent,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
         if (controller.hasContent) {
           await _handleClose(controller);
-          return false;
+        } else {
+          Get.back();
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: AppColors.white,
@@ -332,8 +335,9 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                       ),
                     ),
                     Obx(() {
-                      if (controller.attachments.isEmpty)
+                      if (controller.attachments.isEmpty) {
                         return const SizedBox();
+                      }
                       return Container(
                         constraints: const BoxConstraints(maxHeight: 180),
                         decoration: const BoxDecoration(
@@ -554,7 +558,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     ? 'ชื่อการบ้าน'
                     : 'ชื่อประกาศ',
                 hintStyle: TextStyle(
-                  color: AppColors.gray.withOpacity(0.6),
+                  color: AppColors.gray.withValues(alpha: 0.6),
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
@@ -595,13 +599,28 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
     BuildContext context,
     CreatePostController controller,
   ) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final currentDue = controller.dueDate.value;
+    final dueDateOnly = currentDue == null
+        ? null
+        : DateTime(currentDue.year, currentDue.month, currentDue.day);
+
+    // Allow opening picker in edit mode even if existing due date is in the past.
+    final firstDate = (dueDateOnly != null && dueDateOnly.isBefore(today))
+        ? dueDateOnly
+        : today;
+    final lastDate = DateTime(now.year + 1, now.month, now.day);
+
+    DateTime initialDate = dueDateOnly ?? today.add(const Duration(days: 7));
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
+
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate:
-          controller.dueDate.value ??
-          DateTime.now().add(const Duration(days: 7)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -651,26 +670,78 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
 
   Widget _buildAssignmentTypeChip(CreatePostController controller) {
     return Obx(() {
-      final isEditMode = controller.mode.value == CreatePostMode.edit;
-      if (isEditMode) {
-        return Opacity(
-          opacity: 0.4,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.buttonPalette[100],
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.buttonPalette[300]!,
-                width: 1,
+      if (controller.isCheckingSubmissionStatus.value) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.buttonPalette[100],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.buttonPalette[300]!, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.buttonPalette[700],
+                ),
               ),
-            ),
-            child: Text(
-              controller.isGroup.value ? 'งานกลุ่ม' : 'งานเดี่ยว',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.buttonPalette[700],
+              const SizedBox(width: 8),
+              Text(
+                controller.isGroup.value ? 'งานกลุ่ม' : 'งานเดี่ยว',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.buttonPalette[700],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (!controller.canChangeAssignmentType) {
+        return GestureDetector(
+          onLongPress: () {
+            DialogHelper.showNotification(
+              title: 'ไม่สามารถเปลี่ยนประเภทงาน',
+              message: controller.assignmentTypeLockReason,
+              type: NotificationType.warning,
+            );
+          },
+          child: Opacity(
+            opacity: 0.45,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.buttonPalette[100],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.buttonPalette[300]!,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    controller.isGroup.value ? 'งานกลุ่ม' : 'งานเดี่ยว',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.buttonPalette[700],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: AppColors.buttonPalette[700],
+                  ),
+                ],
               ),
             ),
           ),
@@ -678,7 +749,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
       }
 
       return PopupMenuButton<bool>(
-        onSelected: (isGroup) => controller.isGroup.value = isGroup,
+        onSelected: (isGroup) => controller.setAssignmentIsGroup(isGroup),
         offset: const Offset(0, 45),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         color: AppColors.white,
@@ -832,12 +903,12 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.buttonPalette[100]
-              : AppColors.gray.withOpacity(0.2),
+              : AppColors.gray.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? AppColors.buttonPalette[300]!
-                : AppColors.gray.withOpacity(0.5),
+                : AppColors.gray.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -846,7 +917,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
           style: TextStyle(
             color: isSelected
                 ? AppColors.buttonPalette[700]
-                : AppColors.black.withOpacity(0.5),
+                : AppColors.black.withValues(alpha: 0.5),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -911,7 +982,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                   color: AppColors.primaryPalette[900],
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.1),
+                      color: AppColors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -1054,246 +1125,323 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
   }) {
     final auth = Get.find<AuthController>();
 
-    return GestureDetector(
-      onTap: () async {
-        // ===== VALIDATION =====
-        if (controller.postType.value.isEmpty) {
-          DialogHelper.showErrorDialog(description: 'กรุณาเลือกประเภทโพสต์');
-          return;
-        }
-        if (!controller.isAllSelected &&
-            controller.selectedSectionIds.isEmpty) {
-          DialogHelper.showErrorDialog(
-            description: 'กรุณาเลือกอย่างน้อย 1 คลาส',
-          );
-          return;
-        }
-        if (isTeacher && controller.title.value.trim().isEmpty) {
-          DialogHelper.showErrorDialog(description: 'กรุณากรอกชื่อโพสต์');
-          return;
-        }
-        if (controller.content.value.trim().isEmpty) {
-          DialogHelper.showErrorDialog(description: 'กรุณากรอกเนื้อหาโพสต์');
-          return;
-        }
-        if (controller.postType.value == 'assignment' &&
-            controller.dueDate.value == null) {
-          DialogHelper.showErrorDialog(description: 'กรุณาเลือกวันกำหนดส่ง');
-          return;
-        }
+    return Obx(() {
+      final isSubmitting = controller.isLoading.value;
 
-        // ===== SUBMIT =====
-        try {
-          DialogHelper.showLoading('กำลังโพสต์...');
-          final res = await controller.submitPost();
-          DialogHelper.hideLoading();
+      return GestureDetector(
+        onTap: isSubmitting
+            ? null
+            : () async {
+                final now = DateTime.now();
+                if (_lastPostTapAt != null &&
+                    now.difference(_lastPostTapAt!) <
+                        const Duration(milliseconds: 700)) {
+                  return;
+                }
+                _lastPostTapAt = now;
 
-          final isSuccess =
-              res['success'] == true ||
-              res['data'] != null ||
-              res['post_content_id'] != null;
+                if (controller.isLoading.value) return;
+                // ===== VALIDATION =====
+                if (controller.postType.value.isEmpty) {
+                  DialogHelper.showErrorDialog(
+                    description: 'กรุณาเลือกประเภทโพสต์',
+                  );
+                  return;
+                }
+                if (!controller.isAllSelected &&
+                    controller.selectedSectionIds.isEmpty) {
+                  DialogHelper.showErrorDialog(
+                    description: 'กรุณาเลือกอย่างน้อย 1 คลาส',
+                  );
+                  return;
+                }
+                if (isTeacher && controller.title.value.trim().isEmpty) {
+                  DialogHelper.showErrorDialog(
+                    description: 'กรุณากรอกชื่อโพสต์',
+                  );
+                  return;
+                }
+                if (controller.content.value.trim().isEmpty) {
+                  DialogHelper.showErrorDialog(
+                    description: 'กรุณากรอกเนื้อหาโพสต์',
+                  );
+                  return;
+                }
+                if (controller.postType.value == 'assignment' &&
+                    controller.dueDate.value == null) {
+                  DialogHelper.showErrorDialog(
+                    description: 'กรุณาเลือกวันกำหนดส่ง',
+                  );
+                  return;
+                }
 
-          if (!isSuccess) {
-            DialogHelper.showNotification(
-              title: 'เกิดข้อผิดพลาด',
-              message: res['error']?['message'] ?? 'ไม่สามารถสร้างโพสต์ได้',
-              type: NotificationType.error,
-            );
-            return;
-          }
+                // ===== SUBMIT =====
+                try {
+                  DialogHelper.showLoading('กำลังโพสต์...');
+                  final res = await controller.submitPost();
+                  if (res['ignored'] == true) {
+                    DialogHelper.hideLoading();
+                    return;
+                  }
+                  DialogHelper.hideLoading();
 
-          // Show success notification
-          if (res['warning'] != null && (res['warning'] as List).isNotEmpty) {
-            DialogHelper.showNotification(
-              title: 'โพสต์สำเร็จ',
-              message: res['warning'][0]['message'],
-              type: NotificationType.warning,
-            );
-          } else {
-            DialogHelper.showNotification(
-              title: 'โพสต์สำเร็จ',
-              message: 'ระบบได้บันทึกโพสต์ของคุณเรียบร้อยแล้ว',
-              type: NotificationType.success,
-            );
-          }
+                  final isSuccess =
+                      res['success'] == true ||
+                      res['data'] != null ||
+                      res['post_content_id'] != null;
 
-          await Future.delayed(const Duration(milliseconds: 1500));
+                  if (!isSuccess) {
+                    DialogHelper.showNotification(
+                      title: 'เกิดข้อผิดพลาด',
+                      message:
+                          res['error']?['message'] ?? 'ไม่สามารถสร้างโพสต์ได้',
+                      type: NotificationType.error,
+                    );
+                    return;
+                  }
 
-          if (Get.isSnackbarOpen == true) Get.closeAllSnackbars();
-          if (Get.isDialogOpen == true) Get.back();
+                  appLog.info('[CreatePost Class page] Starting redirect');
+                  appLog.info(
+                    '[CreatePost Class page] Source',
+                    data: {controller.source},
+                  );
+                  appLog.info(
+                    '[CreatePost Class page] Mode',
+                    data: {controller.mode.value},
+                  );
+                  appLog.info(
+                    '[CreatePost Class page] Selected sections',
+                    data: {controller.selectedSectionIds},
+                  );
 
-          appLog.info('📍 Starting redirect...');
-          appLog.info('📍 Source: ${controller.source}');
-          appLog.info('📍 Mode: ${controller.mode.value}');
-          appLog.info(
-            '📍 Selected sections: ${controller.selectedSectionIds}',
-          );
+                  // ===== REDIRECT BASED ON SOURCE AND MODE =====
 
-          // ===== REDIRECT BASED ON SOURCE AND MODE =====
+                  // EDIT MODE
+                  if (controller.mode.value == CreatePostMode.edit) {
+                    controller.markCurrentStateAsSaved();
+                    appLog.info(
+                      '[CreatePost Class page] Edit mode: Going back',
+                    );
+                    Get.back(result: {
+                      'success': true,
+                      'edited': true,
+                      'post': {
+                        'post_content_id': controller.editingPostContentId,
+                        'title': isTeacher
+                            ? controller.title.value
+                            : controller.content.value,
+                        'content': controller.content.value,
+                        'post_type': controller.postType.value,
+                        'attachments': controller.attachments,
+                      },
+                    });
+                    return;
+                  }
 
-          // EDIT MODE
-          if (controller.mode.value == CreatePostMode.edit) {
-            appLog.info('📍 Edit mode: Going back');
-            Navigator.of(context).pop({
-              'success': true,
-              'edited': true,
-              'post': {
-                'post_content_id': controller.editingPostContentId,
-                'title': isTeacher
-                    ? controller.title.value
-                    : controller.content.value,
-                'content': controller.content.value,
-                'post_type': controller.postType.value,
-                'attachments': controller.attachments,
+                  final hasWarning =
+                      res['warning'] != null &&
+                      (res['warning'] as List).isNotEmpty;
+                  final successMessage = hasWarning
+                      ? res['warning'][0]['message'].toString()
+                      : 'ระบบได้บันทึกโพสต์ของคุณเรียบร้อยแล้ว';
+                  final successType = hasWarning
+                      ? NotificationType.warning
+                      : NotificationType.success;
+                  controller.clearDraftState();
+
+                  // FROM CLASS ASSIGNMENT PAGE
+                  if (controller.source == CreatePostSource.classAssignment) {
+                    appLog.info(
+                      '[CreatePost Class page] From classAssignment: pop + refresh',
+                    );
+                    Get.back(result: {'success': true, 'refresh': true});
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    DialogHelper.showNotification(
+                      title: 'โพสต์สำเร็จ',
+                      message: successMessage,
+                      type: successType,
+                    );
+                    if (Get.isRegistered<ClassAssignmentController>()) {
+                      Get.find<ClassAssignmentController>()
+                          .refreshAssignments();
+                    }
+                    return;
+                  }
+
+                  // FROM CLASS DETAIL PAGE
+                  if (controller.source == CreatePostSource.classDetail) {
+                    appLog.info(
+                      '[CreatePost Class page] From classDetail: pop + refresh',
+                    );
+                    Get.back(result: {'success': true, 'refresh': true});
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    DialogHelper.showNotification(
+                      title: 'โพสต์สำเร็จ',
+                      message: successMessage,
+                      type: successType,
+                    );
+                    if (Get.isRegistered<ClassDetailController>()) {
+                      final detailController =
+                          Get.find<ClassDetailController>();
+                      await detailController.fetchPosts();
+                      detailController.scrollToTop();
+                    }
+                    return;
+                  }
+
+                  // FROM CLASS FEED (ClassesPage) - single class → ไป ClassDetail
+                  if (controller.source == CreatePostSource.classFeed &&
+                      controller.selectedSectionIds.length == 1) {
+                    final sectionId = controller.selectedSectionIds.first;
+                    final classFeedCtrl = Get.find<ClassFeedController>();
+                    final found = classFeedCtrl.classList.firstWhereOrNull(
+                      (c) => c.sectionId == sectionId,
+                    );
+                    final subjectName = found?.subjectNameTh ?? '';
+                    final className = found?.effectiveClassName ?? '';
+
+                    appLog.info(
+                      '[CreatePost Class page] classFeed single class → Close then ClassDetail',
+                    );
+
+                    final detailArgs = {
+                      'sectionId': sectionId,
+                      'subjectName': subjectName,
+                      'className': className,
+                    };
+
+                    final navController = Get.find<NavigationController>();
+                    navController.showClassDetailFromRedirect(detailArgs);
+                    Get.back();
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    DialogHelper.showNotification(
+                      title: 'โพสต์สำเร็จ',
+                      message: successMessage,
+                      type: successType,
+                    );
+                    return;
+                  }
+
+                  // FROM ASSIGNMENT FEED (AssignmentPage) - single class → ไป ClassAssignment
+                  if (controller.source == CreatePostSource.assignmentFeed &&
+                      controller.selectedSectionIds.length == 1) {
+                    final sectionId = controller.selectedSectionIds.first;
+                    final classFeedCtrl = Get.find<ClassFeedController>();
+                    final found = classFeedCtrl.classList.firstWhereOrNull(
+                      (c) => c.sectionId == sectionId,
+                    );
+                    final subjectName = found?.subjectNameTh ?? '';
+                    final className = found?.effectiveClassName ?? '';
+
+                    appLog.info(
+                      '[CreatePost Class page] assignmentFeed single class → ClassAssignment',
+                    );
+
+                    Get.back();
+                    await Future.delayed(const Duration(milliseconds: 300));
+
+                    Get.offNamed(
+                      AppRoutes.classAssignment,
+                      arguments: {
+                        'sectionId': sectionId,
+                        'className': className,
+                        'subjectName': subjectName,
+                        'role': auth.roleName.value,
+                      },
+                    );
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    DialogHelper.showNotification(
+                      title: 'โพสต์สำเร็จ',
+                      message: successMessage,
+                      type: successType,
+                    );
+
+                    return;
+                  }
+
+                  // MULTIPLE CLASSES or ALL → back to feed + refresh
+                  appLog.info(
+                    '[CreatePost Class page] Multiple/all classes: back to feed',
+                  );
+                  Get.back(result: {'success': true, 'refresh': true});
+                  await Future.delayed(const Duration(milliseconds: 200));
+                  DialogHelper.showNotification(
+                    title: 'โพสต์สำเร็จ',
+                    message: successMessage,
+                    type: successType,
+                  );
+                  if (Get.isRegistered<ClassFeedController>()) {
+                    Get.find<ClassFeedController>().refreshFeed();
+                  }
+                } on DioException catch (e) {
+                  appLog.info(
+                    '[CreatePost Class page] DioException: ${e.message}',
+                  );
+                  DialogHelper.hideLoading();
+                  final responseData = e.response?.data;
+                  String errorMsg = 'ระบบขัดข้อง กรุณาลองใหม่';
+                  if (responseData is Map) {
+                    errorMsg =
+                        responseData['message']?.toString() ??
+                        responseData['error']?.toString() ??
+                        errorMsg;
+                  }
+                  DialogHelper.showNotification(
+                    title: 'เกิดข้อผิดพลาด',
+                    message: errorMsg,
+                    type: NotificationType.error,
+                  );
+                } catch (e, stack) {
+                  appLog.info('[CreatePost Class page] Error: $e\n$stack');
+                  DialogHelper.hideLoading();
+                  DialogHelper.showNotification(
+                    title: 'เกิดข้อผิดพลาด',
+                    message: 'ไม่สามารถสร้างโพสต์ได้: $e',
+                    type: NotificationType.error,
+                  );
+                }
               },
-            });
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (Get.isRegistered<ClassDetailController>()) {
-                Get.find<ClassDetailController>().fetchPosts(keepScroll: true);
-              }
-            });
-            return;
-          }
-
-          // FROM CLASS ASSIGNMENT PAGE
-          if (controller.source == CreatePostSource.classAssignment) {
-            appLog.info('📍 From classAssignment: pop + refresh');
-            Navigator.of(context).pop({'success': true, 'refresh': true});
-            await Future.delayed(const Duration(milliseconds: 200));
-            if (Get.isRegistered<ClassAssignmentController>()) {
-              Get.find<ClassAssignmentController>().refreshAssignments();
-            }
-            return;
-          }
-
-          // FROM CLASS DETAIL PAGE
-          if (controller.source == CreatePostSource.classDetail) {
-            appLog.info('📍 From classDetail: pop + refresh');
-            Navigator.of(context).pop({'success': true, 'refresh': true});
-            await Future.delayed(const Duration(milliseconds: 200));
-            if (Get.isRegistered<ClassDetailController>()) {
-              final detailController = Get.find<ClassDetailController>();
-              await detailController.fetchPosts();
-              detailController.scrollToTop();
-            }
-            return;
-          }
-
-          // FROM CLASS FEED (ClassesPage) - single class → ไป ClassDetail
-          if (controller.source == CreatePostSource.classFeed &&
-              controller.selectedSectionIds.length == 1) {
-            final sectionId = controller.selectedSectionIds.first;
-            final classFeedCtrl = Get.find<ClassFeedController>();
-            final found = classFeedCtrl.classList.firstWhereOrNull(
-              (c) => c.sectionId == sectionId,
-            );
-            final subjectName = found?.subjectNameTh ?? '';
-            final className = found?.effectiveClassName ?? '';
-
-            appLog.info(
-              '📍 classFeed single class → Close then ClassDetail',
-            );
-
-            final detailArgs = {
-              'sectionId': sectionId,
-              'subjectName': subjectName,
-              'className': className,
-            };
-
-            final navController = Get.find<NavigationController>();
-            navController.showClassDetailFromRedirect(detailArgs);
-            Navigator.of(context).pop();
-            return;
-          }
-
-          // FROM ASSIGNMENT FEED (AssignmentPage) - single class → ไป ClassAssignment
-          if (controller.source == CreatePostSource.assignmentFeed &&
-              controller.selectedSectionIds.length == 1) {
-            final sectionId = controller.selectedSectionIds.first;
-            final classFeedCtrl = Get.find<ClassFeedController>();
-            final found = classFeedCtrl.classList.firstWhereOrNull(
-              (c) => c.sectionId == sectionId,
-            );
-            final subjectName = found?.subjectNameTh ?? '';
-            final className = found?.effectiveClassName ?? '';
-
-            appLog.info('📍 assignmentFeed single class → ClassAssignment');
-
-            Get.back();
-            await Future.delayed(const Duration(milliseconds: 300));
-
-            Get.offNamed(
-              AppRoutes.classAssignment,
-              arguments: {
-                'sectionId': sectionId,
-                'className': className,
-                'subjectName': subjectName,
-                'role': auth.roleName.value,
-              },
-            );
-
-            return;
-          }
-
-          // MULTIPLE CLASSES or ALL → back to feed + refresh
-          appLog.info('📍 Multiple/all classes: back to feed');
-          Get.until((route) {
-            return route.settings.name != '/create-post' &&
-                route.settings.name != '/CreatePostClassPage';
-          });
-          await Future.delayed(const Duration(milliseconds: 200));
-          if (Get.isRegistered<ClassFeedController>()) {
-            Get.find<ClassFeedController>().refreshFeed();
-          }
-        } on DioException catch (e) {
-          appLog.info('❌ DioException: ${e.message}');
-          DialogHelper.hideLoading();
-          final responseData = e.response?.data;
-          String errorMsg = 'ระบบขัดข้อง กรุณาลองใหม่';
-          if (responseData is Map) {
-            errorMsg =
-                responseData['message']?.toString() ??
-                responseData['error']?.toString() ??
-                errorMsg;
-          }
-          DialogHelper.showNotification(
-            title: 'เกิดข้อผิดพลาด',
-            message: errorMsg,
-            type: NotificationType.error,
-          );
-        } catch (e, stack) {
-          appLog.info('❌ Error: $e\n$stack');
-          DialogHelper.hideLoading();
-          DialogHelper.showNotification(
-            title: 'เกิดข้อผิดพลาด',
-            message: 'ไม่สามารถสร้างโพสต์ได้: $e',
-            type: NotificationType.error,
-          );
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.primaryPalette[300],
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              controller.mode.value == CreatePostMode.edit ? 'บันทึก' : 'โพสต์',
-              style: TextStyle(color: AppColors.primaryPalette[900]),
+        child: Opacity(
+          opacity: isSubmitting ? 0.7 : 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.primaryPalette[300],
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(width: 6),
-            Icon(
-              LinkLianIcon.post,
-              size: 16,
-              color: AppColors.primaryPalette[900],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isSubmitting
+                      ? 'กำลังโพสต์...'
+                      : (controller.mode.value == CreatePostMode.edit
+                            ? 'บันทึก'
+                            : 'โพสต์'),
+                  style: TextStyle(color: AppColors.primaryPalette[900]),
+                ),
+                const SizedBox(width: 6),
+                if (isSubmitting)
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primaryPalette[900],
+                    ),
+                  )
+                else
+                  Icon(
+                    LinkLianIcon.post,
+                    size: 16,
+                    color: AppColors.primaryPalette[900],
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 

@@ -1,5 +1,6 @@
 import '../model/semester_model.dart';
 import '../../core/services/api_client.dart';
+import 'package:flutter/foundation.dart';
 
 class SemesterRepository {
   final ApiClient _apiClient = ApiClient();
@@ -10,7 +11,7 @@ class SemesterRepository {
   Future<List<SemesterModel>> getSemesters({
     required int instId,
   }) async {
-    print('📅 [SemesterRepo] Fetching semesters for instId: $instId');
+    debugPrint('📅 [SemesterRepo] Fetching semesters for instId: $instId');
     
     // API returns List directly, not { success, data }
     final response = await _apiClient.get<Map<String, dynamic>>(
@@ -20,19 +21,19 @@ class SemesterRepository {
         'flag_valid': true,
       },
     );
-    print('📅 [SemesterRepo] API Response: $response');
+    debugPrint('📅 [SemesterRepo] API Response: $response');
   final responseData = response.data;
   if (responseData == null) {
-    print('❌ [SemesterRepo] Response data is null');
+    debugPrint('❌ [SemesterRepo] Response data is null');
     throw Exception('Failed to fetch semester');
   }
   final data = responseData['data'] as List<dynamic>?;
   if (data == null) {
-    print('❌ [SemesterRepo] Response data is null');
+    debugPrint('❌ [SemesterRepo] Response data is null');
     throw Exception('Failed to fetch semester');
   }
 
-    print('📅 [SemesterRepo] Got ${data.length} semesters');
+    debugPrint('📅 [SemesterRepo] Got ${data.length} semesters');
 
     return data
         .map(

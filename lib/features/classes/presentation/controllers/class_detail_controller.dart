@@ -74,11 +74,13 @@ class ClassDetailController extends GetxController {
   void onInit() {
     super.onInit();
     appLog.info('[ClassDetail] onInit called');
+    appLog.info('[ClassDetail] onInit called');
   }
 
   @override
   void onReady() {
     super.onReady();
+    appLog.info('[ClassDetail] onReady called');
     appLog.info('[ClassDetail] onReady called');
 
     if (sectionId.value == null) {
@@ -88,21 +90,25 @@ class ClassDetailController extends GetxController {
 
         appLog.info(
           '[ClassDetail] onReady - args from NavigationController: $args',
+          '[ClassDetail] onReady - args from NavigationController: $args',
         );
 
         if (args != null) {
           appLog.info(
             '[ClassDetail] Initializing from NavigationController in onReady',
+            '[ClassDetail] Initializing from NavigationController in onReady',
           );
           initializeWithArgs(args);
         } else {
           appLog.info('[ClassDetail] No args available in onReady');
+          appLog.info('[ClassDetail] No args available in onReady');
         }
       } catch (e) {
-        appLog.info('[ClassDetail] Error in onReady: $e');
+        appLog.error('[ClassDetail] Error in onReady: $e');
       }
     } else {
       appLog.info(
+        '[ClassDetail] Already initialized with sectionId: ${sectionId.value}',
         '[ClassDetail] Already initialized with sectionId: ${sectionId.value}',
       );
     }
@@ -112,7 +118,10 @@ class ClassDetailController extends GetxController {
     final newSectionId = args['sectionId'] as int?;
 
     if (newSectionId == null) {
-      appLog.error('sectionId is null', actionPage: 'ClassDetailScreen');
+      appLog.error(
+        '[ClassDetail] sectionId is null',
+        actionPage: 'ClassDetailScreen',
+      );
       return;
     }
 
@@ -121,7 +130,6 @@ class ClassDetailController extends GetxController {
     if (isNewSection) {
       selectedFilter.value = ClassPostFilter.all;
       _lastFetchTime = null;
-      _lastKnownPostCount = null;
       posts.clear();
       hasMore.value = true;
       _offset = 0;
@@ -188,7 +196,6 @@ class ClassDetailController extends GetxController {
         appLog.info('[ClassDetail] sectionId is null, skipping fetch');
         return;
       }
-
       if (!Get.isRegistered<ClassFeedController>()) {
         appLog.info(
           '[ClassDetail] ClassFeedController not registered, using fallback',
@@ -208,11 +215,6 @@ class ClassDetailController extends GetxController {
         subjectNameTh.value = classDetail.subjectNameTh;
         effectiveClassName.value = classDetail.effectiveClassName;
 
-        appLog.info('  - Updated subjectNameTh: ${subjectNameTh.value}');
-        appLog.info(
-          '  - Updated effectiveClassName: ${effectiveClassName.value}',
-        );
-
         _fetchTeacherName();
       } else {
         appLog.info(
@@ -228,12 +230,7 @@ class ClassDetailController extends GetxController {
 
   Future<void> _fetchTeacherName() async {
     try {
-      appLog.info('[ClassDetail] _fetchTeacherName called');
-
       if (sectionId.value == null) {
-        appLog.info(
-          '[ClassDetail] sectionId is null, skipping teacher fetch',
-        );
         return;
       }
 
@@ -241,13 +238,15 @@ class ClassDetailController extends GetxController {
         sectionId: sectionId.value!,
       );
 
-      if (result != null && result.isNotEmpty) {
-        final teacherDisplayName = result[0]['display_name'] ?? 'ไม่ระบุ';
+      if (result.isNotEmpty) {
+        final teacherDisplayName = result.first.fullName.isNotEmpty
+            ? result.first.fullName
+            : 'ไม่ระบุ';
         teacherName.value = teacherDisplayName;
         appLog.info('[ClassDetail] Teacher name set: ${teacherName.value}');
       } else {
         teacherName.value = 'ไม่พบผู้สอนหลัก';
-        appLog.info('[ClassDetail] No teacher found');
+        appLog.debug('[ClassDetail] No teacher found');
       }
     } catch (e) {
       appLog.info('[ClassDetail] Error fetching teacher name: $e');
@@ -301,15 +300,11 @@ class ClassDetailController extends GetxController {
         effectiveClassName.value = classDetail.effectiveClassName;
 
         appLog.info('[ClassDetail] Fallback success:');
-        appLog.info('  - subjectNameTh: ${subjectNameTh.value}');
-        appLog.info('  - effectiveClassName: ${effectiveClassName.value}');
       } else {
         subjectNameTh.value = 'ไม่ระบุ';
         effectiveClassName.value = 'ไม่ระบุ';
-        appLog.info('[ClassDetail] Fallback returned null');
       }
     } catch (e) {
-      appLog.info('[ClassDetail] Fallback error: $e');
       subjectNameTh.value = 'ไม่ระบุ';
       effectiveClassName.value = 'ไม่ระบุ';
     } finally {
@@ -356,7 +351,12 @@ class ClassDetailController extends GetxController {
       }
 
       appLog.info(
-        '🔄 Fetching posts — sectionId: ${sectionId.value}, offset: $_offset, loadMore: $loadMore',
+        '[ClassDetail]',
+        data: {
+          'sectionId': sectionId.value,
+          'offset': _offset,
+          'loadMore': loadMore,
+        },
         actionPage: 'ClassDetailScreen',
       );
 
@@ -369,11 +369,11 @@ class ClassDetailController extends GetxController {
 
       if (!loadMore) {
         _lastFetchTime = DateTime.now();
-        _lastKnownPostCount = result.length;
       }
 
       if (result.length < _limit) {
         hasMore.value = false;
+        appLog.info('[ClassDetail] No more posts to load');
         appLog.info('[ClassDetail] No more posts to load');
       }
 
@@ -381,21 +381,26 @@ class ClassDetailController extends GetxController {
         posts.addAll(result);
         appLog.info(
           '[ClassDetail] Added ${result.length} posts, total: ${posts.length}',
+          data: {'newPosts': result.length, 'totalPosts': posts.length},
         );
       } else {
         posts.assignAll(result);
         if (result.isEmpty) {
-          appLog.error('Posts', actionPage: 'ClassDetailScreen');
-        } else {
-          appLog.info(
-            'Posts loaded: ${result.length}',
+          appLog.error(
+            'Posts',
             actionPage: 'ClassDetailScreen',
+            exception: 'No posts found',
+          );
+        } else {
+          appLog.error(
+            'Posts',
+            actionPage: 'ClassDetailScreen',
+            data: result.length,
           );
         }
       }
 
       _offset += result.length;
-      appLog.info('[ClassDetail] New offset: $_offset');
     } catch (e) {
       appLog.error('fetchPosts failed: $e', actionPage: 'ClassDetailScreen');
       Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดโพสต์ได้');

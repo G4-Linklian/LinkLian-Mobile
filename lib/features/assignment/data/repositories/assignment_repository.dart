@@ -5,6 +5,8 @@ import '../models/assignment_model.dart';
 import '../models/group_model.dart';
 import '../models/assignment_post_detail_model.dart';
 import '../../../shared/models/profile_model.dart';
+import '../models/student_submission_status_model.dart';
+import '../models/submission_detail_model.dart';
 
 class AssignmentRepository {
   final ApiClient _apiClient;
@@ -16,7 +18,6 @@ class AssignmentRepository {
     int offset = 0,
     int limit = 10,
   }) async {
-    
     try {
       final response = await _apiClient.get(
         '/assignment',
@@ -29,10 +30,12 @@ class AssignmentRepository {
       );
 
       if (response.statusCode == 200) {
-        return ApiResponseParser.parseList(response.data, AssignmentModel.fromJson);
+        return ApiResponseParser.parseList(
+          response.data,
+          AssignmentModel.fromJson,
+        );
       }
       return [];
-      
     } catch (e) {
       appLog.error('❌ Error fetching class assignments: $e');
       return [];
@@ -50,6 +53,7 @@ class AssignmentRepository {
       );
 
       if (response.statusCode == 200) {
+        // Also extract subject_name_th from post
         return ApiResponseParser.parseObject(
           response.data,
           AssignmentPostDetailModel.fromJson,
@@ -81,7 +85,10 @@ class AssignmentRepository {
 
       appLog.info('🔍 searchAssignments response: $response.data');
       if (response.statusCode == 200) {
-        return ApiResponseParser.parseList(response.data, AssignmentModel.fromJson);
+        return ApiResponseParser.parseList(
+          response.data,
+          AssignmentModel.fromJson,
+        );
       }
       return [];
     } catch (e) {
@@ -101,7 +108,10 @@ class AssignmentRepository {
       appLog.info('🔍 getGroup response: ${response.data}');
 
       if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
-        return ApiResponseParser.parseObject(response.data, GroupModel.fromJson);
+        return ApiResponseParser.parseObject(
+          response.data,
+          GroupModel.fromJson,
+        );
       }
       return null;
     } catch (e) {
@@ -178,22 +188,69 @@ class AssignmentRepository {
     }
   }
 
-  Future<List<ProfileModel>> getStudentsInSection({
-    required int sectionId,
+Future<List<ProfileModel>> getStudentsInSection({
+  required int sectionId,
+}) async {
+  try {
+    final response = await _apiClient.get(
+      '/section/enrollment',
+      queryParameters: {
+        'section_id': sectionId,
+        'flag_valid': true,
+        'user_status': 'Active',  
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return ApiResponseParser.parseList(
+        response.data,
+        ProfileModel.fromJson,
+      );
+    }
+    return [];
+  } catch (e) {
+    appLog.info('❌ Error fetching students: $e');
+    return [];
+  }
+}
+  /// Get all students with submission status for a given assignment (Teacher view)
+  Future<List<StudentSubmissionStatusModel>> getStudentsSubmissionStatus({
+    required int assignmentId,
+  }) async {
+    try {
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/assignment/submission/students/$assignmentId',
+      );
+      return ApiResponseParser.parseList(
+        response.data,
+        StudentSubmissionStatusModel.fromJson,
+      );
+    } catch (e) {
+      appLog.error('[AssignmentRepo] getStudentsSubmissionStatus error: $e');
+      return [];
+    }
+  }
+
+  /// Get submission detail by submission_id (Teacher view)
+  Future<SubmissionDetailModel?> getSubmissionDetail({
+    required int submissionId,
   }) async {
     try {
       final response = await _apiClient.get(
-        '/section/enrollment',
-        queryParameters: {'section_id': sectionId, 'flag_valid': true},
+        '/assignment/submission/detail/$submissionId',
       );
-
-      if (response.statusCode == 200) {
-        return ApiResponseParser.parseList(response.data, ProfileModel.fromJson);
-      }
-      return [];
+      final detail = ApiResponseParser.parseObject(
+        response.data,
+        SubmissionDetailModel.fromJson,
+      );
+      appLog.info(
+        '[AssignmentRepo] getSubmissionDetail: submissionId=$submissionId, '
+        'attachments=${detail?.attachments.length ?? 0}',
+      );
+      return detail;
     } catch (e) {
-      appLog.info('❌ Error fetching students: $e');
-      return [];
+      appLog.error('[AssignmentRepo] getSubmissionDetail error: $e');
+      return null;
     }
   }
 }

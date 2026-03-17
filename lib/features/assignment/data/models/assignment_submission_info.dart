@@ -5,8 +5,27 @@ part 'assignment_submission_info.g.dart';
 int _intFromJson(dynamic value) {
   if (value == null) return 0;
   if (value is int) return value;
+  if (value is num) return value.toInt();
   if (value is String) return int.tryParse(value) ?? 0;
   return 0;
+}
+
+double _doubleFromJson(dynamic value) {
+  if (value == null) return 0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
+}
+
+bool _boolFromJson(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == 'true' || normalized == '1';
+  }
+  return false;
 }
 
 DateTime? _dateTimeFromJson(dynamic value) {
@@ -24,10 +43,10 @@ class AssignmentSubmissionInfo {
   @JsonKey(name: 'due_date', fromJson: _dateTimeFromJson)
   final DateTime? dueDate;
 
-  @JsonKey(name: 'max_score', fromJson: _intFromJson)
-  final int maxScore;
+  @JsonKey(name: 'max_score', fromJson: _doubleFromJson)
+  final double maxScore;
 
-  @JsonKey(name: 'is_group')
+  @JsonKey(name: 'is_group', fromJson: _boolFromJson)
   final bool isGroup;
 
   const AssignmentSubmissionInfo({
@@ -40,6 +59,5 @@ class AssignmentSubmissionInfo {
   factory AssignmentSubmissionInfo.fromJson(Map<String, dynamic> json) =>
       _$AssignmentSubmissionInfoFromJson(json);
 
-  Map<String, dynamic> toJson() =>
-      _$AssignmentSubmissionInfoToJson(this);
+  Map<String, dynamic> toJson() => _$AssignmentSubmissionInfoToJson(this);
 }

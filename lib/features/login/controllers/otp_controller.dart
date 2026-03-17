@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../../data/repository/auth_repository.dart';
-import '../../../core/services/local_storage.dart';
 import '../../../core/utils/dialog_helper.dart';
-import '../../../core/utils/logger.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../controllers/login_controller.dart';
 
@@ -115,7 +113,7 @@ class OtpController extends GetxController {
 
       // 🔥 ส่งให้ AuthController คนเดียวดูแล session
       final authController = Get.find<AuthController>();
-print('🧠 OTP using AuthController hash = ${authController.hashCode}');
+      Get.log('🧠 OTP using AuthController hash = ${authController.hashCode}');
       await authController.establishSession(
         token: token,
         userId: userId,
