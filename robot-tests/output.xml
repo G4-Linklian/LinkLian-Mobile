@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.2.2 (Python 3.12.3 on darwin)" generated="2026-03-15T22:37:38.191642" rpa="false" schemaversion="5">
+<suite id="s1" name="Community" source="/Users/yourploydao/Desktop/CODE/Year3/T2/SE2/LinkLian-Mobile/robot-tests/tests/community.robot">
+<test id="s1-t1" name="Login Student Successfully" line="23">
+<kw name="Open Application" owner="AppiumLibrary">
+<arg>${APPIUM_SERVER}</arg>
+<arg>platformName=${PLATFORM_NAME}</arg>
+<arg>deviceName=${DEVICE_NAME}</arg>
+<arg>automationName=UiAutomator2</arg>
+<arg>app=${APP}</arg>
+<doc>Opens a new application to the given Appium server.
+Capabilities of appium server, Android and iOS,
+Please check https://appium.io/docs/en/2.19/guides/caps/
+| *Option*            | *Man.* | *Description*     |
+| remote_url          | Yes    | Appium server url |
+| alias               | No     | alias             |</doc>
+<status status="PASS" start="2026-03-15T22:37:39.561111" elapsed="23.885716"/>
+</kw>
+<kw name="Wait Until Element Is Visible" owner="AppiumLibrary">
+<arg>accessibility_id=นักเรียน/นักศึกษา</arg>
+<arg>10s</arg>
+<doc>Waits until the element specified by the ``locator`` is visible.</doc>
+<status status="PASS" start="2026-03-15T22:38:03.455358" elapsed="2.538368"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:05.998109" level="INFO">Clicking element 'accessibility_id=นักเรียน/นักศึกษา'.</msg>
+<arg>accessibility_id=นักเรียน/นักศึกษา</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:05.995852" elapsed="0.404067"/>
+</kw>
+<kw name="Wait Until Element Is Visible" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:08.892980" level="INFO">xpath criteria: (//android.widget.EditText)[1]
+xpath criteria: (//android.widget.EditText)[1]</msg>
+<arg>xpath=(//android.widget.EditText)[1]</arg>
+<arg>10s</arg>
+<doc>Waits until the element specified by the ``locator`` is visible.</doc>
+<status status="PASS" start="2026-03-15T22:38:06.401231" elapsed="2.492594"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:08.902385" level="INFO">Clicking element 'xpath=(//android.widget.EditText)[1]'.</msg>
+<msg time="2026-03-15T22:38:09.056736" level="INFO">xpath criteria: (//android.widget.EditText)[1]</msg>
+<arg>xpath=(//android.widget.EditText)[1]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:08.900876" elapsed="0.155922"/>
+</kw>
+<kw name="Input Text" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:09.062908" level="INFO">Typing text 'jantimaploy9@gmail.com' into text field 'xpath=(//android.widget.EditText)[1]'</msg>
+<msg time="2026-03-15T22:38:09.856996" level="INFO">xpath criteria: (//android.widget.EditText)[1]</msg>
+<arg>xpath=(//android.widget.EditText)[1]</arg>
+<arg>${EMAIL}</arg>
+<doc>Types the given ``text`` into the text field identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:09.057124" elapsed="0.801277"/>
+</kw>
+<kw name="Press Keycode" owner="AppiumLibrary">
+<arg>4</arg>
+<doc>Sends a press of ``keycode`` to the device.</doc>
+<status status="PASS" start="2026-03-15T22:38:09.871768" elapsed="0.915522"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:13.805063" level="INFO">Slept 3 seconds.</msg>
+<arg>3s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:10.797860" elapsed="3.009305"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:13.812901" level="INFO">Clicking element 'xpath=(//android.widget.EditText)[2]'.</msg>
+<msg time="2026-03-15T22:38:14.041810" level="INFO">xpath criteria: (//android.widget.EditText)[2]</msg>
+<arg>xpath=(//android.widget.EditText)[2]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:13.809367" elapsed="0.232526"/>
+</kw>
+<kw name="Input Text" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:14.042738" level="INFO">Typing text 'LinkLian1511' into text field 'xpath=(//android.widget.EditText)[2]'</msg>
+<msg time="2026-03-15T22:38:16.401488" level="INFO">xpath criteria: (//android.widget.EditText)[2]</msg>
+<arg>xpath=(//android.widget.EditText)[2]</arg>
+<arg>${PASSWORD}</arg>
+<doc>Types the given ``text`` into the text field identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:14.042043" elapsed="2.361363"/>
+</kw>
+<kw name="Press Keycode" owner="AppiumLibrary">
+<arg>4</arg>
+<doc>Sends a press of ``keycode`` to the device.</doc>
+<status status="PASS" start="2026-03-15T22:38:16.409491" elapsed="0.242103"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:19.653728" level="INFO">Slept 3 seconds.</msg>
+<arg>3s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:16.652099" elapsed="3.002423"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:19.657770" level="INFO">Clicking element 'xpath=//android.widget.Button[@content-desc="เข้าสู่ระบบ"]'.</msg>
+<msg time="2026-03-15T22:38:19.926876" level="INFO">xpath criteria: //android.widget.Button[@content-desc="เข้าสู่ระบบ"]</msg>
+<arg>xpath=//android.widget.Button[@content-desc="เข้าสู่ระบบ"]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:19.655412" elapsed="0.271920"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:24.930698" level="INFO">Slept 5 seconds.</msg>
+<arg>5s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:19.928261" elapsed="5.003238"/>
+</kw>
+<kw name="Wait Until Page Contains" owner="AppiumLibrary">
+<arg>รหัสยืนยัน</arg>
+<arg>10s</arg>
+<doc>Waits until the ``text`` appears on the current page.</doc>
+<status status="PASS" start="2026-03-15T22:38:24.932422" elapsed="1.989566"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:26.930762" level="INFO">Clicking element 'xpath=(//android.widget.EditText)'.</msg>
+<msg time="2026-03-15T22:38:27.059414" level="INFO">xpath criteria: (//android.widget.EditText)</msg>
+<arg>xpath=(//android.widget.EditText)</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:26.926345" elapsed="0.133129"/>
+</kw>
+<kw name="Input Text" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:27.060772" level="INFO">Typing text '111111' into text field 'xpath=(//android.widget.EditText)'</msg>
+<msg time="2026-03-15T22:38:28.899020" level="INFO">xpath criteria: (//android.widget.EditText)</msg>
+<arg>xpath=(//android.widget.EditText)</arg>
+<arg>${OTP}</arg>
+<doc>Types the given ``text`` into the text field identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:27.059610" elapsed="1.840672"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:28.903403" level="INFO">Clicking element 'accessibility_id=ยืนยัน'.</msg>
+<arg>accessibility_id=ยืนยัน</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:28.901459" elapsed="0.974345"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:37.879345" level="INFO">Slept 8 seconds.</msg>
+<arg>8s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:29.875990" elapsed="8.007401"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:37.903824" level="INFO">Clicking element 'xpath=//android.widget.Button[contains(@content-desc,"ชุมชน")]'.</msg>
+<msg time="2026-03-15T22:38:38.231282" level="INFO">xpath criteria: //android.widget.Button[contains(@content-desc,"ชุมชน")]</msg>
+<arg>xpath=//android.widget.Button[contains(@content-desc,"ชุมชน")]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:37.896341" elapsed="0.335029"/>
+</kw>
+<status status="PASS" start="2026-03-15T22:37:39.557631" elapsed="58.675760"/>
+</test>
+<test id="s1-t2" name="Create Community" line="52">
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:41.244148" level="INFO">Slept 3 seconds.</msg>
+<arg>3s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:38.240069" elapsed="3.004834"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:41.247824" level="INFO">Clicking element 'xpath=//android.widget.ImageView/android.view.View[1]'.</msg>
+<msg time="2026-03-15T22:38:41.418031" level="INFO">xpath criteria: //android.widget.ImageView/android.view.View[1]</msg>
+<arg>xpath=//android.widget.ImageView/android.view.View[1]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:41.246286" elapsed="0.171908"/>
+</kw>
+<kw name="Wait Until Page Contains" owner="AppiumLibrary">
+<arg>สร้างชุมชน</arg>
+<arg>10s</arg>
+<doc>Waits until the ``text`` appears on the current page.</doc>
+<status status="PASS" start="2026-03-15T22:38:41.418587" elapsed="0.570875"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:42.000222" level="INFO">Clicking element 'xpath=//android.widget.ScrollView/android.widget.EditText[1]'.</msg>
+<msg time="2026-03-15T22:38:42.540253" level="INFO">xpath criteria: //android.widget.ScrollView/android.widget.EditText[1]</msg>
+<arg>xpath=//android.widget.ScrollView/android.widget.EditText[1]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:41.993556" elapsed="0.547188"/>
+</kw>
+<kw name="Input Text" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:42.542944" level="INFO">Typing text 'ชุมชนคนรักญี่ปุ่น' into text field 'xpath=//android.widget.ScrollView/android.widget.EditText[1]'</msg>
+<msg time="2026-03-15T22:38:44.041287" level="INFO">xpath criteria: //android.widget.ScrollView/android.widget.EditText[1]</msg>
+<arg>xpath=//android.widget.ScrollView/android.widget.EditText[1]</arg>
+<arg>${COMMUNITY_NAME}</arg>
+<doc>Types the given ``text`` into the text field identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:42.541646" elapsed="1.500380"/>
+</kw>
+<kw name="Press Keycode" owner="AppiumLibrary">
+<arg>4</arg>
+<doc>Sends a press of ``keycode`` to the device.</doc>
+<status status="PASS" start="2026-03-15T22:38:44.043575" elapsed="0.315365"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:46.360796" level="INFO">Slept 2 seconds.</msg>
+<arg>2s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:44.359767" elapsed="2.001751"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:46.365262" level="INFO">Clicking element 'xpath=//android.widget.ScrollView/android.widget.EditText[2]'.</msg>
+<msg time="2026-03-15T22:38:46.511077" level="INFO">xpath criteria: //android.widget.ScrollView/android.widget.EditText[2]</msg>
+<arg>xpath=//android.widget.ScrollView/android.widget.EditText[2]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:46.362975" elapsed="0.148254"/>
+</kw>
+<kw name="Input Text" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:46.512775" level="INFO">Typing text 'ชุมชนสำหรับคนที่รักญี่ปุ่นทั้งภาษาและวัฒนธรรมญี่ปุ่น' into text field 'xpath=//android.widget.ScrollView/android.widget.EditText[2]'</msg>
+<msg time="2026-03-15T22:38:48.006270" level="INFO">xpath criteria: //android.widget.ScrollView/android.widget.EditText[2]</msg>
+<arg>xpath=//android.widget.ScrollView/android.widget.EditText[2]</arg>
+<arg>${COMMUNITY_DETAIL}</arg>
+<doc>Types the given ``text`` into the text field identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:46.511675" elapsed="1.495804"/>
+</kw>
+<kw name="Press Keycode" owner="AppiumLibrary">
+<arg>4</arg>
+<doc>Sends a press of ``keycode`` to the device.</doc>
+<status status="PASS" start="2026-03-15T22:38:48.008961" elapsed="0.207871"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:50.226110" level="INFO">Slept 2 seconds.</msg>
+<arg>2s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:48.217003" elapsed="2.010664"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:50.233461" level="INFO">Clicking element 'accessibility_id=คลิกเพื่ออัปโหลดรูปภาพ'.</msg>
+<arg>accessibility_id=คลิกเพื่ออัปโหลดรูปภาพ</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:50.229416" elapsed="0.160971"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:53.397341" level="INFO">Slept 3 seconds.</msg>
+<arg>3s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:50.390527" elapsed="3.007884"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:53.403598" level="INFO">Clicking element 'xpath=//androidx.compose.ui.platform.ComposeView//android.view.View[5]//android.view.View[3]//android.view.View[2]/android.view.View'.</msg>
+<msg time="2026-03-15T22:38:54.452408" level="INFO">xpath criteria: //androidx.compose.ui.platform.ComposeView//android.view.View[5]//android.view.View[3]//android.view.View[2]/android.view.View</msg>
+<arg>xpath=//androidx.compose.ui.platform.ComposeView//android.view.View[5]//android.view.View[3]//android.view.View[2]/android.view.View</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:53.399857" elapsed="1.055209"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:56.463607" level="INFO">Slept 2 seconds.</msg>
+<arg>2s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:54.460392" elapsed="2.005123"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:56.469895" level="INFO">Clicking element 'accessibility_id=กลุ่มสาธารณะ'.</msg>
+<arg>accessibility_id=กลุ่มสาธารณะ</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:56.467052" elapsed="0.206895"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:56.674809" level="INFO">Clicking element 'accessibility_id=เพิ่มแท็ก'.</msg>
+<arg>accessibility_id=เพิ่มแท็ก</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:56.674130" elapsed="0.331666"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:38:59.014291" level="INFO">Slept 2 seconds.</msg>
+<arg>2s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:57.009054" elapsed="2.006971"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:59.018964" level="INFO">Clicking element 'xpath=//android.widget.EditText'.</msg>
+<msg time="2026-03-15T22:38:59.297155" level="INFO">xpath criteria: //android.widget.EditText</msg>
+<arg>xpath=//android.widget.EditText</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:59.017358" elapsed="0.279871"/>
+</kw>
+<kw name="Input Text" owner="AppiumLibrary">
+<msg time="2026-03-15T22:38:59.298742" level="INFO">Typing text 'ญี่ปุ่น' into text field 'xpath=//android.widget.EditText'</msg>
+<msg time="2026-03-15T22:38:59.375055" level="INFO">xpath criteria: //android.widget.EditText</msg>
+<arg>xpath=//android.widget.EditText</arg>
+<arg>${COMMUNITY_TAG}</arg>
+<doc>Types the given ``text`` into the text field identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:38:59.297407" elapsed="0.077724"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:39:02.376795" level="INFO">Slept 3 seconds.</msg>
+<arg>3s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:38:59.375587" elapsed="3.002022"/>
+</kw>
+<kw name="Press Keycode" owner="AppiumLibrary">
+<arg>66</arg>
+<doc>Sends a press of ``keycode`` to the device.</doc>
+<status status="PASS" start="2026-03-15T22:39:02.378752" elapsed="0.392521"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:39:04.774189" level="INFO">Slept 2 seconds.</msg>
+<arg>2s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:39:02.771439" elapsed="2.004493"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:39:04.781330" level="INFO">Clicking element 'accessibility_id=บันทึก'.</msg>
+<arg>accessibility_id=บันทึก</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:39:04.777549" elapsed="0.150562"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:39:06.929250" level="INFO">Slept 2 seconds.</msg>
+<arg>2s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:39:04.928282" elapsed="2.001970"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:39:06.933235" level="INFO">Clicking element 'xpath=//android.widget.ScrollView/android.widget.EditText[3]'.</msg>
+<msg time="2026-03-15T22:39:07.140542" level="INFO">xpath criteria: //android.widget.ScrollView/android.widget.EditText[3]</msg>
+<arg>xpath=//android.widget.ScrollView/android.widget.EditText[3]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:39:06.931393" elapsed="0.209219"/>
+</kw>
+<kw name="Input Text" owner="AppiumLibrary">
+<msg time="2026-03-15T22:39:07.141505" level="INFO">Typing text 'ห้ามโพสต์เนื้อหาที่ไม่เกี่ยวข้องกับญี่ปุ่น' into text field 'xpath=//android.widget.ScrollView/android.widget.EditText[3]'</msg>
+<msg time="2026-03-15T22:39:08.084310" level="INFO">xpath criteria: //android.widget.ScrollView/android.widget.EditText[3]</msg>
+<arg>xpath=//android.widget.ScrollView/android.widget.EditText[3]</arg>
+<arg>${COMMUNITY_RULES}</arg>
+<doc>Types the given ``text`` into the text field identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:39:07.140796" elapsed="0.944207"/>
+</kw>
+<kw name="Press Keycode" owner="AppiumLibrary">
+<arg>4</arg>
+<doc>Sends a press of ``keycode`` to the device.</doc>
+<status status="PASS" start="2026-03-15T22:39:08.086132" elapsed="0.108175"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:39:10.195937" level="INFO">Slept 2 seconds.</msg>
+<arg>2s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:39:08.194495" elapsed="2.002981"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<msg time="2026-03-15T22:39:10.203148" level="INFO">Clicking element 'accessibility_id=สร้าง'.</msg>
+<arg>accessibility_id=สร้าง</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="PASS" start="2026-03-15T22:39:10.199351" elapsed="0.208802"/>
+</kw>
+<status status="PASS" start="2026-03-15T22:38:38.234767" elapsed="32.173656"/>
+</test>
+<test id="s1-t3" name="Post in Community" line="84">
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-03-15T22:39:13.411440" level="INFO">Slept 3 seconds.</msg>
+<arg>3s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2026-03-15T22:39:10.409314" elapsed="3.003529"/>
+</kw>
+<kw name="Wait Until Page Contains" owner="AppiumLibrary">
+<msg time="2026-03-15T22:39:23.742586" level="INFO">&lt;?xml version='1.0' encoding='UTF-8' standalone='yes' ?&gt;
+&lt;hierarchy index="0" class="hierarchy" rotation="0" width="1080" height="2424"&gt;
+  &lt;android.widget.FrameLayout index="0" package="com.example.linklian" class="android.widget.FrameLayout" text="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1080,2424]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+    &lt;android.widget.LinearLayout index="0" package="com.example.linklian" class="android.widget.LinearLayout" text="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1080,2424]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="1" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+      &lt;android.widget.FrameLayout index="0" package="com.example.linklian" class="android.widget.FrameLayout" text="" resource-id="android:id/content" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1080,2424]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="2" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+        &lt;android.widget.FrameLayout index="0" package="com.example.linklian" class="android.widget.FrameLayout" text="" checkable="false" checked="false" clickable="false" enabled="true" focusable="true" focused="true" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1080,2424]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="1" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" pane-title=" " window-id="863"&gt;
+          &lt;android.view.View index="0" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1080,2424]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+            &lt;android.view.View index="0" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1080,2424]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+              &lt;android.view.View index="0" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1080,2424]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+                &lt;android.view.View index="0" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1080,2424]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+                  &lt;android.view.View index="0" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1080,289]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+                    &lt;android.widget.ImageView index="0" package="com.example.linklian" class="android.widget.ImageView" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[42,174][1038,258]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+                      &lt;android.view.View index="0" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[728,174][812,258]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863" /&gt;
+                      &lt;android.view.View index="1" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[844,174][928,258]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863" /&gt;
+                      &lt;android.view.View index="2" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[959,176][1038,255]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863" /&gt;
+                    &lt;/android.widget.ImageView&gt;
+                  &lt;/android.view.View&gt;
+                  &lt;android.widget.EditText index="1" package="com.example.linklian" class="android.widget.EditText" text="" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[42,310][1038,428]" displayed="true" hint="ค้นหาชุมชน..." a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863" /&gt;
+                  &lt;android.view.View index="2" package="com.example.linklian" class="android.view.View" text="" content-desc="ชุมชนของคุณ" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[42,470][1038,541]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863" /&gt;
+                  &lt;android.view.View index="3" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,573][1080,2198]" displayed="true" a11y-important="false" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+                    &lt;android.view.View index="0" package="com.example.linklian" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="true" selected="false" bounds="[0,573][1080,2198]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+                      &lt;android.view.View index="0" package="com.example.linklian" class="android.view.View" text="" content-desc="ชุมชนคนรักญี่ปุ่น&amp;#10;สมาชิก 1 คน&amp;#10;กลุ่มสาธารณะ" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[42,604][1038,1161]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+                        &lt;android.widget.Button index="0" package="com.example.linklian" class="android.widget.Button" text="" content-desc="แสดงเมนู" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[901,607][1028,733]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" tooltip-text="แสดงเมนู" window-id="863" /&gt;
+                      &lt;/android.view.View&gt;
+                      &lt;android.view.View index="1" package="com.example.linklian" class="android.view.View" text="" content-desc="ชุมชนคนรักญี่ปุ่น&amp;#10;สมาชิก 1 คน&amp;#10;กลุ่มสาธารณะ" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[42,1161][1038,1717]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+                        &lt;android.widget.Button index="0" package="com.example.linklian" class="android.widget.Button" text="" content-desc="แสดงเมนู" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[901,1163][1028,1289]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" tooltip-text="แสดงเมนู" window-id="863" /&gt;
+                      &lt;/android.view.View&gt;
+                      &lt;android.view.View index="2" package="com.example.linklian" class="android.view.View" text="" content-desc="คณิตศาสตร์ง่ายนิดเดียว&amp;#10;สมาชิก 1 คน&amp;#10;กลุ่มสาธารณะ" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[42,1717][1038,2198]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863"&gt;
+                        &lt;android.widget.Button index="0" package="com.example.linklian" class="android.widget.Button" text="" content-desc="แสดงเมนู" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[901,1720][1028,1846]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" tooltip-text="แสดงเมนู" window-id="863" /&gt;
+                      &lt;/android.view.View&gt;
+                    &lt;/android.view.View&gt;
+                  &lt;/android.view.View&gt;
+                  &lt;android.widget.Button index="5" package="com.example.linklian" class="android.widget.Button" text="" content-desc="การบ้าน&amp;#10;แท็บที่ 1 จาก 4" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,2209][270,2351]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863" /&gt;
+                  &lt;android.widget.Button index="6" package="com.example.linklian" class="android.widget.Button" text="" content-desc="ห้องเรียน&amp;#10;แท็บที่ 2 จาก 4" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[270,2209][540,2351]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863" /&gt;
+                  &lt;android.widget.Button index="7" package="com.example.linklian" class="android.widget.Button" text="" content-desc="ชุมชน&amp;#10;แท็บที่ 3 จาก 4" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="true" bounds="[540,2198][810,2361]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863" /&gt;
+                  &lt;android.widget.Button index="8" package="com.example.linklian" class="android.widget.Button" text="" content-desc="โปรไฟล์&amp;#10;แท็บที่ 4 จาก 4" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[810,2209][1080,2351]" displayed="true" a11y-important="true" screen-reader-focusable="false" drawing-order="0" showing-hint="false" text-entry-key="false" dismissable="false" a11y-focused="false" heading="false" live-region="0" context-clickable="false" content-invalid="false" window-id="863" /&gt;
+                &lt;/android.view.View&gt;
+              &lt;/android.view.View&gt;
+            &lt;/android.view.View&gt;
+          &lt;/android.view.View&gt;
+        &lt;/android.widget.FrameLayout&gt;
+      &lt;/android.widget.FrameLayout&gt;
+    &lt;/android.widget.LinearLayout&gt;
+  &lt;/android.widget.FrameLayout&gt;
+&lt;/hierarchy&gt;</msg>
+<kw name="Capture Page Screenshot" owner="AppiumLibrary">
+<doc>Takes a screenshot of the current page and embeds it into the log.</doc>
+<status status="FAIL" start="2026-03-15T22:39:23.743679" elapsed="3.689752">Execution terminated by signal</status>
+</kw>
+<msg time="2026-03-15T22:39:27.445743" level="WARN">Keyword 'Capture Page Screenshot' could not be run on failure: Execution terminated by signal</msg>
+<msg time="2026-03-15T22:39:27.455439" level="FAIL">Text 'ศูนย์รวมคนรักวิทยาศาสตร์' did not appear in 10 seconds</msg>
+<arg>ศูนย์รวมคนรักวิทยาศาสตร์</arg>
+<arg>10s</arg>
+<doc>Waits until the ``text`` appears on the current page.</doc>
+<status status="FAIL" start="2026-03-15T22:39:13.414615" elapsed="14.108019">Text 'ศูนย์รวมคนรักวิทยาศาสตร์' did not appear in 10 seconds</status>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<arg>xpath=//android.view.View/android.view.View/android.view.View[6]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.526489" elapsed="0.000058"/>
+</kw>
+<kw name="Wait Until Page Contains" owner="AppiumLibrary">
+<arg>สร้างโพสต์</arg>
+<arg>10s</arg>
+<doc>Waits until the ``text`` appears on the current page.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.526777" elapsed="0.000012"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<arg>xpath=(//android.widget.EditText)</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.526896" elapsed="0.000068"/>
+</kw>
+<kw name="Input Text" owner="AppiumLibrary">
+<arg>xpath=(//android.widget.EditText)</arg>
+<arg>${POST1}</arg>
+<doc>Types the given ``text`` into the text field identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.527112" elapsed="0.000017"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<arg>accessibility_id=โพสต์</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.527192" elapsed="0.000010"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<arg>3s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.527311" elapsed="0.000010"/>
+</kw>
+<status status="FAIL" start="2026-03-15T22:39:10.409015" elapsed="17.118567">Text 'ศูนย์รวมคนรักวิทยาศาสตร์' did not appear in 10 seconds</status>
+</test>
+<test id="s1-t4" name="Comment Post" line="94">
+<kw name="Sleep" owner="BuiltIn">
+<arg>3s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="FAIL" start="2026-03-15T22:39:27.528125" elapsed="0.000329">Execution terminated by signal</status>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<arg>accessibility_id=โพสต์ใหม่สุด</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.528579" elapsed="0.000011"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<arg>2s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.528638" elapsed="0.000156"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<arg>accessibility_id=โพสต์เก่าสุด</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.528865" elapsed="0.000019"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<arg>2s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.528928" elapsed="0.000008"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<arg>xpath=//android.view.View/android.view.View[8]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.528970" elapsed="0.000007"/>
+</kw>
+<kw name="Wait Until Page Contains" owner="AppiumLibrary">
+<arg>โพสต์</arg>
+<arg>10s</arg>
+<doc>Waits until the ``text`` appears on the current page.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.529097" elapsed="0.000133"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<arg>xpath=(//android.widget.EditText)</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.529427" elapsed="0.000012"/>
+</kw>
+<kw name="Input Text" owner="AppiumLibrary">
+<arg>xpath=(//android.widget.EditText)</arg>
+<arg>${COMMENT}</arg>
+<doc>Types the given ``text`` into the text field identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.529486" elapsed="0.000126"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<arg>xpath=//android.view.View/android.view.View[3]</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.529803" elapsed="0.000009"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<arg>5s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.529931" elapsed="0.000014"/>
+</kw>
+<kw name="Click Element" owner="AppiumLibrary">
+<arg>xpath=//android.view.View[1]/android.widget.Button</arg>
+<doc>Clicks the element identified by ``locator``.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.530008" elapsed="0.000010"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<arg>3s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="NOT RUN" start="2026-03-15T22:39:27.530198" elapsed="0.000009"/>
+</kw>
+<status status="FAIL" start="2026-03-15T22:39:27.527788" elapsed="0.002637">Execution terminated by signal</status>
+</test>
+<test id="s1-t5" name="Find Community" line="109">
+<tag>robot:exit</tag>
+<status status="FAIL" start="2026-03-15T22:39:27.530536" elapsed="0.000285">Test execution stopped due to a fatal error.</status>
+</test>
+<status status="FAIL" start="2026-03-15T22:37:38.194554" elapsed="109.343912"/>
+</suite>
+<statistics>
+<total>
+<stat pass="2" fail="3" skip="0">All Tests</stat>
+</total>
+<tag>
+<stat info="combined" combined="NOT robot:exit" pass="2" fail="2" skip="0">NOT robot:exit</stat>
+</tag>
+<suite>
+<stat name="Community" id="s1" pass="2" fail="3" skip="0">Community</stat>
+</suite>
+</statistics>
+<errors>
+<msg time="2026-03-15T22:39:27.445743" level="WARN">Keyword 'Capture Page Screenshot' could not be run on failure: Execution terminated by signal</msg>
+</errors>
+</robot>
