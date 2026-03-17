@@ -18,7 +18,9 @@ class _AIChatListPageState extends State<AIChatListPage> {
   List<Map<String, dynamic>> filteredChats = [];
 
   static const String _aiAvatarUrl =
-      'https://linklianstorage.blob.core.windows.net/chat/logo/Logo-black-sq.png';
+      //'https://linklianstorage.blob.core.windows.net/chat/logo/Logo-black-sq.png';
+      'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3422.png';
+     //'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3420.png';
 
   final AIChatRepository _repo = AIChatRepository();
 
@@ -150,54 +152,6 @@ class _AIChatListPageState extends State<AIChatListPage> {
                           final int? aiChatId = chat["ai_chat_id"];
 
                           return InkWell(
-                            // onTap: () async {
-                            //   if (aiChatId == null) return;
-
-                            //   // final detail = await _repo.getAIChat(aiChatId);
-
-                            //   // Navigator.push(
-                            //   //   context,
-                            //   //   MaterialPageRoute(
-                            //   //     builder: (_) => AIChatDetailPage(
-                            //   //       title: detail["post_title"] ?? "",
-                            //   //       documentTitle:
-                            //   //           detail["document_title"] ??
-                            //   //           detail["chat_title"] ??
-                            //   //           detail["title"] ??
-                            //   //           "AI Chat",
-                            //   //       aiChatId: detail["ai_chat_id"] ?? 0,
-                            //   //       summary: detail["summary"] ?? "",
-                            //   //       content: detail["content"] ?? "",
-                            //   //       attachments: detail["attachments"] ?? [],
-                            //   //       postContentId:
-                            //   //           detail["post_content_id"] ?? 0,
-                            //   //     ),
-                            //   //   ),
-                            //   // );
-                            //   final detail = await _repo.getAIChat(aiChatId);
-
-                            //   if (!mounted) return;
-
-                            //   Navigator.push(
-                            //     context,
-                            //     MaterialPageRoute(
-                            //       builder: (_) => AIChatDetailPage(
-                            //         title: detail["post_title"] ?? "",
-                            //         documentTitle:
-                            //             detail["document_title"] ??
-                            //             detail["chat_title"] ??
-                            //             detail["title"] ??
-                            //             "AI Chat",
-                            //         aiChatId: detail["ai_chat_id"] ?? 0,
-                            //         summary: detail["summary"] ?? "",
-                            //         content: detail["content"] ?? "",
-                            //         attachments: detail["attachments"] ?? [],
-                            //         postContentId:
-                            //             detail["post_content_id"] ?? 0,
-                            //       ),
-                            //     ),
-                            //   );
-                            //},
                             onTap: () async {
                               if (aiChatId == null) return;
 
@@ -242,14 +196,14 @@ class _AIChatListPageState extends State<AIChatListPage> {
                                       shape: BoxShape.circle,
                                       color: AppColors.buttonPalette[100],
                                       border: Border.all(
-                                        color: AppColors.buttonPalette[100]!
-                                            .withValues(alpha: 0.95),
+                                        color: AppColors.primaryPalette[400]!
+                                            .withValues(alpha: 0.9),
                                         width: 2,
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.buttonPalette[300]!
-                                              .withValues(alpha: 0.55),
+                                          color: AppColors.primaryPalette[200]!
+                                              .withValues(alpha: 0.7),
                                           blurRadius: 0,
                                           spreadRadius: 1.2,
                                         ),
@@ -365,7 +319,7 @@ class _AIChatListPageState extends State<AIChatListPage> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
               borderSide: BorderSide(
-                color: AppColors.buttonPalette[300]!,
+                color: AppColors.buttonPalette[300]!.withValues(alpha: 0.65),
                 width: 1.2,
               ),
             ),
@@ -373,8 +327,8 @@ class _AIChatListPageState extends State<AIChatListPage> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
               borderSide: BorderSide(
-                color: AppColors.buttonPalette[300]!,
-                width: 1.2,
+                color: AppColors.buttonPalette[500]!,
+                width: 1.4,
               ),
             ),
 

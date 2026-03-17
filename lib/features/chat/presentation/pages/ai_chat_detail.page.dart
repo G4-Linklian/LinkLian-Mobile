@@ -43,7 +43,9 @@ class AIChatDetailPage extends StatefulWidget {
 
 class _AIChatDetailPageState extends State<AIChatDetailPage> {
   static const String _aiAvatarUrl =
-      'https://linklianstorage.blob.core.windows.net/chat/logo/Logo-black-sq.png';
+      //'https://linklianstorage.blob.core.windows.net/chat/logo/Logo-black-sq.png';
+      'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3422.png';
+     //'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3420.png';
 
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
