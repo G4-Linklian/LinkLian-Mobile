@@ -10,7 +10,6 @@ import 'class_feed_controller.dart';
 import '../../../shared/models/post_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/animation.dart';
-import '../../../../core/utils/dialog_helper.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 
 class ClassDetailController extends GetxController {

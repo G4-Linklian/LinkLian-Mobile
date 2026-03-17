@@ -2,7 +2,6 @@ import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
 import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AIChatListPage extends StatefulWidget {
   const AIChatListPage({super.key});
@@ -18,7 +17,8 @@ class _AIChatListPageState extends State<AIChatListPage> {
   List<Map<String, dynamic>> chats = [];
   List<Map<String, dynamic>> filteredChats = [];
 
-  static final String _aiAvatarUrl = (dotenv.env['AI_AVATAR_URL'] ?? '').trim();
+  static const String _aiAvatarUrl =
+      'https://linklianstorage.blob.core.windows.net/chat/logo/Logo-black-sq.png';
 
   final AIChatRepository _repo = AIChatRepository();
 
@@ -41,7 +41,7 @@ class _AIChatListPageState extends State<AIChatListPage> {
         filteredChats = result;
       });
     } catch (e) {
-      print(e);
+      debugPrint(e.toString());
     }
   }
 
@@ -134,7 +134,8 @@ class _AIChatListPageState extends State<AIChatListPage> {
                       ),
                       child: ListView.separated(
                         itemCount: filteredChats.length,
-                        separatorBuilder: (_, __) => const Divider(
+                        //separatorBuilder: (_, __) => const Divider(
+                        separatorBuilder: (context, index) => const Divider(
                           height: 1,
                           thickness: 1,
                           color: Color(0xFFF0F0F0),
@@ -149,13 +150,64 @@ class _AIChatListPageState extends State<AIChatListPage> {
                           final int? aiChatId = chat["ai_chat_id"];
 
                           return InkWell(
+                            // onTap: () async {
+                            //   if (aiChatId == null) return;
+
+                            //   // final detail = await _repo.getAIChat(aiChatId);
+
+                            //   // Navigator.push(
+                            //   //   context,
+                            //   //   MaterialPageRoute(
+                            //   //     builder: (_) => AIChatDetailPage(
+                            //   //       title: detail["post_title"] ?? "",
+                            //   //       documentTitle:
+                            //   //           detail["document_title"] ??
+                            //   //           detail["chat_title"] ??
+                            //   //           detail["title"] ??
+                            //   //           "AI Chat",
+                            //   //       aiChatId: detail["ai_chat_id"] ?? 0,
+                            //   //       summary: detail["summary"] ?? "",
+                            //   //       content: detail["content"] ?? "",
+                            //   //       attachments: detail["attachments"] ?? [],
+                            //   //       postContentId:
+                            //   //           detail["post_content_id"] ?? 0,
+                            //   //     ),
+                            //   //   ),
+                            //   // );
+                            //   final detail = await _repo.getAIChat(aiChatId);
+
+                            //   if (!mounted) return;
+
+                            //   Navigator.push(
+                            //     context,
+                            //     MaterialPageRoute(
+                            //       builder: (_) => AIChatDetailPage(
+                            //         title: detail["post_title"] ?? "",
+                            //         documentTitle:
+                            //             detail["document_title"] ??
+                            //             detail["chat_title"] ??
+                            //             detail["title"] ??
+                            //             "AI Chat",
+                            //         aiChatId: detail["ai_chat_id"] ?? 0,
+                            //         summary: detail["summary"] ?? "",
+                            //         content: detail["content"] ?? "",
+                            //         attachments: detail["attachments"] ?? [],
+                            //         postContentId:
+                            //             detail["post_content_id"] ?? 0,
+                            //       ),
+                            //     ),
+                            //   );
+                            //},
                             onTap: () async {
                               if (aiChatId == null) return;
 
+                              final navigator = Navigator.of(context);
+
                               final detail = await _repo.getAIChat(aiChatId);
 
-                              Navigator.push(
-                                context,
+                              if (!mounted) return;
+
+                              navigator.push(
                                 MaterialPageRoute(
                                   builder: (_) => AIChatDetailPage(
                                     title: detail["post_title"] ?? "",
@@ -217,13 +269,18 @@ class _AIChatListPageState extends State<AIChatListPage> {
                                         _aiAvatarUrl,
                                         fit: BoxFit.cover,
                                         alignment: Alignment.center,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          color: AppColors.buttonPalette[100],
-                                          child: Icon(
-                                            Icons.auto_awesome,
-                                            color: AppColors.buttonPalette[600],
-                                          ),
-                                        ),
+                                        //errorBuilder: (_, __, ___) => Container(
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Container(
+                                                  color: AppColors
+                                                      .buttonPalette[100],
+                                                  child: Icon(
+                                                    Icons.auto_awesome,
+                                                    color: AppColors
+                                                        .buttonPalette[600],
+                                                  ),
+                                                ),
                                       ),
                                     ),
                                   ),

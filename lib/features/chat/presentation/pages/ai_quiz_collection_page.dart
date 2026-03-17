@@ -93,7 +93,7 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
     });
   }
 
-  String _buildQuizMetaText(
+  String buildQuizMetaText(
     Map<String, dynamic> quiz,
     int questionCount,
     QuizAttemptResult? result,

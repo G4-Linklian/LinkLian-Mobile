@@ -1,5 +1,4 @@
 import 'package:LinkLian/core/constants/colors.dart';
-import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/features/chat/presentation/pages/ai_quiz_collection_page.dart';
 import 'package:LinkLian/features/chat/presentation/pages/ai_quiz_page.dart';
 import 'package:LinkLian/features/chat/presentation/pages/quiz_attempt_store.dart';
@@ -13,7 +12,6 @@ import 'package:LinkLian/features/chat/presentation/widgets/ai_quiz_popup.widget
 import 'package:LinkLian/features/chat/presentation/widgets/chat_attachment_widget.dart';
 import 'package:LinkLian/features/chat/presentation/widgets/ai_chat_input_bar.widget.dart';
 import 'package:LinkLian/features/chat/presentation/services/ai_summary_notification_service.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AIChatDetailPage extends StatefulWidget {
   final String title;
@@ -44,7 +42,8 @@ class AIChatDetailPage extends StatefulWidget {
 }
 
 class _AIChatDetailPageState extends State<AIChatDetailPage> {
-  static final String _aiAvatarUrl = (dotenv.env['AI_AVATAR_URL'] ?? '').trim();
+  static const String _aiAvatarUrl =
+      'https://linklianstorage.blob.core.windows.net/chat/logo/Logo-black-sq.png';
 
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -83,7 +82,8 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
       child: Image.network(
         _aiAvatarUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
+        //errorBuilder: (_, __, ___) => Container(
+        errorBuilder: (context, error, stackTrace) => Container(
           color: AppColors.primaryPalette[100],
           child: Icon(
             Icons.auto_awesome,
@@ -446,7 +446,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
       });
 
       _scrollToBottom();
-    } catch (e, stack) {
+    } catch (e) {
       setState(() {
         _isAiResponding = false;
         messages.removeWhere(
@@ -727,7 +727,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                             padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
                             child: attachment,
                           );
-                        }).toList(),
+                        }),
                     ],
                   ),
                 ),
@@ -1102,7 +1102,6 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -1154,15 +1153,15 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                 ),
                 Positioned(
                   right: -6,
-                  bottom: -4,
+                  bottom: -2,
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.09),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      TablerIcons.ai,
-                      size: 24,
+                      Icons.auto_awesome,
+                      size: 18,
                       color: AppColors.primaryPalette[800],
                     ),
                   ),
@@ -1191,7 +1190,8 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                       children: [
                         _buildPostCard(),
                         const SizedBox(height: 10),
-                        ...messages.map((msg) => _buildMessage(msg)).toList(),
+                        //...messages.map((msg) => _buildMessage(msg)).toList(),
+                        ...messages.map((msg) => _buildMessage(msg)),
                       ],
                     ),
                     if (_showScrollToLatestButton)
@@ -1257,12 +1257,15 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
         repo.getQuiz(_activeAiChatId),
       ]);
 
-      final result = List<Map<String, dynamic>>.from(
-        responses[0] as List<Map<String, dynamic>>,
-      );
-      final quizzes = List<Map<String, dynamic>>.from(
-        responses[1] as List<Map<String, dynamic>>,
-      );
+      // final result = List<Map<String, dynamic>>.from(
+      //   responses[0] as List<Map<String, dynamic>>,
+      // );
+      // final quizzes = List<Map<String, dynamic>>.from(
+      //   responses[1] as List<Map<String, dynamic>>,
+      // );
+      final result = List<Map<String, dynamic>>.from(responses[0]);
+
+      final quizzes = List<Map<String, dynamic>>.from(responses[1]);
 
       if (!mounted) return;
 

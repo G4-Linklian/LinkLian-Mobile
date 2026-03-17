@@ -116,67 +116,61 @@ class _ChatPageState extends State<ChatPage> {
           ),
         ),
         actions: [
-  if (viewerRole == "high school student" || viewerRole == "uni student")
-    Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: Container(
-        // decoration: BoxDecoration(
-        //   color: AppColors.primaryPalette[100],
-        //   shape: BoxShape.circle,
-        // ),
-        child: IconButton(
-          icon: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Icon(
-                // TablerIcons.message_circle,
-                //TablerIcons.brand_wechat,
-                TablerIcons.message_filled,
-                size: 28,
-                color: AppColors.primaryPalette[500],
-              ),
-              Positioned(
-                right: -6,
-                top: -6,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  padding: const EdgeInsets.all(2),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primaryPalette[500]!.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+          if (viewerRole == "high school student" ||
+              viewerRole == "uni student")
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      // TablerIcons.message_circle,
+                      //TablerIcons.brand_wechat,
+                      TablerIcons.message_filled,
+                      size: 28,
+                      color: AppColors.primaryPalette[500],
+                    ),
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
                         ),
-                      ],
+                        padding: const EdgeInsets.all(2),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primaryPalette[500]!
+                                    .withValues(alpha: 0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.auto_awesome,
+                            size: 22,
+                            color: AppColors.primaryPalette[700],
+                          ),
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      Icons.auto_awesome,
-                      size: 22,
-                      color: AppColors.primaryPalette[700],
-                    ),
-                  ),
+                  ],
                 ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AIChatListPage()),
+                  );
+                },
               ),
-            ],
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const AIChatListPage(),
-              ),
-            );
-          },
-        ),
-      ),
-    ),
-],
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -331,6 +325,8 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildChatItem(ChatModel chat) {
     return InkWell(
       onTap: () async {
+        final navigator = Navigator.of(context);
+
         if (_isSearching) {
           final senderId = await LocalStorage.getLastLoginUserId();
 
@@ -350,17 +346,20 @@ class _ChatPageState extends State<ChatPage> {
             profileImage: chat.profileImage,
           );
 
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => ChatMessagePage(chat: chat)),
+          if (!mounted) return;
+
+          await navigator.push(
+            MaterialPageRoute(
+              builder: (_) => ChatMessagePage(chat: mergedChat),
+            ),
           );
 
           _resetSearch();
-
           await _loadChats();
         } else {
-          await Navigator.push(
-            context,
+          if (!mounted) return;
+
+          await navigator.push(
             MaterialPageRoute(builder: (_) => ChatMessagePage(chat: chat)),
           );
 
@@ -505,6 +504,8 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildSearchUserItem(ChatModel user) {
     return InkWell(
       onTap: () async {
+        final navigator = Navigator.of(context);
+
         final senderId = await LocalStorage.getLastLoginUserId();
 
         final newChat = await _chatController.createChat(
@@ -523,12 +524,13 @@ class _ChatPageState extends State<ChatPage> {
           profileImage: user.profileImage,
         );
 
-        await Navigator.push(
-          context,
+        if (!mounted) return;
+
+        await navigator.push(
           MaterialPageRoute(builder: (_) => ChatMessagePage(chat: mergedChat)),
         );
-        _resetSearch();
 
+        _resetSearch();
         await _loadChats();
       },
       child: Container(
