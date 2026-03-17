@@ -90,12 +90,10 @@ class ClassDetailController extends GetxController {
 
         appLog.info(
           '[ClassDetail] onReady - args from NavigationController: $args',
-          '[ClassDetail] onReady - args from NavigationController: $args',
         );
 
         if (args != null) {
           appLog.info(
-            '[ClassDetail] Initializing from NavigationController in onReady',
             '[ClassDetail] Initializing from NavigationController in onReady',
           );
           initializeWithArgs(args);
@@ -108,7 +106,6 @@ class ClassDetailController extends GetxController {
       }
     } else {
       appLog.info(
-        '[ClassDetail] Already initialized with sectionId: ${sectionId.value}',
         '[ClassDetail] Already initialized with sectionId: ${sectionId.value}',
       );
     }
