@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/utils/dialog_helper.dart';
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:LinkLian/features/community/data/models/community_model.dart';
@@ -86,12 +87,10 @@ class CommunityController extends GetxController {
 
       communities.assignAll(filtered);
     } catch (e) {
-      Get.snackbar(
-        'ข้อผิดพลาด',
-        'ไม่สามารถโหลดข้อมูลชุมชนได้',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      appLog.error(
+        'Load community failed',
+        actionPage: 'CommunityController',
+        data: e.toString(),
       );
     } finally {
       isLoading.value = false;
@@ -112,10 +111,10 @@ class CommunityController extends GetxController {
         type: NotificationType.success,
       );
     } catch (e) {
-      DialogHelper.showNotification(
-        title: 'ข้อผิดพลาด',
-        message: 'ไม่สามารถลบชุมชนได้',
-        type: NotificationType.error,
+      appLog.error(
+        'Delete community failed',
+        actionPage: 'CommunityController',
+        data: e.toString(),
       );
     } finally {
       isLoading.value = false;
