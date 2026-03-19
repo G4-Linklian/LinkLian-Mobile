@@ -1,4 +1,7 @@
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
+import 'package:LinkLian/features/chat/presentation/services/ai_summary_notification_service.dart';
+import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:get/get.dart';
 import 'class_detail_filter.dart';
 import '../../../shared/repositories/post_repository.dart';
@@ -6,6 +9,7 @@ import '../../../shared/repositories/class_feed_repository.dart';
 import 'class_feed_controller.dart';
 import '../../../shared/models/post_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/animation.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 
 class ClassDetailController extends GetxController {
@@ -21,15 +25,9 @@ class ClassDetailController extends GetxController {
   final RxList<PostModel> posts = <PostModel>[].obs;
   final RxSet<int> selectedPostIdsForAI = <int>{}.obs;
 
-  // Maximum posts that can be selected for AI summary
-  // Currently 1, but can be increased in future for multi-select flow
   static const int maxAISelectCount = 1;
 
-  // final isLoadingClassInfo = false.obs;
-  // final RxString classInfoError = ''.obs;
   final schedules = <Map<String, dynamic>>[].obs;
-  // final members = <Map<String, dynamic>>[].obs;
-  // final educators = <Map<String, dynamic>>[].obs;
 
   int _offset = 0;
   final int _limit = 10;
@@ -37,9 +35,10 @@ class ClassDetailController extends GetxController {
   final PostRepository _postRepository = PostRepository();
   final ClassFeedRepository _classFeedRepository = ClassFeedRepository();
   final ScrollController scrollController = ScrollController();
-  // เพิ่ม fields เหล่านี้ใน ClassDetailController
+
   DateTime? _lastFetchTime;
-  static const _refreshThresholdSeconds = 30; // โหลดใหม่ถ้าผ่านไป 30 วิ
+  int? _lastKnownPostCount;
+  static const _refreshThresholdSeconds = 30; 
   List<int> get effectiveSectionIds {
     return [if (sectionId.value != null) sectionId.value!];
   }
@@ -75,14 +74,15 @@ class ClassDetailController extends GetxController {
   void onInit() {
     super.onInit();
     appLog.info('[ClassDetail] onInit called');
+    appLog.info('[ClassDetail] onInit called');
   }
 
   @override
   void onReady() {
     super.onReady();
     appLog.info('[ClassDetail] onReady called');
+    appLog.info('[ClassDetail] onReady called');
 
-    // Try to initialize from NavigationController if not already initialized
     if (sectionId.value == null) {
       try {
         final navController = Get.find<NavigationController>();
@@ -98,6 +98,7 @@ class ClassDetailController extends GetxController {
           );
           initializeWithArgs(args);
         } else {
+          appLog.info('[ClassDetail] No args available in onReady');
           appLog.info('[ClassDetail] No args available in onReady');
         }
       } catch (e) {
@@ -124,15 +125,13 @@ class ClassDetailController extends GetxController {
     final isNewSection = sectionId.value != newSectionId;
 
     if (isNewSection) {
-      // เปลี่ยน section — reset ทุกอย่าง
       selectedFilter.value = ClassPostFilter.all;
       _lastFetchTime = null;
       posts.clear();
       hasMore.value = true;
       _offset = 0;
       appLog.info(
-        '[ClassDetail] New section',
-        data: {'oldSectionId': sectionId.value, 'newSectionId': newSectionId},
+        'New section - reset & reload',
         actionPage: 'ClassDetailScreen',
       );
     }
@@ -150,16 +149,11 @@ class ClassDetailController extends GetxController {
     }
   }
 
-  /// เรียกเมื่อกลับมาที่หน้านี้จากหน้าอื่น (เช่น หลังโพสต์)
   Future<void> refreshIfNeeded() async {
     if (sectionId.value == null) return;
 
-    // ถ้าไม่มีโพสต์เลย — โหลดเสมอ
     if (posts.isEmpty) {
-      appLog.info(
-        '[ClassDetail] No posts — fetching',
-        actionPage: 'ClassDetailScreen',
-      );
+      appLog.info('No posts - fetching', actionPage: 'ClassDetailScreen');
       await fetchPosts();
       return;
     }
@@ -167,7 +161,7 @@ class ClassDetailController extends GetxController {
     final lastFetch = _lastFetchTime;
     if (lastFetch == null) {
       appLog.info(
-        '[ClassDetail] Never loaded — fetching',
+        'Never loaded - fetching',
         actionPage: 'ClassDetailScreen',
       );
       await fetchPosts();
@@ -178,22 +172,31 @@ class ClassDetailController extends GetxController {
 
     if (secondsSinceFetch >= _refreshThresholdSeconds) {
       appLog.info(
-        '[ClassDetail] Data stale (${secondsSinceFetch}s) — refreshing',
-        data: {'lastFetch': lastFetch, 'currentTime': DateTime.now()},
+        'Data stale (${secondsSinceFetch}s) - refreshing',
         actionPage: 'ClassDetailScreen',
       );
       await fetchPosts();
       return;
     }
+
+    appLog.info(
+      'Data fresh (${secondsSinceFetch}s ago) - skip',
+      actionPage: 'ClassDetailScreen',
+    );
   }
 
   void fetchClassDetailFromFeed() {
     try {
+      appLog.info('[ClassDetail] fetchClassDetailFromFeed called');
+
       if (sectionId.value == null) {
-        appLog.info('⚠️ [ClassDetail] sectionId is null, skipping fetch');
+        appLog.info('[ClassDetail] sectionId is null, skipping fetch');
         return;
       }
       if (!Get.isRegistered<ClassFeedController>()) {
+        appLog.info(
+          '[ClassDetail] ClassFeedController not registered, using fallback',
+        );
         _fetchClassDetailFallback();
         return;
       }
@@ -205,14 +208,19 @@ class ClassDetailController extends GetxController {
       );
 
       if (classDetail != null) {
+        appLog.info('[ClassDetail] Found class detail in feed controller');
         subjectNameTh.value = classDetail.subjectNameTh;
         effectiveClassName.value = classDetail.effectiveClassName;
 
         _fetchTeacherName();
       } else {
+        appLog.info(
+          '[ClassDetail] Class detail not found in feed, using fallback',
+        );
         _fetchClassDetailFallback();
       }
     } catch (e) {
+      appLog.info('[ClassDetail] Error in fetchClassDetailFromFeed: $e');
       _fetchClassDetailFallback();
     }
   }
@@ -306,17 +314,17 @@ class ClassDetailController extends GetxController {
     bool keepScroll = false,
   }) async {
     if (loadMore && !hasMore.value) {
+      appLog.info('[ClassDetail] No more posts to load');
       return;
     }
 
     if (loadMore && isLoadingMore.value) {
-      appLog.warning('[ClassDetail] Already loading more');
+      appLog.info('[ClassDetail] Already loading more');
       return;
     }
 
-    // ป้องกันโหลดซ้ำขณะที่กำลังโหลดอยู่
     if (!loadMore && isLoading.value) {
-      appLog.warning('[ClassDetail] Already loading');
+      appLog.info('[ClassDetail] Already loading');
       return;
     }
 
@@ -362,6 +370,7 @@ class ClassDetailController extends GetxController {
 
       if (result.length < _limit) {
         hasMore.value = false;
+        appLog.info('[ClassDetail] No more posts to load');
         appLog.info('[ClassDetail] No more posts to load');
       }
 
@@ -413,42 +422,76 @@ class ClassDetailController extends GetxController {
 
   void togglePostSelection(int postId) {
     if (selectedPostIdsForAI.contains(postId)) {
-      // Deselect
       selectedPostIdsForAI.remove(postId);
     } else {
-      // Check if can select more (respects maxAISelectCount limit)
       if (selectedPostIdsForAI.length < maxAISelectCount) {
         selectedPostIdsForAI.add(postId);
       }
-      // If already at max, do nothing (UI should prevent this)
+
     }
   }
 
-  /// Check if a post can be selected for AI
-  /// Returns true if the post is already selected OR there's room for more selections
-  bool canSelectForAI(int postId) {
-    return selectedPostIdsForAI.contains(postId) ||
+ 
+  bool canSelectForAI(int postContentId) {
+    return selectedPostIdsForAI.contains(postContentId) ||
         selectedPostIdsForAI.length < maxAISelectCount;
   }
 
-  /// Clear all AI selections (useful when returning from AI flow)
   void clearAISelections() {
     selectedPostIdsForAI.clear();
   }
 
   Future<void> generateAISummary() async {
-    if (selectedPostIdsForAI.isEmpty) {
-      Get.snackbar('แจ้งเตือน', 'กรุณาเลือกโพสต์อย่างน้อย 1 โพสต์');
-      return;
-    }
+    if (selectedPostIdsForAI.isEmpty) return;
 
     try {
-      Get.snackbar(
-        'กำลังสรุป',
-        'กำลังสรุปโพสต์ ${selectedPostIdsForAI.length} รายการ...',
+      final repo = AIChatRepository();
+      final postContentId = selectedPostIdsForAI.first;
+      final selectedPost = posts.firstWhereOrNull(
+        (post) => post.postContentId == postContentId,
+      );
+      final attachments =
+          selectedPost?.attachments
+              ?.map(
+                (attachment) => {
+                  "url": attachment.fileUrl,
+                  "type": attachment.fileType,
+                  "name": attachment.fileName,
+                  "original_name": attachment.originalName,
+                },
+              )
+              .toList() ??
+          const <Map<String, dynamic>>[];
+      final summaryFuture = repo.generateSummary(postContentId);
+
+      AISummaryNotificationService.watchSummary(
+        summaryFuture: summaryFuture,
+        postContentId: postContentId,
+        fallbackPostTitle: (selectedPost?.title.isNotEmpty ?? false)
+            ? selectedPost!.title
+            : "AI Chat",
+        content: selectedPost?.content ?? "",
+        attachments: List<Map<String, dynamic>>.from(attachments),
+      );
+
+      selectedPostIdsForAI.clear();
+
+      Get.to(
+        () => AIChatDetailPage(
+          title: (selectedPost?.title.isNotEmpty ?? false)
+              ? selectedPost!.title
+              : "AI Chat",
+          documentTitle: 'AI Chat',
+          aiChatId: 0,
+          summary: "",
+          content: selectedPost?.content ?? "",
+          attachments: attachments,
+          postContentId: postContentId,
+          initialSummaryFuture: summaryFuture,
+        ),
       );
     } catch (e) {
-      Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถสรุปเนื้อหาได้');
+      //Get.snackbar("Error", "ไม่สามารถสร้าง AI Chat ได้");
     }
   }
 

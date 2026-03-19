@@ -1,6 +1,6 @@
-import 'package:LinkLian/data/repository/chat.repository.dart';
+import 'package:LinkLian/features/chat/data/repository/chat.repository.dart';
 import 'package:LinkLian/core/services/local_storage.dart';
-import 'package:LinkLian/data/model/chat.model.dart';
+import 'package:LinkLian/features/chat/data/models/chat.model.dart';
 // import 'package:LinkLian/core/utils/logger.dart';
 
 class ChatController {
@@ -39,6 +39,16 @@ class ChatController {
       chatId: chatId,
       isAiChat: isAiChat,
       flagValid: flagValid,
+    );
+  }
+
+  /// SEARCH USER FOR CREATE CHAT
+  Future<List<ChatModel>> searchUsers(String keyword) async {
+    final userSysId = await LocalStorage.getLastLoginUserId();
+
+    return await _chatRepository.searchUsers(
+      userSysId: userSysId!,
+      keyword: keyword,
     );
   }
 }

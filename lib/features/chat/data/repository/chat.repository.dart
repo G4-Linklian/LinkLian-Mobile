@@ -1,7 +1,10 @@
+import 'package:LinkLian/core/utils/api_response_parser.dart';
+import 'package:dio/dio.dart';
+import 'dart:io';
 import 'package:LinkLian/core/utils/logger.dart';
 
-import '../../core/services/api_client.dart';
-import '../model/chat.model.dart';
+import '../../../../core/services/api_client.dart';
+import '../models/chat.model.dart';
 
 class ChatRepository {
   final ApiClient _apiClient = ApiClient();
@@ -28,31 +31,18 @@ class ChatRepository {
     if (limit != null) body['limit'] = limit;
     if (offset != null) body['offset'] = offset;
 
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      '/chat.get',
-      data: body,
-    );
+    final response = await _apiClient.get('/chat', queryParameters: body);
 
     if (response.statusCode == 200 && response.data != null) {
       final list = response.data!['data'] as List;
       appLog.info('Response data: ${response.data!['data']}');
 
       appLog.info('Fetched chats count: ${list.length}');
-
-      try {
-        final chats = list.map((chatJson) {
-          appLog.info('Parsing chatJson: $chatJson');
-          return ChatModel.fromJson(Map<String, dynamic>.from(chatJson));
-        }).toList();
-
-        appLog.info('Parsed chats count: ${chats.length}');
-        return chats;
-      } catch (e, stack) {
-        appLog.error('❌ Error parsing chats');
-        appLog.error('$e');
-        appLog.error('$stack');
-        rethrow;
-      }
+      
+      return ApiResponseParser.parseList<ChatModel>(
+        response.data,
+        ChatModel.fromJson,
+      );
     }
 
     throw Exception('Failed to fetch chats');
@@ -64,8 +54,8 @@ class ChatRepository {
     required int senderId,
     required int receiverId,
   }) async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      '/chat.create',
+    final response = await _apiClient.post(
+      '/chat',
       data: {
         'is_ai_chat': isAiChat,
         'sender_id': senderId,
@@ -74,9 +64,11 @@ class ChatRepository {
     );
 
     if (response.statusCode == 201 && response.data != null) {
-      return ChatModel.fromJson(
-        Map<String, dynamic>.from(response.data!['data']),
+      final result = ApiResponseParser.parseObject<ChatModel>(
+        response.data,
+        ChatModel.fromJson,
       );
+      if (result != null) return result;
     }
 
     throw Exception('Failed to create chat');
@@ -99,9 +91,11 @@ class ChatRepository {
     );
 
     if (response.statusCode == 200 && response.data != null) {
-      return ChatModel.fromJson(
-        Map<String, dynamic>.from(response.data!['data']),
+      final result = ApiResponseParser.parseObject<ChatModel>(
+        response.data,
+        ChatModel.fromJson,
       );
+      if (result != null) return result;
     }
 
     throw Exception('Failed to update chat');
@@ -115,8 +109,10 @@ class ChatRepository {
     );
 
     if (response.statusCode == 200) {
-      appLog.info('Chat deleted successfully');
-      return;
+      if (ApiResponseParser.parseSuccess(response.data)) {
+        appLog.info('Chat deleted successfully');
+        return;
+      }
     }
 
     throw Exception('Failed to delete chat');
@@ -148,56 +144,84 @@ class ChatRepository {
     if (limit != null) body['limit'] = limit;
     if (offset != null) body['offset'] = offset;
 
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      '/message.get',
-      data: body,
+    final response = await _apiClient.get(
+      '/chat/messages',
+      queryParameters: body,
     );
 
     if (response.statusCode == 200 && response.data != null) {
-      final list = response.data!['data'] as List;
-      return list.map((e) => ChatModel.fromJson(Map<String, dynamic>.from(e))).toList();
+      return ApiResponseParser.parseList<ChatModel>(
+        response.data,
+        ChatModel.fromJson,
+      );
     }
 
     throw Exception('Failed to fetch messages');
   }
 
-  /// CREATE MESSAGE
   Future<ChatModel> createMessage({
     required int chatId,
     required int senderId,
     required String content,
     int? replyId,
-    List<dynamic>? file,
+    File? file,
   }) async {
-    final Map<String, dynamic> body = {
+    final formData = FormData.fromMap({
       'chat_id': chatId,
       'sender_id': senderId,
       'content': content,
-    };
+      if (replyId != null) 'reply_id': replyId,
+      if (file != null)
+        'files': [
+          await MultipartFile.fromFile(
+            file.path,
+            filename: file.path.split('/').last,
+          ),
+        ],
+    });
 
-    if (replyId != null) body['reply_id'] = replyId;
-    if (file != null) body['file'] = file;
-
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      '/message.create',
-      data: body,
+    final response = await _apiClient.post(
+      '/chat/messages',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
     );
 
     if (response.statusCode == 201 && response.data != null) {
       final data = response.data!['data'];
-      
+
       // Handle if data is a List, take the first item
       if (data is List && data.isNotEmpty) {
         return ChatModel.fromJson(Map<String, dynamic>.from(data.first));
       }
-      // Handle if data is already a Map
-      else if (data is Map) {
-        return ChatModel.fromJson(Map<String, dynamic>.from(data));
-      }
-      
+
+      // Handle if data is already a Map — use parseObject
+      final result = ApiResponseParser.parseObject<ChatModel>(
+        response.data,
+        ChatModel.fromJson,
+      );
+      if (result != null) return result;
+
       throw Exception('Invalid response data format');
     }
 
     throw Exception('Failed to create message');
+  }
+
+  Future<List<ChatModel>> searchUsers({
+    required int userSysId,
+    String? keyword,
+  }) async {
+    final response = await _apiClient.get(
+      '/chat/users/search',
+      queryParameters: {'user_sys_id': userSysId, 'keyword': keyword},
+    );
+
+    if (response.statusCode == 200 && response.data != null) {
+      final list = response.data['data']['users'] ?? [];
+
+      return list.map<ChatModel>((e) => ChatModel.fromJson(e)).toList();
+    }
+
+    return [];
   }
 }

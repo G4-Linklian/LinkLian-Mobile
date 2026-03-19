@@ -88,6 +88,8 @@ class LinkLianIcon {
   static const IconData message = TablerIcons.message_circle_filled;
   static const IconData notification = TablerIcons.bell_filled;
   static const IconData add = TablerIcons.square_rounded_plus_filled;
+  static const IconData bulbFilled = TablerIcons.bulb_filled;
+  static const IconData fileTextSpark = TablerIcons.file_text_spark;
   
   //auth
   static const IconData info = TablerIcons.info_circle;          

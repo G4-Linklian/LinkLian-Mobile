@@ -179,13 +179,14 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                       }
 
                       final post = controller.posts[index];
+                      //
                       return CardPost(
                         post: post,
                         classDetailController: controller,
                         onSelectForAI: isTeacher
                             ? null
-                            : (postId) {
-                                controller.togglePostSelection(postId);
+                            : (postContentId) {
+                                controller.togglePostSelection(postContentId);
                               },
                       );
                     },
@@ -337,7 +338,7 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
       fit: StackFit.expand,
       children: [
         // รูปภาพ — ไม่เปลี่ยน
-        Image.network(LinkLianBg.classCardHeader, fit: BoxFit.cover,),
+        Image.network(LinkLianBg.classCardHeader, fit: BoxFit.cover),
 
         // Gradient layer — ไม่เปลี่ยน
         Container(
@@ -609,7 +610,7 @@ class _FilterSection extends StatelessWidget {
             Obx(() {
               final count = controller.selectedPostIdsForAI.length;
               if (count == 0) return const SizedBox.shrink();
-              
+
               return TextButton.icon(
                 onPressed: controller.generateAISummary,
                 icon: Icon(

@@ -1,5 +1,8 @@
 import 'package:LinkLian/core/constants/linklian-icon.dart';
+import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/core/utils/profile_popup_helper.dart';
+import 'package:LinkLian/features/shared/repositories/profile_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:get/get.dart';
@@ -163,19 +166,45 @@ class _CardPostState extends State<CardPost> {
                   const SizedBox(height: 12),
 
                   // ===== PROFILE ROW =====
+                  // Row(
+                  //   children: [
+                  //     _buildProfileAvatar(),
                   Row(
                     children: [
-                      _buildProfileAvatar(),
+                      GestureDetector(
+                        onTap: () {
+                          final auth = Get.find<AuthController>();
+
+                          if (widget.post.userSysId == auth.userId.value) {
+                            return;
+                          }
+
+                          _openProfilePopup();
+                        },
+                        child: _buildProfileAvatar(),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              widget.post.displayName ?? 'ไม่ทราบชื่อ',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                            GestureDetector(
+                              onTap: () {
+                                final auth = Get.find<AuthController>();
+
+                                if (widget.post.userSysId ==
+                                    auth.userId.value) {
+                                  return;
+                                }
+
+                                _openProfilePopup();
+                              },
+                              child: Text(
+                                widget.post.displayName ?? 'ไม่ทราบชื่อ',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                             if (!widget.post.isAnonymous &&
@@ -612,16 +641,16 @@ class _CardPostState extends State<CardPost> {
       }
 
       final isSelected = _classController!.selectedPostIdsForAI.contains(
-        widget.post.postId,
+        widget.post.postContentId,
       );
 
       // Check if can select this post (either already selected or has room)
-      final canSelect = _classController!.canSelectForAI(widget.post.postId);
-
+      final canSelect = _classController!.canSelectForAI(widget.post.postContentId);
+ 
       return GestureDetector(
         onTap: () {
           if (canSelect && widget.onSelectForAI != null) {
-            widget.onSelectForAI!(widget.post.postId);
+            widget.onSelectForAI!(widget.post.postContentId);
           }
         },
         child: Container(
@@ -1146,6 +1175,36 @@ class _CardPostState extends State<CardPost> {
         ),
       ),
     );
+  }
+
+  Future<void> _openProfilePopup() async {
+    if (widget.post.isAnonymous) return;
+    if (widget.post.userSysId == null) return;
+
+    final auth = Get.find<AuthController>();
+
+    if (auth.userId.value == widget.post.userSysId) {
+      return;
+    }
+
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      final repo = ProfileRepository(ApiClient());
+
+      final profile = await repo.getProfile(widget.post.userSysId!);
+
+      Get.back();
+
+      showProfilePopup(profile);
+    } catch (e) {
+      if (Get.isDialogOpen ?? false) Get.back();
+
+      Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลโปรไฟล์ได้');
+    }
   }
 
   String _formatDateTime(DateTime dt) {
