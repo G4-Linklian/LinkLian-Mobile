@@ -36,6 +36,7 @@ class AIChatRepository {
     required int aiChatId,
     required String difficulty,
     required int questionCount,
+    required String mode,
   }) async {
     Future<Map<String, dynamic>> sendRequest() async {
       final response = await _apiClient.post(
@@ -44,6 +45,7 @@ class AIChatRepository {
           "ai_chat_id": aiChatId,
           "difficulty": difficulty,
           "question_count": questionCount,
+          "mode": mode,
         },
       );
 
@@ -173,5 +175,26 @@ class AIChatRepository {
     }
 
     throw Exception("Failed to send message");
+  }
+
+  Future<Map<String, dynamic>> checkAnswer({
+    required int quizId,
+    required int questionIndex,
+    required String selected,
+  }) async {
+    final response = await _apiClient.post(
+      '/quiz/check-answer',
+      data: {
+        "quiz_id": quizId,
+        "question_index": questionIndex,
+        "selected": selected,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return Map<String, dynamic>.from(response.data);
+    }
+
+    throw Exception("Failed to check answer");
   }
 }

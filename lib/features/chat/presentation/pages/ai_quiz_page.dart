@@ -20,6 +20,7 @@ class _AIQuizPageState extends State<AIQuizPage> {
   int correctCount = 0;
   int wrongCount = 0;
   bool _isOpeningResult = false;
+  bool _showExamReview = false;
 
   static const List<String> _thaiLabels = [
     'ก',
@@ -49,16 +50,10 @@ class _AIQuizPageState extends State<AIQuizPage> {
     if (saved == null || saved.isEmpty) return;
     final qs = questions;
     userAnswers.addAll(saved);
-    correctCount = 0;
-    wrongCount = 0;
-    for (final entry in saved.entries) {
-      if (entry.key >= qs.length) continue;
-      final answer = qs[entry.key]['answer']?.toString() ?? '';
-      if (entry.value == answer) {
-        correctCount++;
-      } else {
-        wrongCount++;
-      }
+    _recalculateCounts();
+
+    if (mode == 'exam' && result != null && saved.length >= qs.length) {
+      _showExamReview = true;
     }
   }
 
@@ -77,20 +72,9 @@ class _AIQuizPageState extends State<AIQuizPage> {
       userAnswers.addAll(
         answers.map((k, v) => MapEntry(int.parse(k), v.toString())),
       );
-
-      correctCount = 0;
-      wrongCount = 0;
-
-      for (final entry in userAnswers.entries) {
-        if (entry.key >= questions.length) continue;
-
-        final answer = questions[entry.key]['answer']?.toString() ?? '';
-
-        if (entry.value == answer) {
-          correctCount++;
-        } else {
-          wrongCount++;
-        }
+      _recalculateCounts();
+      if (mode == 'exam' && userAnswers.length >= questions.length) {
+        _showExamReview = true;
       }
     });
   }
@@ -111,7 +95,27 @@ class _AIQuizPageState extends State<AIQuizPage> {
     return 0;
   }
 
+  String get mode => widget.quiz['mode'] ?? 'exam';
   bool get hasAnsweredCurrent => userAnswers.containsKey(currentIndex);
+  bool get _allAnswered => userAnswers.length >= questions.length;
+
+  void _recalculateCounts() {
+    int correct = 0;
+    int wrong = 0;
+
+    for (final entry in userAnswers.entries) {
+      if (entry.key >= questions.length) continue;
+      final answer = questions[entry.key]['answer']?.toString() ?? '';
+      if (entry.value == answer) {
+        correct++;
+      } else {
+        wrong++;
+      }
+    }
+
+    correctCount = correct;
+    wrongCount = wrong;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,11 +126,16 @@ class _AIQuizPageState extends State<AIQuizPage> {
     final question = questions[currentIndex];
     final total = questions.length;
     final choices = List<String>.from(question['choices'] ?? const <String>[]);
+    final isLastQuestion = currentIndex == total - 1;
+    final canPrimaryAction =
+        hasAnsweredCurrent &&
+        !_isOpeningResult &&
+        (mode != 'exam' || !isLastQuestion || _allAnswered);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('AI Quiz'),
+        title: Text(mode == 'learning' ? 'แบบการเรียนรู้' : 'แบบทดสอบ'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0.5,
@@ -227,17 +236,27 @@ class _AIQuizPageState extends State<AIQuizPage> {
                         ),
                         textStyle: const TextStyle(fontSize: 13),
                       ),
-                      onPressed: (!hasAnsweredCurrent || _isOpeningResult)
+                      onPressed: !canPrimaryAction
                           ? null
                           : () {
-                              if (currentIndex < total - 1) {
-                                setState(() => currentIndex++);
-                                return;
+                              if (mode == "exam") {
+                                if (currentIndex < total - 1) {
+                                  setState(() => currentIndex++);
+                                  return;
+                                }
+                                _submitExam(total);
+                              } else {
+                                if (currentIndex < total - 1) {
+                                  setState(() => currentIndex++);
+                                  return;
+                                }
+                                _openResult(total);
                               }
-                              _openResult(total);
                             },
                       child: Text(
-                        currentIndex < total - 1 ? 'ถัดไป' : 'ดูผลลัพธ์',
+                        currentIndex < total - 1
+                            ? 'ถัดไป'
+                            : (mode == 'exam' ? 'ส่งคำตอบ' : 'ดูผลลัพธ์'),
                       ),
                     ),
                   ),
@@ -248,6 +267,23 @@ class _AIQuizPageState extends State<AIQuizPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _submitExam(int total) async {
+    _recalculateCounts();
+
+    final repo = AIChatRepository();
+
+    await repo.saveQuizAttempt(
+      quizId: quizId,
+      score: correctCount,
+      total: total,
+      answers: userAnswers,
+    );
+
+    _showExamReview = true;
+
+    _openResult(total);
   }
 
   Widget _scoreBadge({
@@ -325,31 +361,71 @@ class _AIQuizPageState extends State<AIQuizPage> {
 
     final isCorrect = choice == answer;
     final isSelected = choice == selected;
+    final showExamReveal = mode == 'exam' && _showExamReview;
 
     // Background color
     Color bg = Colors.white;
-    if (hasAnswered && isCorrect) {
+    if ((mode == "learning" && hasAnswered && isCorrect) ||
+        (showExamReveal && isCorrect)) {
       bg = AppColors.successPalette[100]!;
-    } else if (hasAnswered && isSelected && !isCorrect) {
+    } else if ((mode == "learning" &&
+            hasAnswered &&
+            isSelected &&
+            !isCorrect) ||
+        (showExamReveal && isSelected && !isCorrect)) {
       bg = AppColors.dangerPalette[200]!;
+    } else if (mode == 'exam' && isSelected) {
+      bg = AppColors.primaryPalette[100]!;
     }
+
+    final borderColor = isSelected
+        ? AppColors.primaryPalette[400]!
+        : AppColors.primaryPalette[100]!;
 
     final label = choiceIndex < _thaiLabels.length
         ? _thaiLabels[choiceIndex]
         : '${choiceIndex + 1}';
 
     return GestureDetector(
-      onTap: () {
-        if (hasAnswered) return;
-        setState(() {
-          userAnswers[currentIndex] = choice;
-          if (choice == answer) {
-            correctCount++;
-          } else {
-            wrongCount++;
-          }
-        });
-        QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+      // onTap: () {
+      //   if (hasAnswered) return;
+      //   setState(() {
+      //     userAnswers[currentIndex] = choice;
+      //     if (choice == answer) {
+      //       correctCount++;
+      //     } else {
+      //       wrongCount++;
+      //     }
+      //   });
+      //   QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+      // },
+      onTap: () async {
+        if (mode == "learning") {
+          setState(() {
+            userAnswers[currentIndex] = choice;
+            _recalculateCounts();
+          });
+
+          QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+
+          // Keep backend validation as best-effort so learning mode always
+          // reveals immediately even if the network request fails.
+          try {
+            final repo = AIChatRepository();
+            await repo.checkAnswer(
+              quizId: quizId,
+              questionIndex: currentIndex,
+              selected: choice,
+            );
+          } catch (_) {}
+        } else {
+          setState(() {
+            userAnswers[currentIndex] = choice;
+            _recalculateCounts();
+          });
+
+          QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+        }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -357,6 +433,7 @@ class _AIQuizPageState extends State<AIQuizPage> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: bg,
+          border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
@@ -387,7 +464,10 @@ class _AIQuizPageState extends State<AIQuizPage> {
             ),
 
             // Wrong feedback
-            if (hasAnswered && isSelected && !isCorrect) ...[
+            if ((mode == "learning" || showExamReveal) &&
+                hasAnswered &&
+                isSelected &&
+                !isCorrect) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -410,7 +490,9 @@ class _AIQuizPageState extends State<AIQuizPage> {
             ],
 
             // Correct feedback
-            if (hasAnswered && isCorrect) ...[
+            if ((mode == "learning" || showExamReveal) &&
+                hasAnswered &&
+                isCorrect) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -484,10 +566,14 @@ class _AIQuizPageState extends State<AIQuizPage> {
         builder: (_) => QuizResultPage(
           correct: correctCount,
           total: total,
+          mode: mode,
           onReview: () {
             Navigator.pop(context);
             setState(() {
               currentIndex = 0;
+              if (mode == 'exam') {
+                _showExamReview = true;
+              }
             });
           },
           onBackToList: () {

@@ -15,9 +15,11 @@ class ChatAttachmentWidget {
         url.endsWith(".webp");
   }
 
-  static bool isPdf(String? type) {
-    if (type == null) return false;
-    return type.toLowerCase().contains("pdf");
+  static bool isPdf(String? type, String url) {
+    if (type != null && type.toLowerCase().contains("pdf")) {
+      return true;
+    }
+    return url.toLowerCase().endsWith('.pdf');
   }
 
   static bool isLink(String? type) {
@@ -37,13 +39,75 @@ class ChatAttachmentWidget {
     return url.endsWith(".ppt") || url.endsWith(".pptx");
   }
 
+  static Future<void> _openAttachmentUrl(
+    BuildContext context,
+    String rawUrl,
+  ) async {
+    final normalized = rawUrl.startsWith('http') ? rawUrl : 'https://$rawUrl';
+    final uri = Uri.tryParse(normalized);
+
+    if (uri == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('ไม่สามารถเปิดไฟล์ได้')));
+      }
+      return;
+    }
+
+    bool launched = false;
+
+    try {
+      launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+    } catch (_) {}
+
+    if (!launched) {
+      try {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {}
+    }
+
+    if (!launched) {
+      try {
+        launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+      } catch (_) {}
+    }
+
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('เปิดไฟล์ไม่สำเร็จ')));
+    }
+  }
+
+  static Widget _buildFileTile({
+    required BuildContext context,
+    required String url,
+    required Widget leading,
+    required String name,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => _openAttachmentUrl(context, url),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        child: Row(
+          children: [
+            leading,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   static Widget buildAttachment(BuildContext context, dynamic file) {
     final type = file['type'] ?? file['file_type'];
     final url = file['url'] ?? file['file_url'];
-    final name =
-    file['name'] ??
-    file['original_name'] ??
-    extractFileName(url);
+    final name = file['name'] ?? file['original_name'] ?? extractFileName(url);
 
     if (url == null) return const SizedBox();
 
@@ -77,52 +141,47 @@ class ChatAttachmentWidget {
       return buildLinkPreview(url);
     }
 
-    if (isPdf(type)) {
-      return Row(
-        children: [
-          const Icon(Icons.picture_as_pdf),
-          const SizedBox(width: 8),
-          Expanded(child: Text(name)),
-        ],
+    if (isPdf(type, url)) {
+      return _buildFileTile(
+        context: context,
+        url: url,
+        leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+        name: name,
       );
     }
 
     if (isDoc(type, url)) {
-      return Row(
-        children: [
-          const Icon(Icons.description, color: Colors.blue),
-          const SizedBox(width: 8),
-          Expanded(child: Text(name)),
-        ],
+      return _buildFileTile(
+        context: context,
+        url: url,
+        leading: const Icon(Icons.description, color: Colors.blue),
+        name: name,
       );
     }
 
     if (isExcel(type, url)) {
-      return Row(
-        children: [
-          const Icon(Icons.table_chart, color: Colors.green),
-          const SizedBox(width: 8),
-          Expanded(child: Text(name)),
-        ],
+      return _buildFileTile(
+        context: context,
+        url: url,
+        leading: const Icon(Icons.table_chart, color: Colors.green),
+        name: name,
       );
     }
 
     if (isPpt(type, url)) {
-      return Row(
-        children: [
-          const Icon(Icons.slideshow, color: Colors.orange),
-          const SizedBox(width: 8),
-          Expanded(child: Text(name)),
-        ],
+      return _buildFileTile(
+        context: context,
+        url: url,
+        leading: const Icon(Icons.slideshow, color: Colors.orange),
+        name: name,
       );
     }
 
-    return Row(
-      children: [
-        const Icon(Icons.insert_drive_file),
-        const SizedBox(width: 8),
-        Expanded(child: Text(name)),
-      ],
+    return _buildFileTile(
+      context: context,
+      url: url,
+      leading: const Icon(Icons.insert_drive_file),
+      name: name,
     );
   }
 

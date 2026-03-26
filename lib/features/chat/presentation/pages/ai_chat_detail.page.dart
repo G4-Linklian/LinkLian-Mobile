@@ -45,7 +45,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
   static const String _aiAvatarUrl =
       //'https://linklianstorage.blob.core.windows.net/chat/logo/Logo-black-sq.png';
       'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3422.png';
-     //'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3420.png';
+  //'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3420.png';
 
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -306,13 +306,35 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
 
     try {
       final result = await summaryFuture;
-      if (!mounted) return;
-
       final newSummary = _extractSummary(result).trim();
       final newAiChatId = _extractAiChatId(result);
       final newDocumentTitle = _extractDocumentTitle(result);
       final newPostTitle = _extractPostTitle(result);
       final shouldLoadHistory = newAiChatId > 0;
+      final targetAiChatId = newAiChatId > 0 ? newAiChatId : _activeAiChatId;
+      final targetDocumentTitle = newDocumentTitle.isNotEmpty
+          ? newDocumentTitle
+          : _appBarTitle;
+      final targetPostTitle = newPostTitle.isNotEmpty
+          ? newPostTitle
+          : _postCardTitle;
+
+      if (userTriggerText != null &&
+          userTriggerText.trim().isNotEmpty &&
+          newSummary.isNotEmpty &&
+          targetAiChatId > 0) {
+        AISummaryNotificationService.notifySummaryCompleted(
+          aiChatId: targetAiChatId,
+          documentTitle: targetDocumentTitle,
+          postTitle: targetPostTitle,
+          summary: newSummary,
+          content: widget.content,
+          attachments: List<Map<String, dynamic>>.from(widget.attachments),
+          postContentId: widget.postContentId,
+        );
+      }
+
+      if (!mounted) return;
 
       setState(() {
         _isSummaryGenerating = false;
@@ -352,6 +374,8 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
         await _loadExistingQuiz();
         _scrollToBottom();
       }
+
+      if (!mounted) return;
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -462,6 +486,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
   Future<void> _generateQuizWithConfig({
     required String difficulty,
     required int questionCount,
+    required String mode,
     bool addUserMessage = true,
   }) async {
     if (_isQuizGenerating || _activeAiChatId <= 0) return;
@@ -470,14 +495,19 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
       _isQuizGenerating = true;
 
       if (addUserMessage) {
-        messages.add({"isMe": true, "text": "สร้างแบบทดสอบ"});
+        messages.add({
+          "isMe": true,
+          "text": mode == "learning" ? "สร้างแบบการเรียนรู้" : "สร้างแบบทดสอบ",
+        });
       }
 
       messages.add({
         "isMe": false,
         "type": "loading",
         "loadingKind": "quiz",
-        "text": "กำลังสร้างแบบทดสอบ...",
+        "text": mode == "learning"
+            ? "กำลังสร้างแบบการเรียนรู้..."
+            : "กำลังสร้างแบบทดสอบ...",
       });
     });
     _scrollToBottom();
@@ -488,7 +518,21 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
         aiChatId: _activeAiChatId,
         difficulty: difficulty,
         questionCount: questionCount,
+        mode: mode,
       );
+
+      if (_activeAiChatId > 0) {
+        AISummaryNotificationService.notifyQuizGenerated(
+          aiChatId: _activeAiChatId,
+          documentTitle: _appBarTitle,
+          postTitle: _postCardTitle,
+          summary: widget.summary,
+          content: widget.content,
+          attachments: List<Map<String, dynamic>>.from(widget.attachments),
+          postContentId: widget.postContentId,
+          mode: mode,
+        );
+      }
 
       if (!mounted) return;
 
@@ -536,7 +580,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
         } else {
           messages.add({
             "isMe": false,
-            "text": "เกิดข้อผิดพลาดในการสร้างแบบทดสอบ",
+            "text": "เกิดข้อผิดพลาดในการสร้างชุดคำถาม",
           });
         }
       });
@@ -561,6 +605,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
 
     if (result["action"] == "generate") {
       final difficulty = (result["difficulty"] ?? "medium").toString();
+      final mode = (result["mode"] ?? "exam").toString();
       final countRaw = result["questionCount"];
       final questionCount = countRaw is int
           ? countRaw
@@ -569,6 +614,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
       await _generateQuizWithConfig(
         difficulty: difficulty,
         questionCount: questionCount,
+        mode: mode,
         addUserMessage: true,
       );
     }
@@ -583,11 +629,12 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
       context: context,
       builder: (context) {
         return AIQuizPopup(
-          onGenerate: (difficulty, questionCount) async {
+          onGenerate: (difficulty, questionCount, mode) async {
             Navigator.pop(context);
             await _generateQuizWithConfig(
               difficulty: difficulty,
               questionCount: questionCount,
+              mode: mode,
               addUserMessage: true,
             );
           },
@@ -619,7 +666,12 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
             _loadedQuizIds.add(quizId);
           }
 
-          messages.add({"isMe": true, "text": "สร้างแบบทดสอบ"});
+          messages.add({
+            "isMe": true,
+            "text": quizMap['mode'] == 'learning'
+                ? "สร้างแบบการเรียนรู้"
+                : "สร้างแบบทดสอบ",
+          });
           messages.add({"isMe": false, "type": "quiz", "quiz": quizMap});
         }
       }
@@ -960,7 +1012,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
                       child: Text(
-                        'สร้างแบบทดสอบเสร็จแล้ว!',
+                        'สร้างชุดคำถามเสร็จแล้ว!',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -994,7 +1046,9 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                               ),
                               const SizedBox(width: 7),
                               Text(
-                                'แบบทดสอบพร้อมแล้ว',
+                                quiz['mode'] == 'learning'
+                                    ? 'แบบการเรียนรู้พร้อมแล้ว'
+                                    : 'แบบทดสอบพร้อมแล้ว',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -1004,39 +1058,36 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                             ],
                           ),
                           const SizedBox(height: 10),
+                          // Wrap(
+                          //   spacing: 8,
+                          //   runSpacing: 8,
+                          //   children: [
+                          //     Container(
+                          //       padding: const EdgeInsets.symmetric(
+                          //         horizontal: 10,
+                          //         vertical: 5,
+                          //       ),
+                          //       decoration: BoxDecoration(
+                          //         color: Colors.blue.shade50,
+                          //         borderRadius: BorderRadius.circular(20),
+                          //       ),
+                          //       child: Text(
+                          //         quiz['mode'] == 'learning'
+                          //             ? 'แบบการเรียนรู้'
+                          //             : ' แบบทดสอบ',
+                          //         style: TextStyle(
+                          //           fontSize: 12,
+                          //           fontWeight: FontWeight.w600,
+                          //           color: Colors.blue.shade700,
+                          //         ),
+                          //       ),
+                          //     ),
+                          //   ],
+                          // ),
+                          // const SizedBox(height: 8),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryPalette[100],
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Icon(
-                                    //   Icons.help_outline,
-                                    //   size: 14,
-                                    //   color: AppColors.primaryPalette[700],
-                                    // ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${questions.length} คำถาม',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.primaryPalette[700],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
@@ -1053,6 +1104,31 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                                     fontWeight: FontWeight.w600,
                                     color: difficultyColor,
                                   ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryPalette[100],
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${questions.length} คำถาม',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primaryPalette[700],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -1078,8 +1154,10 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                               onPressed: () => _openQuizDirect(quiz),
                               child: Text(
                                 isCompleted
-                                    ? 'เปิดแบบทดสอบ'
-                                    : 'เริ่มทำแบบทดสอบ',
+                                    ? 'เปิดชุดคำถาม'
+                                    : (quiz['mode'] == 'learning'
+                                          ? 'เริ่มแบบการเรียนรู้'
+                                          : 'เริ่มทำแบบทดสอบ'),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -1298,7 +1376,12 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
             _loadedQuizIds.add(quizId);
           }
 
-          messages.add({"isMe": true, "text": "สร้างแบบทดสอบ"});
+          messages.add({
+            "isMe": true,
+            "text": quizMap['mode'] == 'learning'
+                ? "สร้างแบบการเรียนรู้"
+                : "สร้างแบบทดสอบ",
+          });
           messages.add({"isMe": false, "type": "quiz", "quiz": quizMap});
         }
 

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:LinkLian/core/constants/colors.dart';
 
 class AIQuizPopup extends StatefulWidget {
-  final Function(String difficulty, int questionCount) onGenerate;
+  final Function(String difficulty, int questionCount, String mode) onGenerate;
 
   const AIQuizPopup({super.key, required this.onGenerate});
 
@@ -14,6 +14,7 @@ class AIQuizPopup extends StatefulWidget {
 class _AIQuizPopupState extends State<AIQuizPopup> {
   double difficultyLevel = 2;
   int questionCount = 5;
+  String mode = "learning";
   late final TextEditingController _questionController;
 
   final Map<int, String> difficultyValueMap = {
@@ -66,7 +67,7 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
 
       title: const Text(
-        "สร้างแบบทดสอบ",
+        "สร้างชุดคำถาม",
         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
       ),
 
@@ -78,16 +79,61 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "ระดับความยาก",
-              style: TextStyle(fontWeight: FontWeight.w600),
+              "โหมดการใช้งาน",
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
             ),
 
-            const SizedBox(height: 8),
-            Text(
-              difficultyTextMap[difficultyLevel.toInt()] ?? "ปานกลาง",
-              style: TextStyle(
-                color: AppColors.primaryPalette[700],
-                fontWeight: FontWeight.w600,
+            //const SizedBox(height: 4),
+            RadioListTile<String>(
+              value: "learning",
+              groupValue: mode,
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                "แบบการเรียนรู้",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              //subtitle: const Text("แสดงเฉลยทันที"),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => mode = value);
+              },
+            ),
+            RadioListTile<String>(
+              value: "exam",
+              groupValue: mode,
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                "แบบทดสอบ",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              //subtitle: const Text("ทำครบก่อนดูเฉลย"),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => mode = value);
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+                children: [
+                  const TextSpan(
+                    text: "ระดับความยาก: ",
+                    style: TextStyle(color: Colors.black),
+                  ),
+                  TextSpan(
+                    text:
+                        difficultyTextMap[difficultyLevel.toInt()] ?? "ปานกลาง",
+                    style: TextStyle(color: AppColors.primaryPalette[700]),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 6),
@@ -121,8 +167,8 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
             const SizedBox(height: 20),
 
             Text(
-              "จำนวนข้อ (สูงสุด 10 ข้อ)",
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              "จำนวนคำถาม (สูงสุด 10 ข้อ)",
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
 
             const SizedBox(height: 6),
@@ -182,6 +228,7 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -206,10 +253,10 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
           onPressed: () {
             final selectedDifficulty =
                 difficultyValueMap[difficultyLevel.toInt()] ?? "medium";
-            widget.onGenerate(selectedDifficulty, questionCount);
+            widget.onGenerate(selectedDifficulty, questionCount, mode);
           },
 
-          child: const Text("สร้างแบบทดสอบ"),
+          child: const Text("เริ่มสร้างชุดคำถาม"),
         ),
       ],
     );

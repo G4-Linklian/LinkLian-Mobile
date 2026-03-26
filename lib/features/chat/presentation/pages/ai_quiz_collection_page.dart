@@ -25,9 +25,21 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
   final AIChatRepository _repo = AIChatRepository();
   final List<Map<String, dynamic>> _quizzes = <Map<String, dynamic>>[];
   final Set<int> _quizIds = <int>{};
-
+  String _filter = "all";
   bool _isLoading = true;
   bool _autoOpened = false;
+
+  String _filterLabel(String value) {
+    switch (value) {
+      case 'exam':
+        return 'แบบทดสอบ';
+      case 'learning':
+        return 'แบบการเรียนรู้';
+      case 'all':
+      default:
+        return 'ทั้งหมด';
+    }
+  }
 
   @override
   void initState() {
@@ -91,6 +103,39 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
 
       return _quizId(right).compareTo(_quizId(left));
     });
+  }
+
+  int _creationSequence(Map<String, dynamic> quiz) {
+    if (_quizzes.isEmpty) return 1;
+
+    final ordered = List<Map<String, dynamic>>.from(_quizzes)
+      ..sort((left, right) {
+        final leftCreatedAt = _parseCreatedAt(left);
+        final rightCreatedAt = _parseCreatedAt(right);
+
+        if (leftCreatedAt != null && rightCreatedAt != null) {
+          final byCreatedAt = leftCreatedAt.compareTo(rightCreatedAt);
+          if (byCreatedAt != 0) return byCreatedAt;
+        } else if (leftCreatedAt != null) {
+          return -1;
+        } else if (rightCreatedAt != null) {
+          return 1;
+        }
+
+        return _quizId(left).compareTo(_quizId(right));
+      });
+
+    final idx = ordered.indexWhere((item) => identical(item, quiz));
+    if (idx >= 0) return idx + 1;
+
+    final fallbackIdx = ordered.indexWhere((item) {
+      final leftId = _quizId(item);
+      final rightId = _quizId(quiz);
+      if (leftId > 0 && rightId > 0) return leftId == rightId;
+      return item['created_at'] == quiz['created_at'] &&
+          item['title'] == quiz['title'];
+    });
+    return fallbackIdx >= 0 ? fallbackIdx + 1 : 1;
   }
 
   String buildQuizMetaText(
@@ -227,32 +272,38 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
 
     if (toFetch.isEmpty) return;
 
-    await Future.wait(toFetch.map((quiz) async {
-      final id = _quizId(quiz);
-      try {
-        final attempt = await _repo.getQuizAttempt(id);
-        if (attempt == null) return;
-        final rawScore = attempt['score'];
-        final rawTotal = attempt['total'];
-        if (rawScore == null || rawTotal == null) return;
-        final score = rawScore is int ? rawScore : int.tryParse(rawScore.toString()) ?? 0;
-        final total = rawTotal is int ? rawTotal : int.tryParse(rawTotal.toString()) ?? 0;
-        final answers = <int, String>{};
-        final rawAnswers = attempt['answers'];
-        if (rawAnswers is Map) {
-          rawAnswers.forEach((k, v) {
-            final idx = int.tryParse(k.toString());
-            if (idx != null) answers[idx] = v.toString();
-          });
-        }
-        QuizAttemptStore.saveResult(
-          storeKey: _storeKey(quiz),
-          correct: score,
-          total: total,
-          userAnswers: answers,
-        );
-      } catch (_) {}
-    }));
+    await Future.wait(
+      toFetch.map((quiz) async {
+        final id = _quizId(quiz);
+        try {
+          final attempt = await _repo.getQuizAttempt(id);
+          if (attempt == null) return;
+          final rawScore = attempt['score'];
+          final rawTotal = attempt['total'];
+          if (rawScore == null || rawTotal == null) return;
+          final score = rawScore is int
+              ? rawScore
+              : int.tryParse(rawScore.toString()) ?? 0;
+          final total = rawTotal is int
+              ? rawTotal
+              : int.tryParse(rawTotal.toString()) ?? 0;
+          final answers = <int, String>{};
+          final rawAnswers = attempt['answers'];
+          if (rawAnswers is Map) {
+            rawAnswers.forEach((k, v) {
+              final idx = int.tryParse(k.toString());
+              if (idx != null) answers[idx] = v.toString();
+            });
+          }
+          QuizAttemptStore.saveResult(
+            storeKey: _storeKey(quiz),
+            correct: score,
+            total: total,
+            userAnswers: answers,
+          );
+        } catch (_) {}
+      }),
+    );
 
     if (!mounted) return;
     setState(() {});
@@ -278,12 +329,13 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
       context: context,
       builder: (_) {
         return AIQuizPopup(
-          onGenerate: (difficulty, questionCount) {
+          onGenerate: (difficulty, questionCount, mode) {
             Navigator.pop(context);
             Navigator.pop(context, {
               'action': 'generate',
               'difficulty': difficulty,
               'questionCount': questionCount,
+              'mode': mode,
             });
           },
         );
@@ -300,36 +352,36 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: Icon(
-                LinkLianIcon.fileTextSpark,
-                size: 60,
-                color: AppColors.primaryPalette[600],
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: Icon(
+                  LinkLianIcon.fileTextSpark,
+                  size: 60,
+                  color: AppColors.primaryPalette[600],
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'ยังไม่มีแบบทดสอบ',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryPalette[600],
+              const SizedBox(height: 4),
+              Text(
+                'ยังไม่มีชุดคำถาม',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryPalette[600],
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'กดปุ่มด้านล่างเพื่อสร้างแบบทดสอบแรกของคุณ',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.4,
-                color: AppColors.primaryPalette[500],
+              const SizedBox(height: 8),
+              Text(
+                'กดปุ่มด้านล่างเพื่อสร้างแบบทดสอบหรือแบบการเรียนรู้แรกของคุณ',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: AppColors.primaryPalette[500],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
               SizedBox(
                 width: 220,
                 child: ElevatedButton(
@@ -345,7 +397,7 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
                     ),
                   ),
                   child: const Text(
-                    'สร้างแบบทดสอบ',
+                    'สร้างชุดคำถาม',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                 ),
@@ -358,7 +410,7 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
   }
 
   Widget _buildQuizTile(Map<String, dynamic> quiz, int index) {
-    final id = _quizId(quiz);
+    final sequence = _creationSequence(quiz);
     final storeKey = _storeKey(quiz);
     final questions = List.from(quiz['questions'] ?? const []);
     final result = QuizAttemptStore.getResult(storeKey);
@@ -406,7 +458,9 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
               children: [
                 Expanded(
                   child: Text(
-                    id > 0 ? 'แบบทดสอบ #$id' : 'แบบทดสอบ',
+                    quiz['mode'] == 'learning'
+                        ? 'แบบการเรียนรู้ #$sequence'
+                        : 'แบบทดสอบ #$sequence',
                     style: const TextStyle(
                       color: Color(0xFF1A1A1A),
                       fontWeight: FontWeight.w700,
@@ -502,8 +556,12 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
-          'แบบทดสอบ',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 18),
+          'รวมชุดคำถาม AI',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
         ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -528,7 +586,7 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
               ),
               icon: const Icon(Icons.add),
               label: const Text(
-                'สร้างแบบทดสอบ',
+                'สร้างชุดคำถาม',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             )
@@ -537,11 +595,102 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
           ? const Center(child: CircularProgressIndicator())
           : _quizzes.isEmpty
           ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 86),
-              itemCount: _quizzes.length,
-              itemBuilder: (_, index) => _buildQuizTile(_quizzes[index], index),
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      PopupMenuButton<String>(
+                        onSelected: (value) => setState(() => _filter = value),
+                        itemBuilder: (context) => const [
+                          PopupMenuItem<String>(
+                            value: 'all',
+                            child: Center(child: Text('ทั้งหมด')),
+                          ),
+                          PopupMenuItem<String>(
+                            value: 'exam',
+                            child: Center(child: Text('แบบทดสอบ')),
+                          ),
+                          PopupMenuItem<String>(
+                            value: 'learning',
+                            child: Center(child: Text('แบบการเรียนรู้')),
+                          ),
+                        ],
+                        offset: const Offset(0, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        color: AppColors.primaryPalette[300],
+                        child: Container(
+                          width: 132,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryPalette[300],
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                _filterLabel(_filter),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.primaryPalette[900],
+                                  height: 1.0,
+                                ),
+                              ),
+                              Icon(
+                                LinkLianIcon.filterpost,
+                                size: 18,
+                                color: AppColors.primaryPalette[700],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 86),
+                    itemCount: _filteredQuizzes.length,
+                    itemBuilder: (_, index) =>
+                        _buildQuizTile(_filteredQuizzes[index], index),
+                  ),
+                ),
+              ],
             ),
+      //       : ListView.builder(
+      //           padding: const EdgeInsets.fromLTRB(16, 14, 16, 86),
+      //           itemCount: _quizzes.length,
+      //           //itemBuilder: (_, index) => _buildQuizTile(_quizzes[index], index),
+      //           itemBuilder: (_, index) =>
+      // _buildQuizTile(_filteredQuizzes[index], index),
+      //         ),
     );
+  }
+
+  List<Map<String, dynamic>> get _filteredQuizzes {
+    if (_filter == "all") return _quizzes;
+
+    return _quizzes.where((quiz) {
+      final mode = quiz['mode'] ?? 'exam';
+
+      if (_filter == "exam") return mode == "exam";
+      if (_filter == "learning") return mode == "learning";
+
+      return true;
+    }).toList();
   }
 }
