@@ -67,8 +67,8 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
 
       title: const Text(
-        "สร้างชุดคำถาม",
-        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        "สร้างแบบฝึกหัด",
+        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
       ),
 
       content: SizedBox(
@@ -256,7 +256,7 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
             widget.onGenerate(selectedDifficulty, questionCount, mode);
           },
 
-          child: const Text("เริ่มสร้างชุดคำถาม"),
+          child: const Text("เริ่มสร้างแบบฝึกหัด"),
         ),
       ],
     );

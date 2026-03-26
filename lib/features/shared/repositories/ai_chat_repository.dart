@@ -5,12 +5,18 @@ class AIChatRepository {
   final ApiClient _apiClient = ApiClient();
 
   Map<String, dynamic> _mergeQuizPayload(Map<String, dynamic> source) {
-    final merged = Map<String, dynamic>.from(source);
+    final merged = <String, dynamic>{};
+
+    merged['quiz_title'] = source['quiz_title'];
+
+    merged.addAll(source);
+
     final quizDetail = source['quiz_detail'];
 
     if (quizDetail is Map) {
       final quizDetailMap = Map<String, dynamic>.from(quizDetail);
       final result = quizDetailMap['result'];
+
       if (result is Map) {
         merged.addAll(Map<String, dynamic>.from(result));
       }
@@ -46,6 +52,7 @@ class AIChatRepository {
           "difficulty": difficulty,
           "question_count": questionCount,
           "mode": mode,
+          "title": mode == "learning" ? "แบบการเรียนรู้" : "แบบทดสอบ",
         },
       );
 
@@ -94,7 +101,6 @@ class AIChatRepository {
     throw Exception("Failed to load AI chat detail");
   }
 
-  // }
   Future<List<Map<String, dynamic>>> getQuiz(int aiChatId) async {
     final response = await _apiClient.get('/quiz/by-chat/$aiChatId');
 

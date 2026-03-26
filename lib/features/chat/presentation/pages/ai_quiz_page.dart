@@ -134,8 +134,26 @@ class _AIQuizPageState extends State<AIQuizPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
+      // appBar: AppBar(
+      //   title: Text(mode == 'learning' ? 'แบบการเรียนรู้' : 'แบบทดสอบ'),
+      //   backgroundColor: Colors.white,
+      //   foregroundColor: Colors.black,
+      //   elevation: 0.5,
+      //   shadowColor: Colors.black.withValues(alpha: 0.1),
+      //   scrolledUnderElevation: 0,
+      //   surfaceTintColor: Colors.white,
+      //   leading: IconButton(
+      //     icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+      //     onPressed: () => Navigator.pop(context),
+      //   ),
+      // ),
       appBar: AppBar(
-        title: Text(mode == 'learning' ? 'แบบการเรียนรู้' : 'แบบทดสอบ'),
+        title: Text(
+          widget.quiz['quiz_title'] ?? 'แบบฝึก',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: Colors.black,),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0.5,
@@ -163,20 +181,22 @@ class _AIQuizPageState extends State<AIQuizPage> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 10),
-                _scoreBadge(
-                  icon: Icons.close,
-                  count: wrongCount,
-                  iconColor: AppColors.dangerPalette[500]!,
-                  bgColor: AppColors.dangerPalette[200]!,
-                ),
-                const SizedBox(width: 6),
-                _scoreBadge(
-                  icon: Icons.check,
-                  count: correctCount,
-                  iconColor: AppColors.successPalette[700]!,
-                  bgColor: AppColors.successPalette[100]!,
-                ),
+                if (mode == "learning") ...[
+                  const SizedBox(width: 10),
+                  _scoreBadge(
+                    icon: Icons.close,
+                    count: wrongCount,
+                    iconColor: AppColors.dangerPalette[500]!,
+                    bgColor: AppColors.dangerPalette[200]!,
+                  ),
+                  const SizedBox(width: 6),
+                  _scoreBadge(
+                    icon: Icons.check,
+                    count: correctCount,
+                    iconColor: AppColors.successPalette[700]!,
+                    bgColor: AppColors.successPalette[100]!,
+                  ),
+                ],
               ],
             ),
 
@@ -256,7 +276,7 @@ class _AIQuizPageState extends State<AIQuizPage> {
                       child: Text(
                         currentIndex < total - 1
                             ? 'ถัดไป'
-                            : (mode == 'exam' ? 'ส่งคำตอบ' : 'ดูผลลัพธ์'),
+                            : (mode == 'exam' ? 'ดูผลคะแนน' : 'ดูผลลัพธ์'),
                       ),
                     ),
                   ),
@@ -378,9 +398,32 @@ class _AIQuizPageState extends State<AIQuizPage> {
       bg = AppColors.primaryPalette[100]!;
     }
 
-    final borderColor = isSelected
-        ? AppColors.primaryPalette[400]!
-        : AppColors.primaryPalette[100]!;
+    // final borderColor = isSelected
+    //     ? AppColors.primaryPalette[400]!
+    //     : AppColors.primaryPalette[100]!;
+    Color borderColor;
+
+    if (mode == "learning" && hasAnswered) {
+      if (isCorrect) {
+        borderColor = AppColors.successPalette[500]!;
+      } else if (isSelected && !isCorrect) {
+        borderColor = AppColors.dangerPalette[500]!;
+      } else {
+        borderColor = AppColors.primaryPalette[100]!;
+      }
+    } else if (showExamReveal) {
+      if (isCorrect) {
+        borderColor = AppColors.successPalette[500]!;
+      } else if (isSelected && !isCorrect) {
+        borderColor = AppColors.dangerPalette[500]!;
+      } else {
+        borderColor = AppColors.primaryPalette[100]!;
+      }
+    } else {
+      borderColor = isSelected
+          ? AppColors.primaryPalette[400]!
+          : AppColors.primaryPalette[100]!;
+    }
 
     final label = choiceIndex < _thaiLabels.length
         ? _thaiLabels[choiceIndex]
@@ -400,6 +443,8 @@ class _AIQuizPageState extends State<AIQuizPage> {
       //   QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
       // },
       onTap: () async {
+        if (mode == "exam" && _showExamReview) return;
+
         if (mode == "learning") {
           setState(() {
             userAnswers[currentIndex] = choice;
@@ -408,8 +453,6 @@ class _AIQuizPageState extends State<AIQuizPage> {
 
           QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
 
-          // Keep backend validation as best-effort so learning mode always
-          // reveals immediately even if the network request fails.
           try {
             final repo = AIChatRepository();
             await repo.checkAnswer(
@@ -427,6 +470,35 @@ class _AIQuizPageState extends State<AIQuizPage> {
           QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
         }
       },
+
+      // onTap: () async {
+      //   if (mode == "learning") {
+      //     setState(() {
+      //       userAnswers[currentIndex] = choice;
+      //       _recalculateCounts();
+      //     });
+
+      //     QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+
+      //     // Keep backend validation as best-effort so learning mode always
+      //     // reveals immediately even if the network request fails.
+      //     try {
+      //       final repo = AIChatRepository();
+      //       await repo.checkAnswer(
+      //         quizId: quizId,
+      //         questionIndex: currentIndex,
+      //         selected: choice,
+      //       );
+      //     } catch (_) {}
+      //   } else {
+      //     setState(() {
+      //       userAnswers[currentIndex] = choice;
+      //       _recalculateCounts();
+      //     });
+
+      //     QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+      //   }
+      // },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 10),

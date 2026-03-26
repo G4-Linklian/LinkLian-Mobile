@@ -12,6 +12,7 @@ import 'package:LinkLian/features/chat/presentation/widgets/ai_quiz_popup.widget
 import 'package:LinkLian/features/chat/presentation/widgets/chat_attachment_widget.dart';
 import 'package:LinkLian/features/chat/presentation/widgets/ai_chat_input_bar.widget.dart';
 import 'package:LinkLian/features/chat/presentation/services/ai_summary_notification_service.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class AIChatDetailPage extends StatefulWidget {
   final String title;
@@ -580,7 +581,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
         } else {
           messages.add({
             "isMe": false,
-            "text": "เกิดข้อผิดพลาดในการสร้างชุดคำถาม",
+            "text": "เกิดข้อผิดพลาดในการสร้างแบบฝึกหัด",
           });
         }
       });
@@ -1012,7 +1013,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
                       child: Text(
-                        'สร้างชุดคำถามเสร็จแล้ว!',
+                        'สร้างแบบฝึกหัดเสร็จแล้ว!',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -1226,25 +1227,10 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(
-                  Icons.folder_copy,
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedAiBook,
                   size: 26,
                   color: AppColors.primaryPalette[500],
-                ),
-                Positioned(
-                  right: -6,
-                  bottom: -2,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.09),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.auto_awesome,
-                      size: 18,
-                      color: AppColors.primaryPalette[800],
-                    ),
-                  ),
                 ),
               ],
             ),

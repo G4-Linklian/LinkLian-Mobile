@@ -397,7 +397,7 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
                     ),
                   ),
                   child: const Text(
-                    'สร้างชุดคำถาม',
+                    'สร้างแบบฝึกหัด',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                 ),
@@ -556,7 +556,7 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
-          'รวมชุดคำถาม AI',
+          'คลังแบบฝึกหัด',
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.w600,
@@ -573,24 +573,14 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'สร้างแบบฝึกหัด',
+            icon: Icon(LinkLianIcon.add, size: 28, color: AppColors.primaryPalette[500]),
+            onPressed: _showGeneratePopup,
+          ),
+        ],
       ),
-      floatingActionButton: (!_isLoading && _quizzes.isNotEmpty)
-          ? FloatingActionButton.extended(
-              onPressed: _showGeneratePopup,
-              backgroundColor: AppColors.primaryPalette[400],
-              foregroundColor: AppColors.primaryPalette[800],
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: AppColors.primaryPalette[200]!),
-              ),
-              icon: const Icon(Icons.add),
-              label: const Text(
-                'สร้างชุดคำถาม',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-            )
-          : null,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _quizzes.isEmpty
