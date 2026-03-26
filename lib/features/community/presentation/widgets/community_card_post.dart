@@ -141,38 +141,61 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                     children: [
                       _buildProfileAvatar(),
                       const SizedBox(width: 12),
+                      // Expanded(
+                      //   child: Column(
+                      //     crossAxisAlignment: CrossAxisAlignment.start,
+                      //     children: [
+                      //       Text(
+                      //         "${widget.post.firstName} ${widget.post.lastName}",
+                      //         style: const TextStyle(
+                      //           fontSize: 15,
+                      //           fontWeight: FontWeight.w600,
+                      //         ),
+                      //       ),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "${widget.post.firstName} ${widget.post.lastName}",
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
+                        child: Builder(
+                          builder: (context) {
+                            final displayName =
+                                "${widget.post.firstName ?? ''} ${widget.post.lastName ?? ''}"
+                                    .trim();
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  Icons.access_time,
-                                  size: 16,
-                                  color: AppColors.black.withValues(alpha: 0.5),
-                                ),
-                                const SizedBox(width: 4),
                                 Text(
-                                  _formatDateTime(widget.post.createdAt),
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.black.withValues(
-                                      alpha: 0.5,
-                                    ),
+                                  displayName.isNotEmpty
+                                      ? displayName
+                                      : "ผู้ใช้นี้ไม่ได้ใช้งานแล้ว",
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 16,
+                                      color: AppColors.black.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _formatDateTime(widget.post.createdAt),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.black.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
                       // if (widget.showMoreButton) _buildMoreButton(context),
@@ -814,9 +837,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   void _onDeletePost() async {
     appLog.info("[community]DELETE POST ID: ${widget.post.postId}");
-    appLog.info(
-      "[community]DELETE COMMUNITY ID: ${widget.post.communityId}",
-    );
+    appLog.info("[community]DELETE COMMUNITY ID: ${widget.post.communityId}");
     final confirm = await Get.dialog<bool>(
       AlertDialog(
         title: const Text('ยืนยันการลบ'),
@@ -865,7 +886,12 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   // ================= PROFILE AVATAR =================
   Widget _buildProfileAvatar() {
-    if (widget.post.profilePic != null && widget.post.profilePic!.isNotEmpty) {
+    final displayName =
+        "${widget.post.firstName ?? ''} ${widget.post.lastName ?? ''}".trim();
+
+    if (widget.post.profilePic != null &&
+        widget.post.profilePic!.isNotEmpty &&
+        displayName.isNotEmpty) {
       return CircleAvatar(
         radius: 24,
         backgroundImage: NetworkImage(widget.post.profilePic!),
@@ -877,7 +903,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       radius: 24,
       backgroundColor: AppColors.primaryPalette[200],
       child: Text(
-        _getInitial("${widget.post.firstName} ${widget.post.lastName}"),
+        displayName.isNotEmpty ? _getInitial(displayName) : "?",
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -886,6 +912,28 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       ),
     );
   }
+  // Widget _buildProfileAvatar() {
+  //   if (widget.post.profilePic != null && widget.post.profilePic!.isNotEmpty) {
+  //     return CircleAvatar(
+  //       radius: 24,
+  //       backgroundImage: NetworkImage(widget.post.profilePic!),
+  //       backgroundColor: AppColors.primaryPalette[100],
+  //     );
+  //   }
+
+  //   return CircleAvatar(
+  //     radius: 24,
+  //     backgroundColor: AppColors.primaryPalette[200],
+  //     child: Text(
+  //       _getInitial("${widget.post.firstName} ${widget.post.lastName}"),
+  //       style: TextStyle(
+  //         fontSize: 18,
+  //         fontWeight: FontWeight.w600,
+  //         color: AppColors.primaryPalette[700],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   String _getInitial(String? name) {
     if (name == null || name.isEmpty) return '?';
@@ -926,7 +974,9 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         type: NotificationType.success,
       );
     } catch (e) {
-      DialogHelper.showErrorDialog(description: "ไม่สามารถดำเนินการกับบุ๊กมาร์กได้");
+      DialogHelper.showErrorDialog(
+        description: "ไม่สามารถดำเนินการกับบุ๊กมาร์กได้",
+      );
     } finally {
       if (mounted) {
         setState(() => _isBookmarkLoading = false);

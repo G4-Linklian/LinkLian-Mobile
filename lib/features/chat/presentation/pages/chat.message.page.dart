@@ -91,8 +91,31 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     }
   }
 
+  // void _handleSend() async {
+  //   final text = _textController.text.trim();
+  //   if (text.isNotEmpty) {
+  //     _textController.clear();
+  //     await _controller.sendMessage(text);
+  //     setState(() {});
+  //     _scrollToBottom();
+  //   }
+  // }
   void _handleSend() async {
     final text = _textController.text.trim();
+
+    final displayName =
+        ((widget.chat.firstName ?? '') + ' ' + (widget.chat.lastName ?? ''))
+            .trim();
+
+    final isDeletedUser = displayName.isEmpty;
+
+    if (isDeletedUser) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("ไม่สามารถส่งข้อความได้")));
+      return;
+    }
+
     if (text.isNotEmpty) {
       _textController.clear();
       await _controller.sendMessage(text);
@@ -213,6 +236,11 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
 
   @override
   Widget build(BuildContext context) {
+    final displayName =
+        ((widget.chat.firstName ?? '') + ' ' + (widget.chat.lastName ?? ''))
+            .trim();
+
+    final isDeletedUser = displayName.isEmpty;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -241,20 +269,29 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                 child:
                     widget.chat.profileImage == null ||
                         widget.chat.profileImage!.isEmpty
-                    ? (widget.chat.firstName != null ||
-                              widget.chat.lastName != null
-                          ? Text(
-                              _getInitials(
-                                widget.chat.firstName,
-                                widget.chat.lastName,
-                              ),
-                              style: const TextStyle(
+                    ? (isDeletedUser
+                          ? const Text(
+                              "?",
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,
                               ),
                             )
-                          : null)
+                          : (widget.chat.firstName != null ||
+                                    widget.chat.lastName != null
+                                ? Text(
+                                    _getInitials(
+                                      widget.chat.firstName,
+                                      widget.chat.lastName,
+                                    ),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  )
+                                : null))
                     : null,
               ),
             ),
@@ -264,8 +301,9 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${widget.chat.firstName ?? ''} ${widget.chat.lastName ?? ''}'
-                        .trim(),
+                    displayName.isNotEmpty
+                        ? displayName
+                        : "ผู้ใช้นี้ไม่ได้ใช้งานแล้ว",
                     style: const TextStyle(
                       color: Colors.black,
                       fontSize: 16,
@@ -332,7 +370,8 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _scrollToBottom();
                         Future.delayed(const Duration(milliseconds: 450), () {
-                          if (!mounted || !_suppressScrollToLatestButton) return;
+                          if (!mounted || !_suppressScrollToLatestButton)
+                            return;
                           setState(() {
                             _suppressScrollToLatestButton = false;
                           });
@@ -556,7 +595,13 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                 ),
               ChatInputArea(
                 textController: _textController,
-                onSend: _handleSend,
+
+                ///onSend: isDeletedUser ? null : _handleSend,
+                onSend: () {
+                  if (!isDeletedUser) {
+                    _handleSend();
+                  }
+                },
                 controller: _controller,
               ),
             ],

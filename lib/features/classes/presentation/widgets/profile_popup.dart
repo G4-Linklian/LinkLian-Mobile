@@ -70,7 +70,10 @@ class ProfilePopup extends StatelessWidget {
 
                     /// NAME
                     Text(
-                      profile.fullName,
+                      profile.fullName.isNotEmpty
+                          ? profile.fullName
+                          : "ผู้ใช้นี้ไม่ได้ใช้งานแล้ว",
+
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
