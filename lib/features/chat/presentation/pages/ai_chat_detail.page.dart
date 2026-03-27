@@ -1306,6 +1306,8 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
   }
 
   Future<void> _loadMessages({String? fallbackSummary}) async {
+    if (_isAiResponding) return;
+
     if (_activeAiChatId <= 0) {
       if (_isHistoryLoading && mounted) {
         setState(() {
@@ -1323,14 +1325,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
         repo.getQuiz(_activeAiChatId),
       ]);
 
-      // final result = List<Map<String, dynamic>>.from(
-      //   responses[0] as List<Map<String, dynamic>>,
-      // );
-      // final quizzes = List<Map<String, dynamic>>.from(
-      //   responses[1] as List<Map<String, dynamic>>,
-      // );
       final result = List<Map<String, dynamic>>.from(responses[0]);
-
       final quizzes = List<Map<String, dynamic>>.from(responses[1]);
 
       if (!mounted) return;
@@ -1340,53 +1335,115 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
           ? fallbackSummary
           : widget.summary.trim();
 
+      DateTime parseTime(dynamic value) {
+        if (value == null) return DateTime(0);
+        final str = value.toString().replaceAll(" ", "T");
+        return DateTime.tryParse(str) ?? DateTime(0);
+      }
+
       setState(() {
         messages.clear();
         _loadedQuizIds.clear();
 
         final firstMsgIsAi =
             result.isNotEmpty && result.first['role'] != 'user';
+
         if (!firstMsgIsAi && effectiveSummary.isNotEmpty) {
           messages.add({"isMe": false, "text": effectiveSummary});
         }
 
+        final List<Map<String, dynamic>> combined = [];
+
+        for (final msg in result) {
+          combined.add({
+            "type": "message",
+            "isMe": msg["role"] == "user",
+            "text": msg["content"] ?? "",
+            "created_at": msg["created_at"],
+          });
+        }
+
+        /// quiz
         for (final quiz in quizzes) {
           final quizMap = Map<String, dynamic>.from(quiz);
+
+          final questions =
+              quizMap["questions"] ??
+              quizMap["quiz_detail"]?["questions"] ??
+              quizMap["quiz_detail"]?["result"]?["questions"];
+
+          if (questions == null) continue;
+
           final quizId = _extractQuizId(quizMap);
-
-          if (quizMap["questions"] == null) {
-            continue;
-          }
-
           if (quizId > 0) {
             _loadedQuizIds.add(quizId);
           }
 
-          messages.add({
-            "isMe": true,
-            "text": quizMap['mode'] == 'learning'
-                ? "สร้างแบบการเรียนรู้"
-                : "สร้างแบบทดสอบ",
-          });
-          messages.add({"isMe": false, "type": "quiz", "quiz": quizMap});
-        }
-
-        for (final msg in result) {
-          messages.add({
-            "isMe": msg["role"] == "user",
-            "text": msg["content"] ?? "",
+          combined.add({
+            "type": "quiz",
+            "quiz": quizMap,
+            "created_at": quizMap["created_at"],
           });
         }
 
+        combined.sort((a, b) {
+          final aTime = parseTime(a["created_at"]);
+          final bTime = parseTime(b["created_at"]);
+
+          final cmp = aTime.compareTo(bTime);
+          if (cmp != 0) return cmp;
+
+          if (a["type"] == "message" && b["type"] == "message") {
+            if (a["isMe"] == true && b["isMe"] == false) return -1;
+            if (a["isMe"] == false && b["isMe"] == true) return 1;
+          }
+
+          return 0;
+        });
+
+        String? lastText;
+        bool? lastIsMe;
+
+        for (final item in combined) {
+          if (item["type"] == "message") {
+            final currentText = item["text"]?.toString().trim();
+            final currentIsMe = item["isMe"];
+
+            if (currentText == lastText && currentIsMe == lastIsMe) {
+              continue;
+            }
+
+            messages.add({"isMe": currentIsMe, "text": currentText});
+
+            lastText = currentText;
+            lastIsMe = currentIsMe;
+          } else if (item["type"] == "quiz") {
+            final quizMap = item["quiz"];
+
+            messages.add({
+              "isMe": true,
+              "text": quizMap['mode'] == 'learning'
+                  ? "สร้างแบบการเรียนรู้"
+                  : "สร้างแบบทดสอบ",
+            });
+
+            messages.add({"isMe": false, "type": "quiz", "quiz": quizMap});
+          }
+        }
+
+        /// pending reply
         final pending = AISummaryNotificationService.consumePendingReply(
           _activeAiChatId,
         );
+
         if (pending != null) {
           final pendingQ = pending['question']!;
+
           final alreadyInHistory = result.any(
             (msg) =>
                 msg['role'] == 'user' && (msg['content'] ?? '') == pendingQ,
           );
+
           if (!alreadyInHistory) {
             messages.add({"isMe": true, "text": pendingQ});
             messages.add({"isMe": false, "text": pending['answer']!});
@@ -1396,16 +1453,20 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
+
         if (_scrollController.hasClients) {
           final max = _scrollController.position.maxScrollExtent;
+
           if (_shouldAnimateInitialHistory) {
             _shouldAnimateInitialHistory = false;
+
             if (max > 0) {
               await _scrollController.animateTo(
                 max,
                 duration: const Duration(milliseconds: 620),
                 curve: Curves.easeOut,
               );
+
               if (mounted && _scrollController.hasClients) {
                 _scrollController.jumpTo(
                   _scrollController.position.maxScrollExtent,
@@ -1416,11 +1477,12 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
             _scrollController.jumpTo(max);
           }
         }
+
         _releaseScrollButtonSuppression();
       });
     } catch (_) {}
   }
-
+ 
   @override
   void dispose() {
     AISummaryNotificationService.setAIChatDetailVisible(false);
