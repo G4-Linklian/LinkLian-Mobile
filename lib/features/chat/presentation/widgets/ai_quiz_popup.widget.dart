@@ -84,35 +84,41 @@ class _AIQuizPopupState extends State<AIQuizPopup> {
             ),
 
             //const SizedBox(height: 4),
-            RadioListTile<String>(
-              value: "learning",
+            RadioGroup<String>(
               groupValue: mode,
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              title: const Text(
-                "แบบการเรียนรู้",
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-              //subtitle: const Text("แสดงเฉลยทันที"),
               onChanged: (value) {
-                if (value == null) return;
-                setState(() => mode = value);
+                if (value != null) {
+                  setState(() => mode = value);
+                }
               },
-            ),
-            RadioListTile<String>(
-              value: "exam",
-              groupValue: mode,
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              title: const Text(
-                "แบบทดสอบ",
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    value: "learning",
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      "แบบการเรียนรู้",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  RadioListTile<String>(
+                    value: "exam",
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      "แบบทดสอบ",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              //subtitle: const Text("ทำครบก่อนดูเฉลย"),
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() => mode = value);
-              },
             ),
 
             const SizedBox(height: 12),

@@ -110,7 +110,7 @@ class ProfilePopup extends StatelessWidget {
                                                 .isNotEmpty &&
                                             profile.education!.classroom != "-"
                                         ? "${profile.education!.level ?? '-'} ชั้นปี ${profile.education!.classroom}"
-                                        : "${profile.education!.level ?? '-'}"
+                                        : profile.education!.level ?? '-'
                                   : "${profile.education!.level ?? '-'} / ${profile.education!.classroom ?? '-'}"
                             : "-",
                       ),
