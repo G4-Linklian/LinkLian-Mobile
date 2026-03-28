@@ -30,7 +30,10 @@ class ChatMessageBubble extends StatelessWidget {
   final String? senderLastName;
   final String? profileImage;
   final bool highlight;
-
+  final bool isReplyDeletedUser;
+  bool get isDeletedUser =>
+      (senderFirstName == null || senderFirstName!.isEmpty) &&
+      (senderLastName == null || senderLastName!.isEmpty);
   // Cache computed values
   late final String _initials;
   late final Color _avatarColor;
@@ -49,6 +52,7 @@ class ChatMessageBubble extends StatelessWidget {
     this.onReply,
     this.onJumpToMessage,
     this.highlight = false,
+    this.isReplyDeletedUser = false,
   }) : super(key: key) {
     // Pre-compute expensive operations
     _initials = _getInitials(senderFirstName, senderLastName);
@@ -65,9 +69,11 @@ class ChatMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onLongPress: () {
-        _showMessageMenu(context);
-      },
+      onLongPress: isDeletedUser
+          ? null
+          : () {
+              _showMessageMenu(context);
+            },
       child: RepaintBoundary(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 8),
@@ -76,33 +82,90 @@ class ChatMessageBubble extends StatelessWidget {
                 ? MainAxisAlignment.end
                 : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
+            // children: [
+            //   // Profile picture for received messages
+            //   if (!isMe) ...[
+            //     Container(
+            //       margin: const EdgeInsets.only(right: 8, bottom: 2),
+            //       child: CircleAvatar(
+            //         radius: 16,
+            //         backgroundColor: isDeletedUser ? Colors.grey : _avatarColor,
+            //         backgroundImage:
+            //             !isDeletedUser &&
+            //                 profileImage != null &&
+            //                 profileImage!.isNotEmpty
+            //             ? NetworkImage(profileImage!)
+            //             : null,
+            //         // child: profileImage == null || profileImage!.isEmpty
+            //         //     ? (senderFirstName != null || senderLastName != null
+            //         //           ? Text(
+            //         //               _initials,
+            //         //               style: const TextStyle(
+            //         //                 color: AppColors.white,
+            //         //                 fontSize: 14,
+            //         //                 fontWeight: FontWeight.w600,
+            //         //               ),
+            //         //             )
+            //         //           : const Icon(
+            //         //               Icons.person,
+            //         //               color: AppColors.white,
+            //         //               size: 16,
+            //         //             ))
+            //         //     : null,
+            //         child: isDeletedUser
+            //             ? const Icon(
+            //                 Icons.person_off,
+            //                 color: Colors.white,
+            //                 size: 16,
+            //               )
+            //             : (profileImage == null || profileImage!.isEmpty
+            //                   ? (senderFirstName != null ||
+            //                             senderLastName != null
+            //                         ? Text(
+            //                             _initials,
+            //                             style: const TextStyle(
+            //                               color: AppColors.white,
+            //                               fontSize: 14,
+            //                               fontWeight: FontWeight.w600,
+            //                             ),
+            //                           )
+            //                         : const Icon(
+            //                             Icons.person,
+            //                             color: AppColors.white,
+            //                             size: 16,
+            //                           ))
+            //                   : null),
+            //       ),
+            //     ),
+            //   ],
             children: [
-              // Profile picture for received messages
               if (!isMe) ...[
                 Container(
                   margin: const EdgeInsets.only(right: 8, bottom: 2),
                   child: CircleAvatar(
                     radius: 16,
-                    backgroundColor: _avatarColor,
+
+                    backgroundColor: isDeletedUser
+                        ? Colors.grey[300]
+                        : (profileImage == null || profileImage!.isEmpty)
+                        ? _avatarColor
+                        : Colors.transparent,
+
                     backgroundImage:
-                        profileImage != null && profileImage!.isNotEmpty
+                        !isDeletedUser &&
+                            profileImage != null &&
+                            profileImage!.isNotEmpty
                         ? NetworkImage(profileImage!)
                         : null,
-                    child: profileImage == null || profileImage!.isEmpty
-                        ? (senderFirstName != null || senderLastName != null
-                              ? Text(
-                                  _initials,
-                                  style: const TextStyle(
-                                    color: AppColors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.person,
-                                  color: AppColors.white,
-                                  size: 16,
-                                ))
+
+                    child: (profileImage == null || profileImage!.isEmpty)
+                        ? Icon(
+                            Icons.person,
+                            color: isDeletedUser
+                                ? Colors.grey[600]
+                                : Colors.white,
+                            size: 16,
+                          )
                         : null,
                   ),
                 ),
@@ -152,16 +215,22 @@ class ChatMessageBubble extends StatelessWidget {
                     children: [
                       if (replyMessage != null)
                         GestureDetector(
-                          onTap: () {
-                            if (replyMessage?.messageId != null) {
-                              onJumpToMessage?.call(replyMessage!.messageId!);
-                            }
-                          },
+                          onTap: isReplyDeletedUser
+                              ? null
+                              : () {
+                                  if (replyMessage?.messageId != null) {
+                                    onJumpToMessage?.call(
+                                      replyMessage!.messageId!,
+                                    );
+                                  }
+                                },
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 6),
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.grey[200]!.withValues(alpha: 0.8),
+                              color: isReplyDeletedUser
+                                  ? Colors.grey[300]
+                                  : Colors.grey[200]!.withValues(alpha: 0.8),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Column(
@@ -170,7 +239,9 @@ class ChatMessageBubble extends StatelessWidget {
                                 Text(
                                   replyMessage!.senderId == currentUserId
                                       ? "คุณ"
-                                      : "${senderFirstName ?? ''}",
+                                      : isReplyDeletedUser
+                                      ? "ไม่มีบัญชีผู้ใช้งาน"
+                                      : replyMessage!.firstName ?? '',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.primaryPalette[700]!,
@@ -313,17 +384,15 @@ class ChatMessageBubble extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: Icon(
-                  Icons.reply,
-                  color: AppColors.primaryPalette[600],
+              if (!isDeletedUser)
+                ListTile(
+                  leading: Icon(Icons.reply),
+                  title: const Text('ตอบกลับข้อความ'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onReply?.call(message);
+                  },
                 ),
-                title: const Text('ตอบกลับข้อความ'),
-                onTap: () {
-                  Navigator.pop(context);
-                  onReply?.call(message);
-                },
-              ),
 
               ListTile(
                 leading: Icon(Icons.copy, color: AppColors.primaryPalette[600]),
@@ -473,12 +542,13 @@ class ChatInputArea extends StatelessWidget {
   final TextEditingController textController;
   final VoidCallback onSend;
   final ChatMessageController controller;
-
+  final bool isDeletedUser;
   const ChatInputArea({
     super.key,
     required this.textController,
     required this.onSend,
     required this.controller,
+    required this.isDeletedUser,
   });
 
   @override
@@ -518,10 +588,11 @@ class ChatInputArea extends StatelessWidget {
                             color: AppColors.primaryPalette[500],
                             size: 22,
                           ),
-                          onPressed: () {
-                            // Handle file attachment
-                            controller.pickFile();
-                          },
+                          onPressed: isDeletedUser
+                              ? null
+                              : () {
+                                  controller.pickFile();
+                                },
                           padding: const EdgeInsets.all(8),
                           constraints: const BoxConstraints(),
                         ),
@@ -531,71 +602,79 @@ class ChatInputArea extends StatelessWidget {
                             color: AppColors.primaryPalette[500],
                             size: 22,
                           ),
-                          onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(20),
-                                ),
-                              ),
-                              builder: (context) => SafeArea(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'เลือกรูปภาพ',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.primaryPalette[800],
+                          onPressed: isDeletedUser
+                              ? null
+                              : () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(20),
+                                      ),
+                                    ),
+                                    builder: (context) => SafeArea(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(20),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              'เลือกรูปภาพ',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors
+                                                    .primaryPalette[800],
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 20),
+
+                                            ListTile(
+                                              leading: Icon(
+                                                Icons.photo_library,
+                                                color: AppColors
+                                                    .primaryPalette[600],
+                                              ),
+                                              title: const Text(
+                                                'เลือกจากแกลเลอรี',
+                                              ),
+                                              onTap: () {
+                                                Navigator.pop(context);
+                                                controller.pickImage(
+                                                  ImageSource.gallery,
+                                                );
+                                              },
+                                            ),
+
+                                            ListTile(
+                                              leading: Icon(
+                                                Icons.camera_alt,
+                                                color: AppColors
+                                                    .primaryPalette[600],
+                                              ),
+                                              title: const Text('ถ่ายรูป'),
+                                              onTap: () {
+                                                Navigator.pop(context);
+                                                controller.pickImage(
+                                                  ImageSource.camera,
+                                                );
+                                              },
+                                            ),
+
+                                            const SizedBox(height: 10),
+
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: const Text('ยกเลิก'),
+                                            ),
+                                          ],
                                         ),
                                       ),
-
-                                      const SizedBox(height: 20),
-
-                                      ListTile(
-                                        leading: Icon(
-                                          Icons.photo_library,
-                                          color: AppColors.primaryPalette[600],
-                                        ),
-                                        title: const Text('เลือกจากแกลเลอรี'),
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                          controller.pickImage(
-                                            ImageSource.gallery,
-                                          );
-                                        },
-                                      ),
-
-                                      ListTile(
-                                        leading: Icon(
-                                          Icons.camera_alt,
-                                          color: AppColors.primaryPalette[600],
-                                        ),
-                                        title: const Text('ถ่ายรูป'),
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                          controller.pickImage(
-                                            ImageSource.camera,
-                                          );
-                                        },
-                                      ),
-
-                                      const SizedBox(height: 10),
-
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('ยกเลิก'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                                    ),
+                                  );
+                                },
 
                           padding: const EdgeInsets.all(8),
                           constraints: const BoxConstraints(),
@@ -606,16 +685,18 @@ class ChatInputArea extends StatelessWidget {
                             color: AppColors.primaryPalette[500],
                             size: 22,
                           ),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => LinkAttachDialog(
-                                onSubmit: (url) {
-                                  controller.sendLink(url);
+                          onPressed: isDeletedUser
+                              ? null
+                              : () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => LinkAttachDialog(
+                                      onSubmit: (url) {
+                                        controller.sendLink(url);
+                                      },
+                                    ),
+                                  );
                                 },
-                              ),
-                            );
-                          },
                           padding: const EdgeInsets.all(8),
                           constraints: const BoxConstraints(),
                         ),
@@ -635,15 +716,18 @@ class ChatInputArea extends StatelessWidget {
                       children: [
                         Expanded(
                           child: TextField(
+                            enabled: !isDeletedUser,
                             controller: textController,
-                            decoration: const InputDecoration(
-                              hintText: 'Aa...',
-                              hintStyle: TextStyle(
+                            decoration: InputDecoration(
+                              hintText: isDeletedUser
+                                  ? 'ไม่สามารถส่งข้อความได้'
+                                  : 'Aa...',
+                              hintStyle: const TextStyle(
                                 color: Color(0xFFBDBDBD),
                                 fontSize: 15,
                               ),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
+                              contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 18,
                                 vertical: 10,
                               ),
@@ -669,7 +753,7 @@ class ChatInputArea extends StatelessWidget {
                                   color: AppColors.white,
                                   size: 20,
                                 ),
-                                onPressed: onSend,
+                                onPressed: isDeletedUser ? null : onSend,
                                 padding: const EdgeInsets.all(10),
                                 constraints: const BoxConstraints(),
                               ),

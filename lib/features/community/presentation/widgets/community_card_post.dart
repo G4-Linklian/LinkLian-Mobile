@@ -159,13 +159,15 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                                 "${widget.post.firstName ?? ''} ${widget.post.lastName ?? ''}"
                                     .trim();
 
+                            final isDeletedUser = displayName.isEmpty;
+
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  displayName.isNotEmpty
-                                      ? displayName
-                                      : "ผู้ใช้นี้ไม่ได้ใช้งานแล้ว",
+                                  isDeletedUser
+                                      ? "ไม่มีบัญชีผู้ใช้งาน"
+                                      : displayName,
                                   style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,

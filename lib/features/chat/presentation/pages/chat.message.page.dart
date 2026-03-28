@@ -243,6 +243,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     final isDeletedUser = displayName.isEmpty;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -260,42 +261,35 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
               ),
               child: CircleAvatar(
                 radius: 18,
-                backgroundColor: _getAvatarColor(widget.chat.firstName ?? ''),
+
+                backgroundColor: isDeletedUser
+                    ? Colors.grey[300]
+                    : (widget.chat.profileImage == null ||
+                          widget.chat.profileImage!.isEmpty)
+                    ? _getAvatarColor(widget.chat.firstName ?? '')
+                    : Colors.transparent,
+
                 backgroundImage:
-                    widget.chat.profileImage != null &&
+                    !isDeletedUser &&
+                        widget.chat.profileImage != null &&
                         widget.chat.profileImage!.isNotEmpty
                     ? NetworkImage(widget.chat.profileImage!)
                     : null,
+
                 child:
-                    widget.chat.profileImage == null ||
-                        widget.chat.profileImage!.isEmpty
-                    ? (isDeletedUser
-                          ? const Text(
-                              "?",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            )
-                          : (widget.chat.firstName != null ||
-                                    widget.chat.lastName != null
-                                ? Text(
-                                    _getInitials(
-                                      widget.chat.firstName,
-                                      widget.chat.lastName,
-                                    ),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  )
-                                : null))
+                    (widget.chat.profileImage == null ||
+                        widget.chat.profileImage!.isEmpty)
+                    ? Icon(
+                        Icons.person,
+                        color: isDeletedUser ? Colors.grey[600] : Colors.white,
+                        size: 20,
+                      )
                     : null,
               ),
             ),
+
             const SizedBox(width: 12),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,7 +297,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                   Text(
                     displayName.isNotEmpty
                         ? displayName
-                        : "ผู้ใช้นี้ไม่ได้ใช้งานแล้ว",
+                        : "ไม่มีบัญชีผู้ใช้งาน",
                     style: const TextStyle(
                       color: Colors.black,
                       fontSize: 16,
@@ -311,14 +305,6 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  // Optional: Online status
-                  // Text(
-                  //   'Active now',
-                  //   style: TextStyle(
-                  //     color: Colors.grey[600],
-                  //     fontSize: 12,
-                  //   ),
-                  // ),
                 ],
               ),
             ),
@@ -403,7 +389,12 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                         final replyMessage = _controller.findReplyMessage(
                           message.replyId,
                         );
-
+                        final isReplyDeletedUser =
+                            replyMessage != null &&
+                            ((replyMessage.firstName == null ||
+                                    replyMessage.firstName!.isEmpty) &&
+                                (replyMessage.lastName == null ||
+                                    replyMessage.lastName!.isEmpty));
                         // Check if we need to show date separator
                         bool showDateSeparator = false;
                         if (index == 0) {
@@ -455,6 +446,8 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                               highlight:
                                   _highlightMessageId != null &&
                                   message.messageId == _highlightMessageId,
+
+                              isReplyDeletedUser: isReplyDeletedUser,
                               onReply: (msg) {
                                 setState(() {
                                   _controller.replyingMessage = msg;
@@ -595,6 +588,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                 ),
               ChatInputArea(
                 textController: _textController,
+                isDeletedUser: isDeletedUser,
 
                 ///onSend: isDeletedUser ? null : _handleSend,
                 onSend: () {

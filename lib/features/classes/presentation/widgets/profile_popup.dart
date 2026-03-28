@@ -15,7 +15,7 @@ class ProfilePopup extends StatelessWidget {
     final isTeacher = profile.isTeacher;
     final auth = Get.find<AuthController>();
     final viewerRole = auth.roleName.value?.toLowerCase();
-
+    final isDeletedUser = profile.fullName.isEmpty;
     final viewerIsTeacher =
         viewerRole == 'teacher' || viewerRole == 'instructor';
 
@@ -23,7 +23,10 @@ class ProfilePopup extends StatelessWidget {
 
     final isSelf = auth.userId.value == profile.userSysId;
 
-    final canSendMessage = viewerIsTeacher != targetIsTeacher && !isSelf;
+   final canSendMessage =
+    viewerIsTeacher != targetIsTeacher &&
+    !isSelf &&
+    !isDeletedUser;
 
     final role = profile.roleName.toLowerCase();
 

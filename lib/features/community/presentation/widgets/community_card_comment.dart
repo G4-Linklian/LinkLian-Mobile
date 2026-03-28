@@ -22,6 +22,8 @@ class CardCommentCommunity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDeletedUser =
+        comment.displayName == null || comment.displayName!.trim().isEmpty;
     return Padding(
       padding: EdgeInsets.only(
         left: 16.0 + depth * 32.0,
@@ -42,7 +44,9 @@ class CardCommentCommunity extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        comment.displayName ?? 'Anonymous',
+                        isDeletedUser
+                            ? 'ไม่มีบัญชีผู้ใช้งาน'
+                            : comment.displayName!,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -100,16 +104,22 @@ class CardCommentCommunity extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
+    final isDeletedUser =
+        comment.displayName == null || comment.displayName!.trim().isEmpty;
     return CircleAvatar(
       radius: 20,
-      backgroundColor: AppColors.primaryPalette[200],
+      backgroundColor: isDeletedUser
+          ? Colors.grey
+          : AppColors.primaryPalette[200],
       foregroundImage:
           (comment.profilePic != null && comment.profilePic!.isNotEmpty)
           ? NetworkImage(comment.profilePic!)
           : null,
-      child: (comment.profilePic == null || comment.profilePic!.isEmpty)
-          ? Icon(Icons.person, color: AppColors.primaryPalette[600])
-          : null,
+      child: isDeletedUser
+          ? const Icon(Icons.person_off, color: Colors.white)
+          : (comment.profilePic == null || comment.profilePic!.isEmpty
+                ? Icon(Icons.person, color: AppColors.primaryPalette[600])
+                : null),
     );
   }
 
