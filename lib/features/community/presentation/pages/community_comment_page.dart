@@ -121,6 +121,12 @@ class CommunityCommentPage extends StatelessWidget {
 
         final remaining = comment.childrenCount - visible;
 
+        final post = controller.post.value;
+
+        final displayName = "${post?.firstName ?? ''} ${post?.lastName ?? ''}"
+            .trim();
+
+        final isPostOwnerDeleted = displayName.isEmpty;
         return Padding(
           padding: EdgeInsets.only(top: commentIndex == 0 ? 16 : 0),
           child: Stack(
@@ -138,11 +144,13 @@ class CommunityCommentPage extends StatelessWidget {
                 comment: comment,
                 depth: depth,
                 currentUserId: controller.userSysId,
-
-                onReply: () {
-                  controller.replyingTo.value = comment;
-                  controller.focusNode.requestFocus();
-                },
+                isPostOwnerDeleted: isPostOwnerDeleted,
+                onReply: isPostOwnerDeleted
+                    ? null
+                    : () {
+                        controller.replyingTo.value = comment;
+                        controller.focusNode.requestFocus();
+                      },
 
                 onShowMore: remaining > 0
                     ? () => controller.toggleReplies(comment)

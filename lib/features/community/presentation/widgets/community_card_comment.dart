@@ -10,6 +10,7 @@ class CardCommentCommunity extends StatelessWidget {
   final VoidCallback? onShowMore;
   final int? remainingReplies;
   final int currentUserId;
+  final bool isPostOwnerDeleted;
 
   const CardCommentCommunity({
     super.key,
@@ -19,6 +20,7 @@ class CardCommentCommunity extends StatelessWidget {
     this.onShowMore,
     this.remainingReplies,
     required this.currentUserId,
+    required this.isPostOwnerDeleted,
   });
 
   @override
@@ -70,16 +72,29 @@ class CardCommentCommunity extends StatelessWidget {
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: onReply,
+                      onTap: isPostOwnerDeleted ? null : onReply,
                       child: Text(
                         'ตอบกลับ',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.primaryPalette[600],
+                          color: isPostOwnerDeleted
+                              ? Colors.grey
+                              : AppColors.primaryPalette[600],
                         ),
                       ),
                     ),
+                    // GestureDetector(
+                    //   onTap: onReply,
+                    //   child: Text(
+                    //     'ตอบกลับ',
+                    //     style: TextStyle(
+                    //       fontSize: 13,
+                    //       fontWeight: FontWeight.w500,
+                    //       color: AppColors.primaryPalette[600],
+                    //     ),
+                    //   ),
+                    // ),
                     if (onShowMore != null && (remainingReplies ?? 0) > 0) ...[
                       const SizedBox(width: 12),
                       GestureDetector(
