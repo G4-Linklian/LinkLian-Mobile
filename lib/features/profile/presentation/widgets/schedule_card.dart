@@ -97,7 +97,7 @@ class ScheduleCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        room.isNotEmpty ? room : '-',
+                        room.isNotEmpty ? room : 'ไม่ระบุสถานที่',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Colors.black54,

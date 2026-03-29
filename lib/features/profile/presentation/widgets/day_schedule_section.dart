@@ -54,7 +54,10 @@ class DayScheduleSection extends StatelessWidget {
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(8),
                   // border: Border.all(color: Colors.grey.shade200),
-                  border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: color.withValues(alpha: 0.15),
@@ -71,14 +74,33 @@ class DayScheduleSection extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            s.subjectName,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  s.subjectName,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                s.className != null
+                                    ? s.className!
+                                    : 'ไม่ระบุวิชาเรียน',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
                           ),
+
                           const SizedBox(height: 6),
 
                           Row(
@@ -92,17 +114,10 @@ class DayScheduleSection extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                s.className != null ? '${s.className}' : '-',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
                             ],
                           ),
+
+                          // ),
                           const SizedBox(height: 4),
 
                           Row(
@@ -113,6 +128,7 @@ class DayScheduleSection extends StatelessWidget {
                                 color: Colors.grey,
                               ),
                               const SizedBox(width: 4),
+
                               Expanded(
                                 child: Text(
                                   _locationText(s),
@@ -148,10 +164,13 @@ class DayScheduleSection extends StatelessWidget {
   }
 
   String _locationText(TeachingScheduleModel e) {
-    if (e.building != null && e.building!.isNotEmpty) {
-      return e.building!;
+    final value = e.building?.trim();
+
+    if (value == null || value.isEmpty || value == '-') {
+      return 'ไม่ระบุสถานที่';
     }
-    return '-';
+
+    return value;
   }
 
   String _getDayName(int day) {
