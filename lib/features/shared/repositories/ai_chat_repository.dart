@@ -5,12 +5,18 @@ class AIChatRepository {
   final ApiClient _apiClient = ApiClient();
 
   Map<String, dynamic> _mergeQuizPayload(Map<String, dynamic> source) {
-    final merged = Map<String, dynamic>.from(source);
+    final merged = <String, dynamic>{};
+
+    merged['quiz_title'] = source['quiz_title'];
+
+    merged.addAll(source);
+
     final quizDetail = source['quiz_detail'];
 
     if (quizDetail is Map) {
       final quizDetailMap = Map<String, dynamic>.from(quizDetail);
       final result = quizDetailMap['result'];
+
       if (result is Map) {
         merged.addAll(Map<String, dynamic>.from(result));
       }
@@ -36,6 +42,7 @@ class AIChatRepository {
     required int aiChatId,
     required String difficulty,
     required int questionCount,
+    required String mode,
   }) async {
     Future<Map<String, dynamic>> sendRequest() async {
       final response = await _apiClient.post(
@@ -44,6 +51,8 @@ class AIChatRepository {
           "ai_chat_id": aiChatId,
           "difficulty": difficulty,
           "question_count": questionCount,
+          "mode": mode,
+          "title": mode == "learning" ? "แบบการเรียนรู้" : "แบบทดสอบ",
         },
       );
 
@@ -92,7 +101,6 @@ class AIChatRepository {
     throw Exception("Failed to load AI chat detail");
   }
 
-  // }
   Future<List<Map<String, dynamic>>> getQuiz(int aiChatId) async {
     final response = await _apiClient.get('/quiz/by-chat/$aiChatId');
 
@@ -173,5 +181,26 @@ class AIChatRepository {
     }
 
     throw Exception("Failed to send message");
+  }
+
+  Future<Map<String, dynamic>> checkAnswer({
+    required int quizId,
+    required int questionIndex,
+    required String selected,
+  }) async {
+    final response = await _apiClient.post(
+      '/quiz/check-answer',
+      data: {
+        "quiz_id": quizId,
+        "question_index": questionIndex,
+        "selected": selected,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return Map<String, dynamic>.from(response.data);
+    }
+
+    throw Exception("Failed to check answer");
   }
 }

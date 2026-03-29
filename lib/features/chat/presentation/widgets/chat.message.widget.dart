@@ -170,7 +170,7 @@ class ChatMessageBubble extends StatelessWidget {
                                 Text(
                                   replyMessage!.senderId == currentUserId
                                       ? "คุณ"
-                                      : "${senderFirstName ?? ''}",
+                                      : senderFirstName ?? '',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.primaryPalette[700]!,

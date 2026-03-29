@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 class QuizResultPage extends StatelessWidget {
   final int correct;
   final int total;
+  final String mode;
   final VoidCallback onReview;
   final VoidCallback onBackToList;
 
@@ -11,6 +12,7 @@ class QuizResultPage extends StatelessWidget {
     super.key,
     required this.correct,
     required this.total,
+    required this.mode,
     required this.onReview,
     required this.onBackToList,
   });
@@ -54,7 +56,7 @@ class QuizResultPage extends StatelessWidget {
         ),
         centerTitle: true,
         title: const Text(
-          'ผลการทำแบบทดสอบ',
+          'ผลการทำชุดคำถาม',
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.w600,
@@ -163,9 +165,12 @@ class QuizResultPage extends StatelessWidget {
                   ),
                 ),
                 onPressed: onReview,
-                child: const Text(
-                  'ทบทวนแบบทดสอบ',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                child: Text(
+                  mode == 'learning' ? 'ทบทวนแบบการเรียนรู้' : 'เฉลยแบบทดสอบ',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -185,7 +190,7 @@ class QuizResultPage extends StatelessWidget {
                 ),
                 onPressed: onBackToList,
                 child: const Text(
-                  'กลับหน้ารวมแบบทดสอบ',
+                  'กลับหน้ารวมชุดคำถาม',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -225,10 +230,7 @@ class QuizResultPage extends StatelessWidget {
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 13,
-              color: color.withValues(alpha: 0.8),
-            ),
+            style: TextStyle(fontSize: 13, color: color.withValues(alpha: 0.8)),
           ),
         ],
       ),
