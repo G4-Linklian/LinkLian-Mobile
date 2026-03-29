@@ -126,7 +126,10 @@ class CommunityCommentPage extends StatelessWidget {
         final displayName = "${post?.firstName ?? ''} ${post?.lastName ?? ''}"
             .trim();
 
-        final isPostOwnerDeleted = displayName.isEmpty;
+        final isPostOwnerDeleted =
+            displayName.isEmpty ||
+            displayName == "ไม่มีบัญชีผู้ใช้งาน" ||
+            displayName.toLowerCase().contains("deleted");
         return Padding(
           padding: EdgeInsets.only(top: commentIndex == 0 ? 16 : 0),
           child: Stack(

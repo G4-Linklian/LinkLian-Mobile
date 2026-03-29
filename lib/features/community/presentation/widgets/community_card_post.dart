@@ -141,17 +141,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                     children: [
                       _buildProfileAvatar(),
                       const SizedBox(width: 12),
-                      // Expanded(
-                      //   child: Column(
-                      //     crossAxisAlignment: CrossAxisAlignment.start,
-                      //     children: [
-                      //       Text(
-                      //         "${widget.post.firstName} ${widget.post.lastName}",
-                      //         style: const TextStyle(
-                      //           fontSize: 15,
-                      //           fontWeight: FontWeight.w600,
-                      //         ),
-                      //       ),
+
                       Expanded(
                         child: Builder(
                           builder: (context) {
@@ -159,7 +149,9 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                                 "${widget.post.firstName ?? ''} ${widget.post.lastName ?? ''}"
                                     .trim();
 
-                            final isDeletedUser = displayName.isEmpty;
+                            final isDeletedUser =
+                                displayName.isEmpty ||
+                                displayName == "ไม่มีบัญชีผู้ใช้งาน";
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -891,7 +883,8 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     final displayName =
         "${widget.post.firstName ?? ''} ${widget.post.lastName ?? ''}".trim();
 
-    final isDeletedUser = displayName.isEmpty;
+    final isDeletedUser =
+        displayName.isEmpty || displayName == "ไม่มีบัญชีผู้ใช้งาน";
 
     if (!isDeletedUser &&
         widget.post.profilePic != null &&
@@ -926,8 +919,21 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
   }
 
   String _getInitial(String? name) {
-    if (name == null || name.isEmpty) return '?';
-    return name[0].toUpperCase();
+    if (name == null) return '?';
+
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) return '?';
+
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   String _formatDateTime(DateTime dt) {

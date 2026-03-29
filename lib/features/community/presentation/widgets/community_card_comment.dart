@@ -84,17 +84,7 @@ class CardCommentCommunity extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // GestureDetector(
-                    //   onTap: onReply,
-                    //   child: Text(
-                    //     'ตอบกลับ',
-                    //     style: TextStyle(
-                    //       fontSize: 13,
-                    //       fontWeight: FontWeight.w500,
-                    //       color: AppColors.primaryPalette[600],
-                    //     ),
-                    //   ),
-                    // ),
+
                     if (onShowMore != null && (remainingReplies ?? 0) > 0) ...[
                       const SizedBox(width: 12),
                       GestureDetector(
@@ -136,15 +126,6 @@ class CardCommentCommunity extends StatelessWidget {
           ? NetworkImage(comment.profilePic!)
           : null,
 
-      // child: isDeletedUser
-      //     ? Icon(LinkLianIcon.useroff, color: Colors.grey[600], size: 20)
-      //     : (comment.profilePic == null || comment.profilePic!.isEmpty
-      //           ? Icon(
-      //               //LinkLianIcon.identifiedUser,
-      //               LinkLianIcon.useroff,
-      //               color: AppColors.primaryPalette[600],
-      //               size: 18,
-      //             )
       child: isDeletedUser
           ? Icon(LinkLianIcon.useroff, color: Colors.grey[600], size: 20)
           : (comment.profilePic == null || comment.profilePic!.isEmpty
