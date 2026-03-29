@@ -29,7 +29,7 @@ class CommunityBookmarkRepository {
     );
 
     return ApiResponseParser.parseList(
-      response.data,
+      response.data?['data'],
       CommunityPostModel.fromJson,
     );
   }

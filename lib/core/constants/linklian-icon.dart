@@ -15,23 +15,16 @@ abstract class _BaseHugeIcon {
       width: size,
       height: size,
       child: Center(
-        child: HugeIcon(
-          icon: icon,
-          size: size * visualScale,
-          color: color,
-        ),
+        child: HugeIcon(icon: icon, size: size * visualScale, color: color),
       ),
     );
   }
 }
+
 class LinkLianHugeIcon {
+  const LinkLianHugeIcon._();
 
-  const LinkLianHugeIcon._(); 
-
-  static Widget anonymous({
-    double size = 18,
-    Color color = Colors.black,
-  }) {
+  static Widget anonymous({double size = 18, Color color = Colors.black}) {
     return _BaseHugeIcon.build(
       icon: HugeIcons.strokeRoundedAnonymous,
       size: size,
@@ -39,29 +32,30 @@ class LinkLianHugeIcon {
     );
   }
 
-static Widget comment({
-  double size = 18,
-  Color color = Colors.black,
-  double stroke = 2,
-}) {
-  return Stack(
-    alignment: Alignment.center,
-    children: [      Transform.scale(
-        scale: 1 + (stroke / size),
-        child: _BaseHugeIcon.build(
+  static Widget comment({
+    double size = 18,
+    Color color = Colors.black,
+    double stroke = 2,
+  }) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Transform.scale(
+          scale: 1 + (stroke / size),
+          child: _BaseHugeIcon.build(
+            icon: HugeIcons.strokeRoundedComment01,
+            size: size,
+            color: color,
+          ),
+        ),
+        _BaseHugeIcon.build(
           icon: HugeIcons.strokeRoundedComment01,
           size: size,
           color: color,
         ),
-      ),
-      _BaseHugeIcon.build(
-        icon: HugeIcons.strokeRoundedComment01,
-        size: size,
-        color: color,
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   // ตัวอย่าง
   // static Widget warning({
@@ -75,6 +69,7 @@ static Widget comment({
   //   );
   // }
 }
+
 class LinkLianIcon {
   // การบ้าน
   static const IconData homework = TablerIcons.checklist;
@@ -90,17 +85,17 @@ class LinkLianIcon {
   static const IconData add = TablerIcons.square_rounded_plus_filled;
   static const IconData bulbFilled = TablerIcons.bulb_filled;
   static const IconData fileTextSpark = TablerIcons.file_text_spark;
-  
+
   //auth
-  static const IconData info = TablerIcons.info_circle;          
-  static const IconData eye = TablerIcons.eye;                  
-  static const IconData eyeOff = TablerIcons.eye_off;          
+  static const IconData info = TablerIcons.info_circle;
+  static const IconData eye = TablerIcons.eye;
+  static const IconData eyeOff = TablerIcons.eye_off;
 
   //role
   static const IconData student = TablerIcons.school;
   static const IconData teacher = TablerIcons.book;
 
-  //classfeed  
+  //classfeed
   static const IconData location = TablerIcons.map_pin_filled;
   static const IconData expand = TablerIcons.square_rounded_chevron_down;
   static const IconData collapse = TablerIcons.square_rounded_chevron_up;
@@ -147,6 +142,8 @@ class LinkLianIcon {
   static const IconData circleDot = TablerIcons.circle_dot;
   static const IconData users = TablerIcons.users;
 
-  static double? get fontSubheading => null;
+  static const IconData useroff = Icons.person_off;
+  static const IconData user = Icons.person;
 
+  static double? get fontSubheading => null;
 }

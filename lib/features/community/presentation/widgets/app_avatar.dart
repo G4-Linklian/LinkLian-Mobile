@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:flutter/material.dart';
 
 class AppAvatar extends StatelessWidget {
@@ -39,7 +40,7 @@ class AppAvatar extends StatelessWidget {
           ? Colors.grey
           : AppColors.primaryPalette[300],
       child: isDeletedUser
-          ? const Icon(Icons.person_off, color: Colors.white)
+          ? Icon(LinkLianIcon.useroff, color: Colors.white)
           : Text(
               initials,
               style: TextStyle(
@@ -51,3 +52,4 @@ class AppAvatar extends StatelessWidget {
     );
   }
 }
+

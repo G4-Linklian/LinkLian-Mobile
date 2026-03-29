@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/utils/dialog_helper.dart';
 import 'package:LinkLian/features/chat/presentation/widgets/chat_attachment_widget.dart';
 import 'package:flutter/material.dart';
@@ -82,62 +83,6 @@ class ChatMessageBubble extends StatelessWidget {
                 ? MainAxisAlignment.end
                 : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
-            // children: [
-            //   // Profile picture for received messages
-            //   if (!isMe) ...[
-            //     Container(
-            //       margin: const EdgeInsets.only(right: 8, bottom: 2),
-            //       child: CircleAvatar(
-            //         radius: 16,
-            //         backgroundColor: isDeletedUser ? Colors.grey : _avatarColor,
-            //         backgroundImage:
-            //             !isDeletedUser &&
-            //                 profileImage != null &&
-            //                 profileImage!.isNotEmpty
-            //             ? NetworkImage(profileImage!)
-            //             : null,
-            //         // child: profileImage == null || profileImage!.isEmpty
-            //         //     ? (senderFirstName != null || senderLastName != null
-            //         //           ? Text(
-            //         //               _initials,
-            //         //               style: const TextStyle(
-            //         //                 color: AppColors.white,
-            //         //                 fontSize: 14,
-            //         //                 fontWeight: FontWeight.w600,
-            //         //               ),
-            //         //             )
-            //         //           : const Icon(
-            //         //               Icons.person,
-            //         //               color: AppColors.white,
-            //         //               size: 16,
-            //         //             ))
-            //         //     : null,
-            //         child: isDeletedUser
-            //             ? const Icon(
-            //                 Icons.person_off,
-            //                 color: Colors.white,
-            //                 size: 16,
-            //               )
-            //             : (profileImage == null || profileImage!.isEmpty
-            //                   ? (senderFirstName != null ||
-            //                             senderLastName != null
-            //                         ? Text(
-            //                             _initials,
-            //                             style: const TextStyle(
-            //                               color: AppColors.white,
-            //                               fontSize: 14,
-            //                               fontWeight: FontWeight.w600,
-            //                             ),
-            //                           )
-            //                         : const Icon(
-            //                             Icons.person,
-            //                             color: AppColors.white,
-            //                             size: 16,
-            //                           ))
-            //                   : null),
-            //       ),
-            //     ),
-            //   ],
             children: [
               if (!isMe) ...[
                 Container(
@@ -158,15 +103,22 @@ class ChatMessageBubble extends StatelessWidget {
                         ? NetworkImage(profileImage!)
                         : null,
 
-                    child: (profileImage == null || profileImage!.isEmpty)
+                    child: isDeletedUser
                         ? Icon(
-                            Icons.person,
-                            color: isDeletedUser
-                                ? Colors.grey[600]
-                                : Colors.white,
+                            LinkLianIcon.useroff,
+                            color: Colors.grey[600],
                             size: 16,
                           )
-                        : null,
+                        : (profileImage == null || profileImage!.isEmpty
+                              ? Text(
+                                  _initials,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                )
+                              : null),
                   ),
                 ),
               ],
@@ -574,7 +526,7 @@ class ChatInputArea extends StatelessWidget {
             return Row(
               children: [
                 // Attachment buttons
-                if (!hasText)
+                if (!isDeletedUser && !hasText)
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.primaryPalette[100],
@@ -703,65 +655,106 @@ class ChatInputArea extends StatelessWidget {
                       ],
                     ),
                   ),
-                if (!hasText) const SizedBox(width: 8),
+                if (!isDeletedUser && hasText) const SizedBox(width: 8),
 
                 // Text input with send button
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryPalette[100],
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            enabled: !isDeletedUser,
-                            controller: textController,
-                            decoration: InputDecoration(
-                              hintText: isDeletedUser
-                                  ? 'ไม่สามารถส่งข้อความได้'
-                                  : 'Aa...',
-                              hintStyle: const TextStyle(
-                                color: Color(0xFFBDBDBD),
-                                fontSize: 15,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 10,
-                              ),
+                  child: isDeletedUser
+                      ? Container(
+                          padding: const EdgeInsets.all(1.2),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.primaryPalette[300]!,
+                              width: 1.2,
                             ),
-                            style: const TextStyle(fontSize: 15),
-                            minLines: 1,
-                            maxLines: 4,
-                            textCapitalization: TextCapitalization.sentences,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryPalette[100],
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    enabled: false,
+                                    controller: textController,
+                                    decoration: const InputDecoration(
+                                      hintText: 'ไม่สามารถส่งข้อความได้',
+                                      hintStyle: TextStyle(
+                                        color: Color(0xFFBDBDBD),
+                                        fontSize: 15,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 10,
+                                      ),
+                                    ),
+                                    style: const TextStyle(fontSize: 15),
+                                    minLines: 1,
+                                    maxLines: 4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryPalette[100],
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  enabled: true,
+                                  controller: textController,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Aa...',
+                                    hintStyle: TextStyle(
+                                      color: Color(0xFFBDBDBD),
+                                      fontSize: 15,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 10,
+                                    ),
+                                  ),
+                                  style: const TextStyle(fontSize: 15),
+                                  minLines: 1,
+                                  maxLines: 4,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (hasText)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryPalette[500],
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: IconButton(
+                                      icon: Icon(
+                                        TablerIcons.send,
+                                        color: AppColors.white,
+                                        size: 20,
+                                      ),
+                                      onPressed: onSend,
+                                      padding: const EdgeInsets.all(10),
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        if (hasText)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 4),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryPalette[500],
-                                shape: BoxShape.circle,
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  TablerIcons.send,
-                                  color: AppColors.white,
-                                  size: 20,
-                                ),
-                                onPressed: isDeletedUser ? null : onSend,
-                                padding: const EdgeInsets.all(10),
-                                constraints: const BoxConstraints(),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             );

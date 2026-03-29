@@ -24,6 +24,7 @@ class BookmarkController extends GetxController {
   final bookmarkedPostIds = <int>{}.obs;
 
   final loading = false.obs;
+  final loadingCommunity = false.obs;
   final sortType = SortType.all.obs;
   final type = BookmarkType.post.obs;
 
@@ -48,7 +49,6 @@ class BookmarkController extends GetxController {
       _fetchBookmarks(auth.userId.value!);
     }
   }
-
 
   Future<void> _fetchBookmarks(int userId) async {
     try {
@@ -186,7 +186,7 @@ class BookmarkController extends GetxController {
     if (userId == null) return;
 
     try {
-      loading.value = true;
+      loadingCommunity.value = true;
 
       final result = await communityRepo.getMyBookmarks();
 
@@ -197,46 +197,45 @@ class BookmarkController extends GetxController {
     } catch (e) {
       appLog.info("[Bookmark]Error loading community bookmarks: $e");
     } finally {
-      loading.value = false;
+      loadingCommunity.value = false;
     }
   }
+
   Future<void> toggleCommunityBookmark(int postId) async {
-  if (isToggling.value) return; 
+    if (isToggling.value) return;
 
-  try {
-    isToggling.value = true;
+    try {
+      isToggling.value = true;
 
-    final result =
-        await communityRepo.toggleBookmark(postId: postId);
+      final result = await communityRepo.toggleBookmark(postId: postId);
 
-    final action = result['action'];
+      final action = result['action'];
 
-    if (action == 'created') {
+      if (action == 'created') {
+        DialogHelper.showNotification(
+          title: 'สำเร็จ',
+          message: 'บันทึกโพสต์เรียบร้อยแล้ว',
+          type: NotificationType.success,
+        );
+      } else if (action == 'removed') {
+        DialogHelper.showNotification(
+          title: 'สำเร็จ',
+          message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
+          type: NotificationType.success,
+        );
+      }
+
+      await loadCommunityBookmarks();
+    } catch (e) {
       DialogHelper.showNotification(
-        title: 'สำเร็จ',
-        message: 'บันทึกโพสต์เรียบร้อยแล้ว',
-        type: NotificationType.success,
+        title: 'เกิดข้อผิดพลาด',
+        message: 'ไม่สามารถทำรายการได้',
+        type: NotificationType.error,
       );
-    } else if (action == 'removed') {
-      DialogHelper.showNotification(
-        title: 'สำเร็จ',
-        message: 'ลบบุ๊กมาร์กเรียบร้อยแล้ว',
-        type: NotificationType.success,
-      );
+    } finally {
+      isToggling.value = false;
     }
-
-    await loadCommunityBookmarks();
-
-  } catch (e) {
-    DialogHelper.showNotification(
-      title: 'เกิดข้อผิดพลาด',
-      message: 'ไม่สามารถทำรายการได้',
-      type: NotificationType.error,
-    );
-  } finally {
-    isToggling.value = false;
   }
-}
 
   void changeSort(SortType value) {
     sortType.value = value;

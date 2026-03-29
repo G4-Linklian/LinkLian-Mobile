@@ -414,7 +414,10 @@ class _CardPostState extends State<CardPost> {
       // No URLs, show plain text
       return Text(
         content,
-        style: TextStyle(fontSize: 15, color: AppColors.black.withValues(alpha: 0.8)),
+        style: TextStyle(
+          fontSize: 15,
+          color: AppColors.black.withValues(alpha: 0.8),
+        ),
         maxLines: maxLines,
         overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
       );
@@ -645,8 +648,10 @@ class _CardPostState extends State<CardPost> {
       );
 
       // Check if can select this post (either already selected or has room)
-      final canSelect = _classController!.canSelectForAI(widget.post.postContentId);
- 
+      final canSelect = _classController!.canSelectForAI(
+        widget.post.postContentId,
+      );
+
       return GestureDetector(
         onTap: () {
           if (canSelect && widget.onSelectForAI != null) {
@@ -1105,23 +1110,13 @@ class _CardPostState extends State<CardPost> {
       );
 
       if (widget.returnAfterDelete) {
-        Get.back(
-          result: {
-            'deleted': true,
-            'deletedPostId': postId,
-          },
-        );
+        Get.back(result: {'deleted': true, 'deletedPostId': postId});
       } else if (_hasClassController) {
         _classController!.removePostOptimistic(postId);
         await _classController!.fetchPosts(keepScroll: true);
       } else {
         // When deleting from CommentPage, return to ClassDetail with delete result.
-        Get.back(
-          result: {
-            'deleted': true,
-            'deletedPostId': postId,
-          },
-        );
+        Get.back(result: {'deleted': true, 'deletedPostId': postId});
       }
 
       DialogHelper.showNotification(
@@ -1195,9 +1190,25 @@ class _CardPostState extends State<CardPost> {
 
       final repo = ProfileRepository(ApiClient());
 
+      // final profile = await repo.getProfile(widget.post.userSysId!);
+
+      // Get.back();
+
+      // showProfilePopup(profile);
       final profile = await repo.getProfile(widget.post.userSysId!);
 
       Get.back();
+
+      final isDeletedUser = profile.fullName.isEmpty;
+
+      if (isDeletedUser) {
+        DialogHelper.showNotification(
+          title: 'ไม่มีบัญชีผู้ใช้งาน',
+          message: 'บัญชีนี้ถูกลบแล้ว',
+          type: NotificationType.warning,
+        );
+        return;
+      }
 
       showProfilePopup(profile);
     } catch (e) {

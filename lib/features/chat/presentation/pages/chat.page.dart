@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/services/local_storage.dart';
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/auth/controller/auth_controller.dart';
@@ -406,17 +407,23 @@ class _ChatPageState extends State<ChatPage> {
                         ? NetworkImage(chat.profileImage!)
                         : null,
 
-                    child:
-                        (chat.profileImage == null ||
-                            chat.profileImage!.isEmpty)
+                    child: isDeletedUser
                         ? Icon(
-                            Icons.person,
-                            color: isDeletedUser
-                                ? Colors.grey[600]
-                                : Colors.white,
-                            size: 24,
+                            LinkLianIcon.useroff,
+                            color: Colors.grey[600],
+                            size: 28,
                           )
-                        : null,
+                        : (chat.profileImage == null ||
+                                  chat.profileImage!.isEmpty
+                              ? Text(
+                                  _getInitials(chat.firstName, chat.lastName),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                )
+                              : null),
                   ),
                 ),
                 // Online indicator (optional - ถ้ามีข้อมูล online status)
@@ -435,6 +442,7 @@ class _ChatPageState extends State<ChatPage> {
                 // ),
               ],
             ),
+
             const SizedBox(width: 14),
             // Chat Info
             Expanded(

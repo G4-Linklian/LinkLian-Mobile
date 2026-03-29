@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:flutter/material.dart';
 import 'package:LinkLian/features/chat/data/models/chat.model.dart';
 import 'package:LinkLian/features/chat/presentation/controllers/chat.message.controller.dart';
@@ -261,30 +262,38 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
               ),
               child: CircleAvatar(
                 radius: 18,
-
                 backgroundColor: isDeletedUser
                     ? Colors.grey[300]
                     : (widget.chat.profileImage == null ||
                           widget.chat.profileImage!.isEmpty)
                     ? _getAvatarColor(widget.chat.firstName ?? '')
                     : Colors.transparent,
-
                 backgroundImage:
                     !isDeletedUser &&
                         widget.chat.profileImage != null &&
                         widget.chat.profileImage!.isNotEmpty
                     ? NetworkImage(widget.chat.profileImage!)
                     : null,
-
-                child:
-                    (widget.chat.profileImage == null ||
-                        widget.chat.profileImage!.isEmpty)
+                child: isDeletedUser
                     ? Icon(
-                        Icons.person,
-                        color: isDeletedUser ? Colors.grey[600] : Colors.white,
+                        LinkLianIcon.useroff,
+                        color: Colors.grey[600],
                         size: 20,
                       )
-                    : null,
+                    : (widget.chat.profileImage == null ||
+                              widget.chat.profileImage!.isEmpty
+                          ? Text(
+                              _getInitials(
+                                widget.chat.firstName,
+                                widget.chat.lastName,
+                              ),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )
+                          : null),
               ),
             ),
 

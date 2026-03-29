@@ -891,9 +891,11 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
     final displayName =
         "${widget.post.firstName ?? ''} ${widget.post.lastName ?? ''}".trim();
 
-    if (widget.post.profilePic != null &&
-        widget.post.profilePic!.isNotEmpty &&
-        displayName.isNotEmpty) {
+    final isDeletedUser = displayName.isEmpty;
+
+    if (!isDeletedUser &&
+        widget.post.profilePic != null &&
+        widget.post.profilePic!.isNotEmpty) {
       return CircleAvatar(
         radius: 24,
         backgroundImage: NetworkImage(widget.post.profilePic!),
@@ -901,11 +903,19 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       );
     }
 
+    if (isDeletedUser) {
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.grey[300],
+        child: Icon(LinkLianIcon.useroff, color: Colors.grey[600], size: 28),
+      );
+    }
+
     return CircleAvatar(
       radius: 24,
       backgroundColor: AppColors.primaryPalette[200],
       child: Text(
-        displayName.isNotEmpty ? _getInitial(displayName) : "?",
+        _getInitial(displayName),
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -914,28 +924,6 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       ),
     );
   }
-  // Widget _buildProfileAvatar() {
-  //   if (widget.post.profilePic != null && widget.post.profilePic!.isNotEmpty) {
-  //     return CircleAvatar(
-  //       radius: 24,
-  //       backgroundImage: NetworkImage(widget.post.profilePic!),
-  //       backgroundColor: AppColors.primaryPalette[100],
-  //     );
-  //   }
-
-  //   return CircleAvatar(
-  //     radius: 24,
-  //     backgroundColor: AppColors.primaryPalette[200],
-  //     child: Text(
-  //       _getInitial("${widget.post.firstName} ${widget.post.lastName}"),
-  //       style: TextStyle(
-  //         fontSize: 18,
-  //         fontWeight: FontWeight.w600,
-  //         color: AppColors.primaryPalette[700],
-  //       ),
-  //     ),
-  //   );
-  // }
 
   String _getInitial(String? name) {
     if (name == null || name.isEmpty) return '?';

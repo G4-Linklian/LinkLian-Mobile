@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/community_comment_model.dart';
 import '../../../../core/constants/colors.dart';
@@ -104,23 +105,57 @@ class CardCommentCommunity extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    final isDeletedUser =
-        comment.displayName == null || comment.displayName!.trim().isEmpty;
+    final isDeletedUser = comment.displayName == 'ไม่มีบัญชีผู้ใช้งาน';
+
     return CircleAvatar(
       radius: 20,
+
       backgroundColor: isDeletedUser
-          ? Colors.grey
+          ? Colors.grey[300]
           : AppColors.primaryPalette[200],
-      foregroundImage:
-          (comment.profilePic != null && comment.profilePic!.isNotEmpty)
+
+      backgroundImage:
+          (!isDeletedUser &&
+              comment.profilePic != null &&
+              comment.profilePic!.isNotEmpty)
           ? NetworkImage(comment.profilePic!)
           : null,
+
+      // child: isDeletedUser
+      //     ? Icon(LinkLianIcon.useroff, color: Colors.grey[600], size: 20)
+      //     : (comment.profilePic == null || comment.profilePic!.isEmpty
+      //           ? Icon(
+      //               //LinkLianIcon.identifiedUser,
+      //               LinkLianIcon.useroff,
+      //               color: AppColors.primaryPalette[600],
+      //               size: 18,
+      //             )
       child: isDeletedUser
-          ? const Icon(Icons.person_off, color: Colors.white)
+          ? Icon(LinkLianIcon.useroff, color: Colors.grey[600], size: 20)
           : (comment.profilePic == null || comment.profilePic!.isEmpty
-                ? Icon(Icons.person, color: AppColors.primaryPalette[600])
+                ? Text(
+                    _getInitials(comment.displayName ?? ''),
+                    style: TextStyle(
+                      color: AppColors.primaryPalette[700],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
                 : null),
+      //           : null),
     );
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+
+    final parts = name.trim().split(' ');
+
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   String _formatTime(DateTime dateTime) {

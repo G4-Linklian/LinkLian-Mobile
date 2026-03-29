@@ -23,10 +23,8 @@ class ProfilePopup extends StatelessWidget {
 
     final isSelf = auth.userId.value == profile.userSysId;
 
-   final canSendMessage =
-    viewerIsTeacher != targetIsTeacher &&
-    !isSelf &&
-    !isDeletedUser;
+    final canSendMessage =
+        viewerIsTeacher != targetIsTeacher && !isSelf && !isDeletedUser;
 
     final role = profile.roleName.toLowerCase();
 
@@ -75,7 +73,7 @@ class ProfilePopup extends StatelessWidget {
                     Text(
                       profile.fullName.isNotEmpty
                           ? profile.fullName
-                          : "ผู้ใช้นี้ไม่ได้ใช้งานแล้ว",
+                          : "ไม่มีบัญชีผู้ใช้งาน",
 
                       style: const TextStyle(
                         fontSize: 18,
