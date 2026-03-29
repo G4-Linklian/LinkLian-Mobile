@@ -4,7 +4,7 @@ import './sizes.dart';
 class AppTextStyles {
   static const TextStyle _baseStyle = TextStyle(
     height: AppSizes.lineHeight,
-    fontFamily: 'linklian-font', 
+    fontFamily: 'IBMPlexSansThai',
     color: Colors.black, 
   );
 

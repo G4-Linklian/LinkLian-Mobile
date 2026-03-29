@@ -20,6 +20,7 @@ class _AIQuizPageState extends State<AIQuizPage> {
   int correctCount = 0;
   int wrongCount = 0;
   bool _isOpeningResult = false;
+  bool _showExamReview = false;
 
   static const List<String> _thaiLabels = [
     'ก',
@@ -49,16 +50,10 @@ class _AIQuizPageState extends State<AIQuizPage> {
     if (saved == null || saved.isEmpty) return;
     final qs = questions;
     userAnswers.addAll(saved);
-    correctCount = 0;
-    wrongCount = 0;
-    for (final entry in saved.entries) {
-      if (entry.key >= qs.length) continue;
-      final answer = qs[entry.key]['answer']?.toString() ?? '';
-      if (entry.value == answer) {
-        correctCount++;
-      } else {
-        wrongCount++;
-      }
+    _recalculateCounts();
+
+    if (mode == 'exam' && result != null && saved.length >= qs.length) {
+      _showExamReview = true;
     }
   }
 
@@ -77,20 +72,9 @@ class _AIQuizPageState extends State<AIQuizPage> {
       userAnswers.addAll(
         answers.map((k, v) => MapEntry(int.parse(k), v.toString())),
       );
-
-      correctCount = 0;
-      wrongCount = 0;
-
-      for (final entry in userAnswers.entries) {
-        if (entry.key >= questions.length) continue;
-
-        final answer = questions[entry.key]['answer']?.toString() ?? '';
-
-        if (entry.value == answer) {
-          correctCount++;
-        } else {
-          wrongCount++;
-        }
+      _recalculateCounts();
+      if (mode == 'exam' && userAnswers.length >= questions.length) {
+        _showExamReview = true;
       }
     });
   }
@@ -111,7 +95,27 @@ class _AIQuizPageState extends State<AIQuizPage> {
     return 0;
   }
 
+  String get mode => widget.quiz['mode'] ?? 'exam';
   bool get hasAnsweredCurrent => userAnswers.containsKey(currentIndex);
+  bool get _allAnswered => userAnswers.length >= questions.length;
+
+  void _recalculateCounts() {
+    int correct = 0;
+    int wrong = 0;
+
+    for (final entry in userAnswers.entries) {
+      if (entry.key >= questions.length) continue;
+      final answer = questions[entry.key]['answer']?.toString() ?? '';
+      if (entry.value == answer) {
+        correct++;
+      } else {
+        wrong++;
+      }
+    }
+
+    correctCount = correct;
+    wrongCount = wrong;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,11 +126,34 @@ class _AIQuizPageState extends State<AIQuizPage> {
     final question = questions[currentIndex];
     final total = questions.length;
     final choices = List<String>.from(question['choices'] ?? const <String>[]);
+    final isLastQuestion = currentIndex == total - 1;
+    final canPrimaryAction =
+        hasAnsweredCurrent &&
+        !_isOpeningResult &&
+        (mode != 'exam' || !isLastQuestion || _allAnswered);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
+      // appBar: AppBar(
+      //   title: Text(mode == 'learning' ? 'แบบการเรียนรู้' : 'แบบทดสอบ'),
+      //   backgroundColor: Colors.white,
+      //   foregroundColor: Colors.black,
+      //   elevation: 0.5,
+      //   shadowColor: Colors.black.withValues(alpha: 0.1),
+      //   scrolledUnderElevation: 0,
+      //   surfaceTintColor: Colors.white,
+      //   leading: IconButton(
+      //     icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+      //     onPressed: () => Navigator.pop(context),
+      //   ),
+      // ),
       appBar: AppBar(
-        title: const Text('AI Quiz'),
+        title: Text(
+          widget.quiz['quiz_title'] ?? 'แบบฝึก',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: Colors.black,),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0.5,
@@ -154,20 +181,22 @@ class _AIQuizPageState extends State<AIQuizPage> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 10),
-                _scoreBadge(
-                  icon: Icons.close,
-                  count: wrongCount,
-                  iconColor: AppColors.dangerPalette[500]!,
-                  bgColor: AppColors.dangerPalette[200]!,
-                ),
-                const SizedBox(width: 6),
-                _scoreBadge(
-                  icon: Icons.check,
-                  count: correctCount,
-                  iconColor: AppColors.successPalette[700]!,
-                  bgColor: AppColors.successPalette[100]!,
-                ),
+                if (mode == "learning") ...[
+                  const SizedBox(width: 10),
+                  _scoreBadge(
+                    icon: Icons.close,
+                    count: wrongCount,
+                    iconColor: AppColors.dangerPalette[500]!,
+                    bgColor: AppColors.dangerPalette[200]!,
+                  ),
+                  const SizedBox(width: 6),
+                  _scoreBadge(
+                    icon: Icons.check,
+                    count: correctCount,
+                    iconColor: AppColors.successPalette[700]!,
+                    bgColor: AppColors.successPalette[100]!,
+                  ),
+                ],
               ],
             ),
 
@@ -227,17 +256,27 @@ class _AIQuizPageState extends State<AIQuizPage> {
                         ),
                         textStyle: const TextStyle(fontSize: 13),
                       ),
-                      onPressed: (!hasAnsweredCurrent || _isOpeningResult)
+                      onPressed: !canPrimaryAction
                           ? null
                           : () {
-                              if (currentIndex < total - 1) {
-                                setState(() => currentIndex++);
-                                return;
+                              if (mode == "exam") {
+                                if (currentIndex < total - 1) {
+                                  setState(() => currentIndex++);
+                                  return;
+                                }
+                                _submitExam(total);
+                              } else {
+                                if (currentIndex < total - 1) {
+                                  setState(() => currentIndex++);
+                                  return;
+                                }
+                                _openResult(total);
                               }
-                              _openResult(total);
                             },
                       child: Text(
-                        currentIndex < total - 1 ? 'ถัดไป' : 'ดูผลลัพธ์',
+                        currentIndex < total - 1
+                            ? 'ถัดไป'
+                            : (mode == 'exam' ? 'ดูผลคะแนน' : 'ดูผลลัพธ์'),
                       ),
                     ),
                   ),
@@ -248,6 +287,23 @@ class _AIQuizPageState extends State<AIQuizPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _submitExam(int total) async {
+    _recalculateCounts();
+
+    final repo = AIChatRepository();
+
+    await repo.saveQuizAttempt(
+      quizId: quizId,
+      score: correctCount,
+      total: total,
+      answers: userAnswers,
+    );
+
+    _showExamReview = true;
+
+    _openResult(total);
   }
 
   Widget _scoreBadge({
@@ -325,13 +381,48 @@ class _AIQuizPageState extends State<AIQuizPage> {
 
     final isCorrect = choice == answer;
     final isSelected = choice == selected;
+    final showExamReveal = mode == 'exam' && _showExamReview;
 
     // Background color
     Color bg = Colors.white;
-    if (hasAnswered && isCorrect) {
+    if ((mode == "learning" && hasAnswered && isCorrect) ||
+        (showExamReveal && isCorrect)) {
       bg = AppColors.successPalette[100]!;
-    } else if (hasAnswered && isSelected && !isCorrect) {
+    } else if ((mode == "learning" &&
+            hasAnswered &&
+            isSelected &&
+            !isCorrect) ||
+        (showExamReveal && isSelected && !isCorrect)) {
       bg = AppColors.dangerPalette[200]!;
+    } else if (mode == 'exam' && isSelected) {
+      bg = AppColors.primaryPalette[100]!;
+    }
+
+    // final borderColor = isSelected
+    //     ? AppColors.primaryPalette[400]!
+    //     : AppColors.primaryPalette[100]!;
+    Color borderColor;
+
+    if (mode == "learning" && hasAnswered) {
+      if (isCorrect) {
+        borderColor = AppColors.successPalette[500]!;
+      } else if (isSelected && !isCorrect) {
+        borderColor = AppColors.dangerPalette[500]!;
+      } else {
+        borderColor = AppColors.primaryPalette[100]!;
+      }
+    } else if (showExamReveal) {
+      if (isCorrect) {
+        borderColor = AppColors.successPalette[500]!;
+      } else if (isSelected && !isCorrect) {
+        borderColor = AppColors.dangerPalette[500]!;
+      } else {
+        borderColor = AppColors.primaryPalette[100]!;
+      }
+    } else {
+      borderColor = isSelected
+          ? AppColors.primaryPalette[400]!
+          : AppColors.primaryPalette[100]!;
     }
 
     final label = choiceIndex < _thaiLabels.length
@@ -339,24 +430,82 @@ class _AIQuizPageState extends State<AIQuizPage> {
         : '${choiceIndex + 1}';
 
     return GestureDetector(
-      onTap: () {
-        if (hasAnswered) return;
-        setState(() {
-          userAnswers[currentIndex] = choice;
-          if (choice == answer) {
-            correctCount++;
-          } else {
-            wrongCount++;
-          }
-        });
-        QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+      // onTap: () {
+      //   if (hasAnswered) return;
+      //   setState(() {
+      //     userAnswers[currentIndex] = choice;
+      //     if (choice == answer) {
+      //       correctCount++;
+      //     } else {
+      //       wrongCount++;
+      //     }
+      //   });
+      //   QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+      // },
+      onTap: () async {
+        if (mode == "exam" && _showExamReview) return;
+
+        if (mode == "learning") {
+          setState(() {
+            userAnswers[currentIndex] = choice;
+            _recalculateCounts();
+          });
+
+          QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+
+          try {
+            final repo = AIChatRepository();
+            await repo.checkAnswer(
+              quizId: quizId,
+              questionIndex: currentIndex,
+              selected: choice,
+            );
+          } catch (_) {}
+        } else {
+          setState(() {
+            userAnswers[currentIndex] = choice;
+            _recalculateCounts();
+          });
+
+          QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+        }
       },
+
+      // onTap: () async {
+      //   if (mode == "learning") {
+      //     setState(() {
+      //       userAnswers[currentIndex] = choice;
+      //       _recalculateCounts();
+      //     });
+
+      //     QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+
+      //     // Keep backend validation as best-effort so learning mode always
+      //     // reveals immediately even if the network request fails.
+      //     try {
+      //       final repo = AIChatRepository();
+      //       await repo.checkAnswer(
+      //         quizId: quizId,
+      //         questionIndex: currentIndex,
+      //         selected: choice,
+      //       );
+      //     } catch (_) {}
+      //   } else {
+      //     setState(() {
+      //       userAnswers[currentIndex] = choice;
+      //       _recalculateCounts();
+      //     });
+
+      //     QuizAttemptStore.saveProgress(widget.storeKey, userAnswers);
+      //   }
+      // },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: bg,
+          border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
@@ -387,7 +536,10 @@ class _AIQuizPageState extends State<AIQuizPage> {
             ),
 
             // Wrong feedback
-            if (hasAnswered && isSelected && !isCorrect) ...[
+            if ((mode == "learning" || showExamReveal) &&
+                hasAnswered &&
+                isSelected &&
+                !isCorrect) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -410,7 +562,9 @@ class _AIQuizPageState extends State<AIQuizPage> {
             ],
 
             // Correct feedback
-            if (hasAnswered && isCorrect) ...[
+            if ((mode == "learning" || showExamReveal) &&
+                hasAnswered &&
+                isCorrect) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -484,10 +638,14 @@ class _AIQuizPageState extends State<AIQuizPage> {
         builder: (_) => QuizResultPage(
           correct: correctCount,
           total: total,
+          mode: mode,
           onReview: () {
             Navigator.pop(context);
             setState(() {
               currentIndex = 0;
+              if (mode == 'exam') {
+                _showExamReview = true;
+              }
             });
           },
           onBackToList: () {

@@ -20,9 +20,112 @@ class _AIChatListPageState extends State<AIChatListPage> {
   static const String _aiAvatarUrl =
       //'https://linklianstorage.blob.core.windows.net/chat/logo/Logo-black-sq.png';
       'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3422.png';
-     //'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3420.png';
+  //'https://linklianstorage.blob.core.windows.net/chat/logo/IMG_3420.png';
 
   final AIChatRepository _repo = AIChatRepository();
+  final Map<int, DateTime> _activityByChatId = <int, DateTime>{};
+
+  DateTime? _parseDate(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is DateTime) return raw;
+    return DateTime.tryParse(raw.toString())?.toLocal();
+  }
+
+  DateTime _chatSortDate(Map<String, dynamic> chat) {
+    final rawId = chat['ai_chat_id'];
+    final chatId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
+    if (chatId != null && _activityByChatId.containsKey(chatId)) {
+      return _activityByChatId[chatId]!;
+    }
+
+    return _parseDate(chat['updated_at']) ??
+        _parseDate(chat['last_message_at']) ??
+        _parseDate(chat['last_sent']) ??
+        _parseDate(chat['last_activity_at']) ??
+        _parseDate(chat['modified_at']) ??
+        _parseDate(chat['created_at']) ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  List<Map<String, dynamic>> _sortByLatest(List<Map<String, dynamic>> input) {
+    final sorted = List<Map<String, dynamic>>.from(input);
+    sorted.sort((a, b) {
+      final byDate = _chatSortDate(b).compareTo(_chatSortDate(a));
+      if (byDate != 0) return byDate;
+
+      final aIdRaw = a['ai_chat_id'];
+      final bIdRaw = b['ai_chat_id'];
+      final aId = aIdRaw is int
+          ? aIdRaw
+          : int.tryParse(aIdRaw?.toString() ?? '') ?? 0;
+      final bId = bIdRaw is int
+          ? bIdRaw
+          : int.tryParse(bIdRaw?.toString() ?? '') ?? 0;
+      return bId.compareTo(aId);
+    });
+    return sorted;
+  }
+
+  DateTime? _extractMessageDate(Map<String, dynamic> message) {
+    return _parseDate(message['updated_at']) ??
+        _parseDate(message['created_at']) ??
+        _parseDate(message['sent_at']) ??
+        _parseDate(message['timestamp']) ??
+        _parseDate(message['message_at']);
+  }
+
+  Future<void> _hydrateActivityFromMessages(
+    List<Map<String, dynamic>> source,
+  ) async {
+    final chatIds = source
+        .map((chat) {
+          final raw = chat['ai_chat_id'];
+          if (raw is int) return raw;
+          return int.tryParse(raw?.toString() ?? '');
+        })
+        .whereType<int>()
+        .toList();
+
+    if (chatIds.isEmpty) return;
+
+    await Future.wait(
+      chatIds.map((chatId) async {
+        try {
+          final messages = await _repo.getMessages(chatId);
+          DateTime? latest;
+          for (final message in messages) {
+            final date = _extractMessageDate(message);
+            if (date == null) continue;
+            if (latest == null || date.isAfter(latest)) {
+              latest = date;
+            }
+          }
+
+          if (latest != null) {
+            _activityByChatId[chatId] = latest;
+          }
+        } catch (_) {}
+      }),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      chats = _sortByLatest(chats);
+      final query = _searchController.text.trim();
+      if (query.isEmpty) {
+        filteredChats = chats;
+      } else {
+        filteredChats = _sortByLatest(
+          chats.where((chat) {
+            return (chat['chat_title'] ?? '').toString().toLowerCase().contains(
+              query.toLowerCase(),
+            );
+          }).toList(),
+        );
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -37,11 +140,14 @@ class _AIChatListPageState extends State<AIChatListPage> {
   Future<void> loadChats() async {
     try {
       final result = await _repo.getAIChats();
+      final sorted = _sortByLatest(result);
 
       setState(() {
-        chats = result;
-        filteredChats = result;
+        chats = sorted;
+        filteredChats = sorted;
       });
+
+      _hydrateActivityFromMessages(result);
     } catch (e) {
       debugPrint(e.toString());
     }
@@ -49,13 +155,15 @@ class _AIChatListPageState extends State<AIChatListPage> {
 
   void _onSearchChanged(String value) {
     setState(() {
-      filteredChats = chats
-          .where(
-            (chat) => (chat["chat_title"] ?? "").toLowerCase().contains(
-              value.toLowerCase(),
-            ),
-          )
-          .toList();
+      filteredChats = _sortByLatest(
+        chats
+            .where(
+              (chat) => (chat["chat_title"] ?? "").toLowerCase().contains(
+                value.toLowerCase(),
+              ),
+            )
+            .toList(),
+      );
     });
   }
 
@@ -161,24 +269,30 @@ class _AIChatListPageState extends State<AIChatListPage> {
 
                               if (!mounted) return;
 
-                              navigator.push(
-                                MaterialPageRoute(
-                                  builder: (_) => AIChatDetailPage(
-                                    title: detail["post_title"] ?? "",
-                                    documentTitle:
-                                        detail["document_title"] ??
-                                        detail["chat_title"] ??
-                                        detail["title"] ??
-                                        "AI Chat",
-                                    aiChatId: detail["ai_chat_id"] ?? 0,
-                                    summary: detail["summary"] ?? "",
-                                    content: detail["content"] ?? "",
-                                    attachments: detail["attachments"] ?? [],
-                                    postContentId:
-                                        detail["post_content_id"] ?? 0,
-                                  ),
-                                ),
-                              );
+                              navigator
+                                  .push(
+                                    MaterialPageRoute(
+                                      builder: (_) => AIChatDetailPage(
+                                        title: detail["post_title"] ?? "",
+                                        documentTitle:
+                                            detail["document_title"] ??
+                                            detail["chat_title"] ??
+                                            detail["title"] ??
+                                            "AI Chat",
+                                        aiChatId: detail["ai_chat_id"] ?? 0,
+                                        summary: detail["summary"] ?? "",
+                                        content: detail["content"] ?? "",
+                                        attachments:
+                                            detail["attachments"] ?? [],
+                                        postContentId:
+                                            detail["post_content_id"] ?? 0,
+                                      ),
+                                    ),
+                                  )
+                                  .then((_) {
+                                    if (!mounted) return;
+                                    loadChats();
+                                  });
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(

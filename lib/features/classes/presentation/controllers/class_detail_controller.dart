@@ -9,7 +9,6 @@ import '../../../shared/repositories/class_feed_repository.dart';
 import 'class_feed_controller.dart';
 import '../../../shared/models/post_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/animation.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 
 class ClassDetailController extends GetxController {
@@ -37,7 +36,6 @@ class ClassDetailController extends GetxController {
   final ScrollController scrollController = ScrollController();
 
   DateTime? _lastFetchTime;
-  int? _lastKnownPostCount;
   static const _refreshThresholdSeconds = 30; 
   List<int> get effectiveSectionIds {
     return [if (sectionId.value != null) sectionId.value!];
@@ -396,7 +394,6 @@ class ClassDetailController extends GetxController {
           );
         }
       }
-
       _offset += result.length;
     } catch (e) {
       appLog.error('fetchPosts failed: $e', actionPage: 'ClassDetailScreen');

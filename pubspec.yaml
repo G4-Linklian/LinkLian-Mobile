@@ -112,7 +112,18 @@ flutter:
   fonts:
     - family: IBMPlexSansThai
       fonts:
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Light.ttf
+          weight: 300
         - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-SemiBold.ttf
+          weight: 600
         - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Bold.ttf
           weight: 700
 
