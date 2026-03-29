@@ -103,7 +103,7 @@ class ProfileHeader extends StatelessWidget {
       return CircleAvatar(
         radius: 42,
         backgroundImage: NetworkImage(profile.profilePic!),
-        onBackgroundImageError: (_, __) {},
+        onBackgroundImageError: (_, _) {},
       );
     }
 
