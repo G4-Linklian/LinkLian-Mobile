@@ -32,6 +32,23 @@ class ProfilePopup extends StatelessWidget {
     final isUniversity = role.contains('uni');
 
     final codeLabel = isHighSchool ? "รหัสนักเรียน" : "รหัสนักศึกษา";
+    final edu = profile.education;
+
+    String educationText = "-";
+
+    if (edu != null) {
+      final level = edu.level ?? '-';
+      final classroom = edu.classroom;
+
+      final hasClassroom =
+          classroom != null && classroom.isNotEmpty && classroom != '-';
+
+      if (isUniversity) {
+        educationText = hasClassroom ? "$level ชั้นปี $classroom" : level;
+      } else {
+        educationText = "$level / ${classroom ?? '-'}";
+      }
+    }
 
     return GestureDetector(
       onTap: () => Get.back(),
@@ -103,21 +120,23 @@ class ProfilePopup extends StatelessWidget {
                     if (profile.isStudent) ...[
                       _infoRow(codeLabel, profile.code ?? "-"),
                       const SizedBox(height: 6),
-                      _infoRow(
-                        "ระดับชั้น",
-                        profile.education != null
-                            ? isUniversity
-                                  ? profile.education!.classroom != null &&
-                                            profile
-                                                .education!
-                                                .classroom!
-                                                .isNotEmpty &&
-                                            profile.education!.classroom != "-"
-                                        ? "${profile.education!.level ?? '-'} ชั้นปี ${profile.education!.classroom}"
-                                        : "${profile.education!.level ?? '-'}"
-                                  : "${profile.education!.level ?? '-'} / ${profile.education!.classroom ?? '-'}"
-                            : "-",
-                      ),
+                      // _infoRow(
+                      //   "ระดับชั้น",
+                      //   profile.education != null
+                      //       ? isUniversity
+                      //             ? profile.education!.classroom != null &&
+                      //                       profile
+                      //                           .education!
+                      //                           .classroom!
+                      //                           .isNotEmpty &&
+                      //                       profile.education!.classroom != "-"
+                      //                   ? "${profile.education!.level ?? '-'} ชั้นปี ${profile.education!.classroom}"
+                      //                   : "${profile.education!.level ?? '-'}"
+                      //             : "${profile.education!.level ?? '-'} / ${profile.education!.classroom ?? '-'}"
+                      //       : "-",
+                      // ),
+                      _infoRow("ระดับชั้น", educationText),
+
                       const SizedBox(height: 6),
                       _infoRow("อีเมล", profile.email),
                     ],

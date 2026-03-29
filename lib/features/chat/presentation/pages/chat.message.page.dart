@@ -105,8 +105,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     final text = _textController.text.trim();
 
     final displayName =
-        ((widget.chat.firstName ?? '') + ' ' + (widget.chat.lastName ?? ''))
-            .trim();
+        "${widget.chat.firstName ?? ''} ${widget.chat.lastName ?? ''}".trim();
 
     final isDeletedUser = displayName.isEmpty;
 
@@ -238,8 +237,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
   @override
   Widget build(BuildContext context) {
     final displayName =
-        ((widget.chat.firstName ?? '') + ' ' + (widget.chat.lastName ?? ''))
-            .trim();
+        "${widget.chat.firstName ?? ''} ${widget.chat.lastName ?? ''}".trim();
 
     final isDeletedUser = displayName.isEmpty;
     return Scaffold(
@@ -365,8 +363,9 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _scrollToBottom();
                         Future.delayed(const Duration(milliseconds: 450), () {
-                          if (!mounted || !_suppressScrollToLatestButton)
+                          if (!mounted || !_suppressScrollToLatestButton) {
                             return;
+                          }
                           setState(() {
                             _suppressScrollToLatestButton = false;
                           });
