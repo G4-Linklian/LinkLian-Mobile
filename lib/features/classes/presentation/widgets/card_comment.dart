@@ -8,6 +8,7 @@ class CardComment extends StatelessWidget {
   final VoidCallback? onReply;
   final VoidCallback? onShowMore;
   final int? remainingReplies;
+  final bool disableReply;
 
   const CardComment({
     super.key,
@@ -16,6 +17,7 @@ class CardComment extends StatelessWidget {
     this.onReply,
     this.onShowMore,
     this.remainingReplies,
+    this.disableReply = false,
   });
 
   @override
@@ -66,13 +68,15 @@ class CardComment extends StatelessWidget {
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: onReply,
+                      onTap: disableReply ? null : onReply,
                       child: Text(
                         'ตอบกลับ',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.primaryPalette[600],
+                          color: disableReply
+                              ? Colors.grey[400]
+                              : AppColors.primaryPalette[600],
                         ),
                       ),
                     ),

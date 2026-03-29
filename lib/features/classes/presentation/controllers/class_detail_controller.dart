@@ -364,13 +364,21 @@ class ClassDetailController extends GetxController {
         limit: _limit,
       );
 
+      appLog.debug(
+        '[ClassDetail] fetchPosts result: ${result.length} posts',
+        data: {
+          'postIds': result.map((p) => p.postId).toList(),
+          'isUserDeletedFlags': result.map((p) => p.isUserDeleted).toList(),
+          'userSysIds': result.map((p) => p.userSysId).toList(),
+        },
+      );
+
       if (!loadMore) {
         _lastFetchTime = DateTime.now();
       }
 
       if (result.length < _limit) {
         hasMore.value = false;
-        appLog.info('[ClassDetail] No more posts to load');
         appLog.info('[ClassDetail] No more posts to load');
       }
 

@@ -200,7 +200,9 @@ class _CardPostState extends State<CardPost> {
                                 _openProfilePopup();
                               },
                               child: Text(
-                                widget.post.displayName ?? 'ไม่ทราบชื่อ',
+                                widget.post.isUserDeleted
+                                  ? 'ไม่มีบัญชีผู้ใช้งาน'
+                                  : widget.post.displayName ?? 'ไม่ทราบชื่อ',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -1232,6 +1234,22 @@ class _CardPostState extends State<CardPost> {
   }
 
   Widget _buildProfileAvatar() {
+    if (widget.post.isUserDeleted) {
+      return Container(
+        width: 48,
+        height: 48,
+        decoration: const BoxDecoration(
+          color: Color(0xFFE5E7EB),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          LinkLianIcon.userOff,
+          size: 26,
+          color: Color(0xFF9CA3AF),
+        ),
+      );
+    }
+
     if (widget.post.isAnonymous) {
       return Container(
         width: 48,

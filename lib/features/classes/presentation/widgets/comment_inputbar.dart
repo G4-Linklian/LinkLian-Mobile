@@ -8,17 +8,50 @@ import '../controllers/comment_controller.dart';
 
 class CommentInputBar extends StatelessWidget {
   final CommentController controller;
+  final bool isUserDeleted;
 
   const CommentInputBar({
     super.key,
     required this.controller,
+    this.isUserDeleted = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
-    final isTeacher = auth.roleName.value == 'teacher' || 
+    final isTeacher = auth.roleName.value == 'teacher' ||
                       auth.roleName.value == 'instructor';
+
+    if (isUserDeleted) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          border: Border(
+            top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: SafeArea(
+          top: false,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+            ),
+            child: const Text(
+              'ไม่สามารถแสดงความคิดเห็นบนโพสต์นี้ได้',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF9CA3AF),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Container(
       decoration: const BoxDecoration(
