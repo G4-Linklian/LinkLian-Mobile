@@ -19,16 +19,14 @@ class CommentInputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
-    final isTeacher = auth.roleName.value == 'teacher' ||
-                      auth.roleName.value == 'instructor';
+    final isTeacher =
+        auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
 
     if (isUserDeleted) {
       return Container(
         decoration: const BoxDecoration(
           color: AppColors.white,
-          border: Border(
-            top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
-          ),
+          border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: SafeArea(
@@ -43,10 +41,7 @@ class CommentInputBar extends StatelessWidget {
             ),
             child: const Text(
               'ไม่สามารถแสดงความคิดเห็นบนโพสต์นี้ได้',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF9CA3AF),
-              ),
+              style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
             ),
           ),
         ),
@@ -56,9 +51,7 @@ class CommentInputBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -71,8 +64,7 @@ class CommentInputBar extends StatelessWidget {
             }
 
             // ✅ แสดงชื่อที่ backend ส่งมา (รวม Anonymous xxxx หรือชื่อจริง)
-            final displayName = replyingComment.displayName ?? 
-                (replyingComment.isAnonymous ? 'นิรนาม' : 'ผู้ใช้');
+            final displayName = replyingComment.effectiveDisplayName;
 
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -148,14 +140,15 @@ class CommentInputBar extends StatelessWidget {
                 children: [
                   // ===== TOGGLE ANONYMOUS =====
                   if (!isTeacher)
-                    Obx(() => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: _buildIconToggleSwitch(
-                            value: controller.isAnonymous.value,
-                            onChanged: (v) =>
-                                controller.isAnonymous.value = v,
-                          ),
-                        )),
+                    Obx(
+                      () => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _buildIconToggleSwitch(
+                          value: controller.isAnonymous.value,
+                          onChanged: (v) => controller.isAnonymous.value = v,
+                        ),
+                      ),
+                    ),
 
                   // ===== INPUT =====
                   Expanded(
@@ -175,40 +168,42 @@ class CommentInputBar extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Obx(() => TextField(
-                            controller: controller.textController,
-                            focusNode: controller.focusNode,
-                            minLines: 1,
-                            maxLines: 4,
-                            textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _submit(),
-                            decoration: InputDecoration(
-                              hintText: controller.replyingTo.value != null
-                                  ? 'พิมพ์ข้อความตอบกลับ...'
-                                  : 'แสดงความคิดเห็น...',
-                              hintStyle: TextStyle(
-                                color: AppColors.gray.withValues(alpha: 0.5),
-                                fontSize: 14,
-                              ),
-                              filled: false,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                borderSide: BorderSide.none,
-                              ),
+                      child: Obx(
+                        () => TextField(
+                          controller: controller.textController,
+                          focusNode: controller.focusNode,
+                          minLines: 1,
+                          maxLines: 4,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _submit(),
+                          decoration: InputDecoration(
+                            hintText: controller.replyingTo.value != null
+                                ? 'พิมพ์ข้อความตอบกลับ...'
+                                : 'แสดงความคิดเห็น...',
+                            hintStyle: TextStyle(
+                              color: AppColors.gray.withValues(alpha: 0.5),
+                              fontSize: 14,
                             ),
-                          )),
+                            filled: false,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
 
@@ -298,13 +293,11 @@ class CommentInputBar extends StatelessWidget {
             AnimatedAlign(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
-              alignment:
-                  value ? Alignment.centerLeft : Alignment.centerRight,
+              alignment: value ? Alignment.centerLeft : Alignment.centerRight,
               child: Container(
                 width: 32,
                 height: 32,
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.primaryPalette[900],

@@ -1,5 +1,5 @@
 class StudentSubmissionStatusModel {
-  final int userSysId;
+  final int? userSysId;
   final String firstName;
   final String lastName;
   final String? profilePic;
@@ -14,7 +14,7 @@ class StudentSubmissionStatusModel {
   final String submissionStatus; // 'submitted' | 'not_submitted'
 
   const StudentSubmissionStatusModel({
-    required this.userSysId,
+    this.userSysId,
     required this.firstName,
     required this.lastName,
     this.profilePic,
@@ -29,7 +29,10 @@ class StudentSubmissionStatusModel {
     required this.submissionStatus,
   });
 
-  String get displayName => '$firstName $lastName'.trim();
+  bool get isUserDeleted => userSysId == null;
+
+  String get displayName =>
+      isUserDeleted ? 'ไม่มีบัญชีผู้ใช้งาน' : '$firstName $lastName'.trim();
 
   bool get hasSubmitted {
     if (submissionId != null || submittedAt != null) return true;
@@ -43,19 +46,6 @@ class StudentSubmissionStatusModel {
       markedAt != null ||
       score != null ||
       (feedback?.trim().isNotEmpty ?? false);
-
-  static int _toInt(dynamic value) {
-    if (value == null) return 0;
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) {
-      final asInt = int.tryParse(value);
-      if (asInt != null) return asInt;
-      final asDouble = double.tryParse(value);
-      if (asDouble != null) return asDouble.toInt();
-    }
-    return 0;
-  }
 
   static int? _toNullableInt(dynamic value) {
     if (value == null) return null;
@@ -80,7 +70,7 @@ class StudentSubmissionStatusModel {
 
   factory StudentSubmissionStatusModel.fromJson(Map<String, dynamic> json) {
     return StudentSubmissionStatusModel(
-      userSysId: _toInt(json['user_sys_id']),
+      userSysId: _toNullableInt(json['user_sys_id']),
       firstName: json['first_name'] as String? ?? '',
       lastName: json['last_name'] as String? ?? '',
       profilePic: json['profile_pic'] as String?,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/constants/linklian-icon.dart';
 import '../controllers/assignment_submission_controller.dart';
 import '../controllers/teacher_submission_controller.dart';
 import '../../data/models/student_submission_status_model.dart';
@@ -388,11 +389,15 @@ class _GroupTileState extends State<_GroupTile> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              '${m['first_name'] ?? ''} ${m['last_name'] ?? ''}'
-                                  .trim(),
-                              style: const TextStyle(
+                              m['user_sys_id'] == null
+                                  ? 'ไม่มีบัญชีผู้ใช้งาน'
+                                  : '${m['first_name'] ?? ''} ${m['last_name'] ?? ''}'
+                                        .trim(),
+                              style: TextStyle(
                                 fontSize: 13,
-                                color: AppColors.black,
+                                color: m['user_sys_id'] == null
+                                    ? Colors.grey[500]
+                                    : AppColors.black,
                               ),
                             ),
                           ),
@@ -411,6 +416,22 @@ class _GroupTileState extends State<_GroupTile> {
   }
 
   Widget _buildMemberAvatar(Map<String, dynamic> m) {
+    final isDeleted = m['user_sys_id'] == null;
+    if (isDeleted) {
+      return Container(
+        width: 32,
+        height: 32,
+        decoration: const BoxDecoration(
+          color: Color(0xFFE5E7EB),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          LinkLianIcon.userOff,
+          size: 17,
+          color: Color(0xFF9CA3AF),
+        ),
+      );
+    }
     final pic = m['profile_pic'] as String?;
     final first = (m['first_name'] as String? ?? '');
     if (pic != null && pic.isNotEmpty) {
@@ -603,10 +624,12 @@ class _StudentListTile extends StatelessWidget {
                 children: [
                   Text(
                     student.displayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
-                      color: AppColors.black,
+                      color: student.isUserDeleted
+                          ? Colors.grey[500]
+                          : AppColors.black,
                     ),
                   ),
                   if (student.submittedAt != null)
@@ -625,6 +648,21 @@ class _StudentListTile extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
+    if (student.isUserDeleted) {
+      return Container(
+        width: 44,
+        height: 44,
+        decoration: const BoxDecoration(
+          color: Color(0xFFE5E7EB),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          LinkLianIcon.userOff,
+          size: 22,
+          color: Color(0xFF9CA3AF),
+        ),
+      );
+    }
     if (student.profilePic != null && student.profilePic!.isNotEmpty) {
       return CircleAvatar(
         radius: 22,

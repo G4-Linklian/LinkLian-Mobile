@@ -99,10 +99,7 @@ class _CardPostState extends State<CardPost> {
     return role == 'teacher' || role == 'instructor';
   }
 
-  bool get _isTeacherPost {
-    final roleName = widget.post.roleName?.toLowerCase() ?? '';
-    return roleName == 'teacher' || roleName == 'instructor';
-  }
+  bool get _shouldShowTitle => widget.post.title.trim().isNotEmpty;
 
   bool get _canSelectForAI {
     final postType = widget.post.postType.toLowerCase();
@@ -201,8 +198,8 @@ class _CardPostState extends State<CardPost> {
                               },
                               child: Text(
                                 widget.post.isUserDeleted
-                                  ? 'ไม่มีบัญชีผู้ใช้งาน'
-                                  : widget.post.displayName ?? 'ไม่ทราบชื่อ',
+                                    ? 'ไม่มีบัญชีผู้ใช้งาน'
+                                    : widget.post.displayName ?? 'ไม่ทราบชื่อ',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -226,8 +223,9 @@ class _CardPostState extends State<CardPost> {
 
                   const SizedBox(height: 16),
 
-                  // TITLE - แสดงเฉพาะครู
-                  if (_isTeacherPost) ...[
+                  // TITLE - show whenever post_content has a title,
+                  // even if the posting user has been deleted.
+                  if (_shouldShowTitle) ...[
                     Text(
                       widget.post.title,
                       style: const TextStyle(
@@ -416,7 +414,10 @@ class _CardPostState extends State<CardPost> {
       // No URLs, show plain text
       return Text(
         content,
-        style: TextStyle(fontSize: 15, color: AppColors.black.withValues(alpha: 0.8)),
+        style: TextStyle(
+          fontSize: 15,
+          color: AppColors.black.withValues(alpha: 0.8),
+        ),
         maxLines: maxLines,
         overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
       );
@@ -647,8 +648,10 @@ class _CardPostState extends State<CardPost> {
       );
 
       // Check if can select this post (either already selected or has room)
-      final canSelect = _classController!.canSelectForAI(widget.post.postContentId);
- 
+      final canSelect = _classController!.canSelectForAI(
+        widget.post.postContentId,
+      );
+
       return GestureDetector(
         onTap: () {
           if (canSelect && widget.onSelectForAI != null) {
@@ -1107,23 +1110,13 @@ class _CardPostState extends State<CardPost> {
       );
 
       if (widget.returnAfterDelete) {
-        Get.back(
-          result: {
-            'deleted': true,
-            'deletedPostId': postId,
-          },
-        );
+        Get.back(result: {'deleted': true, 'deletedPostId': postId});
       } else if (_hasClassController) {
         _classController!.removePostOptimistic(postId);
         await _classController!.fetchPosts(keepScroll: true);
       } else {
         // When deleting from CommentPage, return to ClassDetail with delete result.
-        Get.back(
-          result: {
-            'deleted': true,
-            'deletedPostId': postId,
-          },
-        );
+        Get.back(result: {'deleted': true, 'deletedPostId': postId});
       }
 
       DialogHelper.showNotification(

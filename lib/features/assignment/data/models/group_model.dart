@@ -9,6 +9,11 @@ int? _intFromJson(dynamic value) {
   return null;
 }
 
+String _stringFromJson(dynamic value) {
+  if (value == null) return '';
+  return value.toString();
+}
+
 @JsonSerializable()
 class GroupModel {
   @JsonKey(name: 'group_id', fromJson: _intFromJson)
@@ -36,10 +41,10 @@ class GroupMemberModel {
   @JsonKey(name: 'user_sys_id', fromJson: _intFromJson)
   final int? userSysId;
 
-  @JsonKey(name: 'first_name')
+  @JsonKey(name: 'first_name', fromJson: _stringFromJson)
   final String firstName;
 
-  @JsonKey(name: 'last_name')
+  @JsonKey(name: 'last_name', fromJson: _stringFromJson)
   final String lastName;
 
   @JsonKey(name: 'profile_pic')
@@ -57,5 +62,10 @@ class GroupMemberModel {
 
   Map<String, dynamic> toJson() => _$GroupMemberModelToJson(this);
 
+  bool get isUserDeleted => userSysId == null;
+
   String get fullName => '$firstName $lastName'.trim();
+
+  String get displayName =>
+      isUserDeleted ? 'ไม่มีบัญชีผู้ใช้งาน' : fullName;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../data/models/comment_model.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/constants/linklian-icon.dart';
+import '../../data/models/comment_model.dart';
 
 class CardComment extends StatelessWidget {
   final CommentModel comment;
@@ -37,34 +38,29 @@ class CardComment extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ===== HEADER =====
                 Row(
                   children: [
                     Expanded(
                       child: Text(
-                        comment.displayName ?? 'Anonymous',
-                        style: const TextStyle(
+                        comment.effectiveDisplayName,
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
+                          color: comment.isUserDeleted
+                              ? Colors.grey[600]
+                              : null,
                         ),
                       ),
                     ),
                     Text(
                       _formatTime(comment.createdAt),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 4),
                 Text(comment.commentText),
-
                 const SizedBox(height: 8),
-
-                // ===== ACTIONS =====
                 Row(
                   children: [
                     GestureDetector(
@@ -80,9 +76,7 @@ class CardComment extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                    if (onShowMore != null &&
-                        (remainingReplies ?? 0) > 0) ...[
+                    if (onShowMore != null && (remainingReplies ?? 0) > 0) ...[
                       const SizedBox(width: 12),
                       GestureDetector(
                         onTap: onShowMore,
@@ -107,25 +101,31 @@ class CardComment extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
+    if (comment.isUserDeleted) {
+      return const CircleAvatar(
+        radius: 20,
+        backgroundColor: Color(0xFFE5E7EB),
+        child: Icon(LinkLianIcon.userOff, color: Color(0xFF9CA3AF), size: 20),
+      );
+    }
+
     return CircleAvatar(
       radius: 20,
       backgroundColor: AppColors.primaryPalette[200],
-      foregroundImage: (!comment.isAnonymous &&
+      foregroundImage:
+          (!comment.isAnonymous &&
               comment.profilePic != null &&
               comment.profilePic!.isNotEmpty)
           ? NetworkImage(comment.profilePic!)
           : null,
-      child: (comment.isAnonymous ||
+      child:
+          (comment.isAnonymous ||
               comment.profilePic == null ||
               comment.profilePic!.isEmpty)
-          ? Icon(Icons.person,
-              color: AppColors.primaryPalette[600])
+          ? Icon(Icons.person, color: AppColors.primaryPalette[600])
           : null,
     );
   }
-}
-
-  // TIME FORMAT
 
   String _formatTime(DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
@@ -134,4 +134,4 @@ class CardComment extends StatelessWidget {
     if (diff.inHours < 24) return '${diff.inHours} ชั่วโมงที่แล้ว';
     return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
   }
-
+}
