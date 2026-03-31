@@ -410,6 +410,7 @@ class _GroupTab extends StatelessWidget {
               ),
               itemBuilder: (_, index) {
                 final member = group.members[index];
+                final isDeleted = member.userSysId == null;
                 return Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -417,18 +418,35 @@ class _GroupTab extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      _buildAvatar(
-                        member.profilePic,
-                        member.firstName,
-                        member.lastName,
-                      ),
+                      isDeleted
+                          ? Container(
+                              width: 48,
+                              height: 48,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFE5E7EB),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                LinkLianIcon.userOff,
+                                size: 24,
+                                color: Color(0xFF9CA3AF),
+                              ),
+                            )
+                          : _buildAvatar(
+                              member.profilePic,
+                              member.firstName,
+                              member.lastName,
+                            ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          member.fullName,
-                          style: const TextStyle(
+                          isDeleted ? 'ไม่มีบัญชีผู้ใช้งาน' : member.fullName,
+                          style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
+                            color: isDeleted
+                                ? Colors.grey[500]
+                                : AppColors.black,
                           ),
                         ),
                       ),
@@ -1444,6 +1462,7 @@ class _TeacherGroupTab extends StatelessWidget {
                     ...members.asMap().entries.map((entry) {
                       final index = entry.key;
                       final member = entry.value;
+                      final isDeleted = member.userSysId == null;
                       return Container(
                         margin: EdgeInsets.only(
                           bottom: index < members.length - 1 ? 8 : 0,
@@ -1458,19 +1477,37 @@ class _TeacherGroupTab extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            _buildAvatar(
-                              member.profilePic,
-                              member.firstName,
-                              member.lastName,
-                            ),
+                            isDeleted
+                                ? Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFE5E7EB),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      LinkLianIcon.userOff,
+                                      size: 20,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  )
+                                : _buildAvatar(
+                                    member.profilePic,
+                                    member.firstName,
+                                    member.lastName,
+                                  ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                member.fullName,
-                                style: const TextStyle(
+                                isDeleted
+                                    ? 'ไม่มีบัญชีผู้ใช้งาน'
+                                    : member.fullName,
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.black,
+                                  color: isDeleted
+                                      ? Colors.grey[500]
+                                      : AppColors.black,
                                 ),
                               ),
                             ),

@@ -138,6 +138,9 @@ class LinkLianIcon {
   static const IconData cancel = TablerIcons.cancel;
   static const IconData delete = TablerIcons.trash;
 
+  // user states
+  static const IconData userOff = TablerIcons.user_off;
+
   // assignment
   static const IconData assignment = TablerIcons.clipboard_list;
   static const IconData assignmentCheck = TablerIcons.clipboard_check;

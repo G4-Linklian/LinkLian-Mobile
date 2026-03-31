@@ -63,7 +63,10 @@ class CommentPage extends StatelessWidget {
           ),
 
           // ===== INPUT =====
-          CommentInputBar(controller: controller),
+          CommentInputBar(
+            controller: controller,
+            isUserDeleted: controller.post?.isUserDeleted ?? false,
+          ),
         ],
       ),
     );
@@ -191,6 +194,7 @@ class CommentPage extends StatelessWidget {
               CardComment(
                 comment: comment,
                 depth: depth,
+                disableReply: controller.post?.isUserDeleted ?? false,
                 onReply: () {
                   controller.replyingTo.value = comment;
                   controller.focusNode.requestFocus();

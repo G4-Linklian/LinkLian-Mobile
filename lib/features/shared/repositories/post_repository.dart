@@ -99,6 +99,17 @@ class PostRepository {
     );
 
     appLog.debug('GET POST RESPONSE RAW: ${response.data.runtimeType}');
+    if (response.data is Map) {
+      final data = (response.data as Map)['data'];
+      appLog.debug('GET POST RESPONSE data count: ${data is List ? data.length : 'not a list'}');
+      if (data is List) {
+        for (final item in data) {
+          if (item is Map) {
+            appLog.debug('  post_id=${item['post_id']} user_sys_id=${item['user'] is Map ? (item['user'] as Map)['user_sys_id'] : item['user_sys_id']} is_anonymous=${item['is_anonymous']} is_user_deleted=${item['is_user_deleted']}');
+          }
+        }
+      }
+    }
 
     return ApiResponseParser.parseList(
       response.data,
