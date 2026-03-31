@@ -65,6 +65,9 @@ class PostModel {
     this.sectionId,
   });
 
+  /// true เมื่อ user ที่โพสต์ถูกลบออกจากระบบแล้ว (user_sys_id = null และไม่ใช่โพสต์익名)
+  bool get isUserDeleted => userSysId == null && !isAnonymous;
+
   static int _intFromJson(dynamic v) {
     if (v is int) return v;
     if (v is String) return int.tryParse(v) ?? 0;

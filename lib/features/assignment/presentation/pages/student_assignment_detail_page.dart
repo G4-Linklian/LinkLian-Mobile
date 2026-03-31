@@ -95,8 +95,9 @@ class _StudentAssignmentDetailPageState
     StudentSubmissionStatusModel? current,
   ) {
     if (current == null) return null;
+    if (current.userSysId == null) return current;
     for (final s in _controller.allStudents) {
-      if (s.userSysId == current.userSysId) return s;
+      if (s.userSysId != null && s.userSysId == current.userSysId) return s;
     }
     return null;
   }
@@ -328,6 +329,9 @@ class _StudentAssignmentDetailPageState
                             _TeacherDetailBottomSheet(
                               controller: controllerOrNull,
                               maxScore: _maxScore,
+                              isUserDeleted:
+                                  !_isGroup &&
+                                  (_student?.isUserDeleted ?? false),
                             ),
                         ],
                       )),
@@ -415,6 +419,21 @@ class _StudentAssignmentDetailPageState
             fontWeight: FontWeight.w700,
             fontSize: 20,
           ),
+        ),
+      );
+    }
+    if (_student?.isUserDeleted == true) {
+      return Container(
+        width: 52,
+        height: 52,
+        decoration: const BoxDecoration(
+          color: Color(0xFFE5E7EB),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          LinkLianIcon.userOff,
+          size: 26,
+          color: Color(0xFF9CA3AF),
         ),
       );
     }
@@ -510,6 +529,7 @@ class _StudentAssignmentDetailPageState
             children: members.asMap().entries.map((entry) {
               final i = entry.key;
               final m = entry.value;
+              final isDeleted = m['user_sys_id'] == null;
               final pic = m['profile_pic'] as String?;
               final first = m['first_name'] as String? ?? '';
               final last = m['last_name'] as String? ?? '';
@@ -522,29 +542,48 @@ class _StudentAssignmentDetailPageState
                     ),
                     child: Row(
                       children: [
-                        pic != null && pic.isNotEmpty
-                            ? CircleAvatar(
-                                radius: 18,
-                                backgroundImage: NetworkImage(pic),
-                              )
-                            : CircleAvatar(
-                                radius: 18,
-                                backgroundColor: AppColors.primaryPalette[200],
-                                child: Text(
-                                  first.isNotEmpty ? first[0] : '?',
-                                  style: TextStyle(
-                                    color: AppColors.primaryPalette[700],
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                        isDeleted
+                            ? Container(
+                                width: 36,
+                                height: 36,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE5E7EB),
+                                  shape: BoxShape.circle,
                                 ),
-                              ),
+                                child: const Icon(
+                                  LinkLianIcon.userOff,
+                                  size: 18,
+                                  color: Color(0xFF9CA3AF),
+                                ),
+                              )
+                            : (pic != null && pic.isNotEmpty
+                                  ? CircleAvatar(
+                                      radius: 18,
+                                      backgroundImage: NetworkImage(pic),
+                                    )
+                                  : CircleAvatar(
+                                      radius: 18,
+                                      backgroundColor:
+                                          AppColors.primaryPalette[200],
+                                      child: Text(
+                                        first.isNotEmpty ? first[0] : '?',
+                                        style: TextStyle(
+                                          color: AppColors.primaryPalette[700],
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    )),
                         const SizedBox(width: 10),
                         Text(
-                          '$first $last'.trim(),
-                          style: const TextStyle(
+                          isDeleted
+                              ? 'ไม่มีบัญชีผู้ใช้งาน'
+                              : '$first $last'.trim(),
+                          style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.black,
+                            color: isDeleted
+                                ? Colors.grey[500]
+                                : AppColors.black,
                           ),
                         ),
                       ],
@@ -669,10 +708,12 @@ class _StudentAssignmentDetailPageState
 class _TeacherDetailBottomSheet extends StatefulWidget {
   final TeacherSubmissionController controller;
   final double? maxScore;
+  final bool isUserDeleted;
 
   const _TeacherDetailBottomSheet({
     required this.controller,
     required this.maxScore,
+    this.isUserDeleted = false,
   });
 
   @override
@@ -756,15 +797,40 @@ class _TeacherDetailBottomSheetState extends State<_TeacherDetailBottomSheet> {
                 const SizedBox(height: 16),
 
                 // Title
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'ข้อเสนอแนะ / คะแนน',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.black,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'ข้อเสนอแนะ / คะแนน',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.black,
+                        ),
+                      ),
+                      if (widget.isUserDeleted) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: Text(
+                            'ไม่สามารถให้คะแนนได้',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -774,12 +840,16 @@ class _TeacherDetailBottomSheetState extends State<_TeacherDetailBottomSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: TextField(
                     controller: _feedbackTextController,
-                    onChanged: (v) =>
-                        widget.controller.feedbackController.value = v,
+                    onChanged: widget.isUserDeleted
+                        ? null
+                        : (v) => widget.controller.feedbackController.value = v,
+                    enabled: !widget.isUserDeleted,
                     maxLines: 4,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.black,
+                      color: widget.isUserDeleted
+                          ? Colors.grey[400]
+                          : AppColors.black,
                     ),
                     decoration: InputDecoration(
                       hintText: 'ข้อเสนอแนะ...',
@@ -788,13 +858,21 @@ class _TeacherDetailBottomSheetState extends State<_TeacherDetailBottomSheet> {
                         fontSize: 14,
                       ),
                       filled: true,
-                      fillColor: AppColors.white,
+                      fillColor: widget.isUserDeleted
+                          ? Colors.grey[50]
+                          : AppColors.white,
                       contentPadding: const EdgeInsets.all(12),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: AppColors.primaryPalette[300]!,
+                          color: widget.isUserDeleted
+                              ? Colors.grey[300]!
+                              : AppColors.primaryPalette[300]!,
                         ),
+                      ),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[200]!),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -817,24 +895,33 @@ class _TeacherDetailBottomSheetState extends State<_TeacherDetailBottomSheet> {
                         width: 80,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: widget.isUserDeleted
+                              ? Colors.grey[50]
+                              : AppColors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.primaryPalette[300]!,
+                            color: widget.isUserDeleted
+                                ? Colors.grey[200]!
+                                : AppColors.primaryPalette[300]!,
                           ),
                         ),
                         child: TextField(
                           controller: _scoreTextController,
-                          onChanged: (v) =>
-                              widget.controller.scoreController.value = v,
+                          onChanged: widget.isUserDeleted
+                              ? null
+                              : (v) =>
+                                    widget.controller.scoreController.value = v,
+                          enabled: !widget.isUserDeleted,
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.black,
+                            color: widget.isUserDeleted
+                                ? Colors.grey[400]
+                                : AppColors.black,
                           ),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
@@ -857,11 +944,14 @@ class _TeacherDetailBottomSheetState extends State<_TeacherDetailBottomSheet> {
                       SizedBox(
                         width: 110,
                         child: ElevatedButton(
-                          onPressed: isGrading
+                          onPressed: (isGrading || widget.isUserDeleted)
                               ? null
                               : widget.controller.gradeSubmission,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryPalette[500],
+                            backgroundColor: widget.isUserDeleted
+                                ? Colors.grey[300]
+                                : AppColors.primaryPalette[500],
+                            disabledBackgroundColor: Colors.grey[300],
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -880,10 +970,12 @@ class _TeacherDetailBottomSheetState extends State<_TeacherDetailBottomSheet> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   'ให้คะแนน',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: widget.isUserDeleted
+                                        ? Colors.grey[500]
+                                        : Colors.white,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
                                   ),
@@ -982,11 +1074,13 @@ class _SubmittedDropdownButtonState extends State<_SubmittedDropdownButton> {
                     (g) =>
                         keyword.isEmpty ||
                         g.groupName.toLowerCase().contains(keyword) ||
-                        g.members.any(
-                          (m) => '${m['first_name']} ${m['last_name']}'
-                              .toLowerCase()
-                              .contains(keyword),
-                        ),
+                        g.members.any((m) {
+                          final label = m['user_sys_id'] == null
+                              ? 'ไม่มีบัญชีผู้ใช้งาน'
+                              : '${m['first_name'] ?? ''} ${m['last_name'] ?? ''}'
+                                    .trim();
+                          return label.toLowerCase().contains(keyword);
+                        }),
                   )
                   .toList()
             : <GroupSubmissionItem>[];
@@ -1178,7 +1272,21 @@ class _DropdownStudentTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            student.profilePic != null && student.profilePic!.isNotEmpty
+            student.isUserDeleted
+                ? Container(
+                    width: 34,
+                    height: 34,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE5E7EB),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LinkLianIcon.userOff,
+                      size: 18,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                  )
+                : student.profilePic != null && student.profilePic!.isNotEmpty
                 ? CircleAvatar(
                     radius: 17,
                     backgroundImage: NetworkImage(student.profilePic!),
@@ -1199,7 +1307,12 @@ class _DropdownStudentTile extends StatelessWidget {
             Expanded(
               child: Text(
                 student.displayName,
-                style: const TextStyle(fontSize: 13, color: AppColors.black),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: student.isUserDeleted
+                      ? Colors.grey[500]
+                      : AppColors.black,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),

@@ -24,8 +24,8 @@ Map<String, dynamic> _$GroupModelToJson(GroupModel instance) =>
 GroupMemberModel _$GroupMemberModelFromJson(Map<String, dynamic> json) =>
     GroupMemberModel(
       userSysId: _intFromJson(json['user_sys_id']),
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
+      firstName: _stringFromJson(json['first_name']),
+      lastName: _stringFromJson(json['last_name']),
       profilePic: json['profile_pic'] as String?,
     );
 

@@ -111,7 +111,7 @@ class AppTheme {
   );
 
   static ThemeData dark = ThemeData(
-    // fontFamily: 'IBMPlexSansThai', // Uncomment when font files are available
+    fontFamily: 'IBMPlexSansThai',
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primaryPalette[200]!,

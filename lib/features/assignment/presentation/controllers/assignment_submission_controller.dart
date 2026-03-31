@@ -54,6 +54,9 @@ class AssignmentSubmissionController extends GetxController {
 
   // Subject name for display
   final subjectNameTh = RxnString();
+
+  // Search keyword for student picker
+  String _searchKeyword = '';
   final ImagePicker _imagePicker = ImagePicker();
   int _localUploadSeed = 0;
 
@@ -133,12 +136,11 @@ class AssignmentSubmissionController extends GetxController {
 
       if (assignmentInfo.value?.isGroup == true) {
         await _loadStudents();
-
-        if (isTeacher) {
-          await _loadAllGroups();
-        } else {
+        await _loadAllGroups();
+        if (!isTeacher) {
           await _loadMyGroup();
         }
+        _rebuildFilteredStudents();
       }
     } finally {
       isLoading.value = false;
@@ -163,6 +165,53 @@ class AssignmentSubmissionController extends GetxController {
   }
   // ================= GROUP =================
 
+  /// IDs of students in the current group. Keep them visible while editing
+  /// even if `/assignment/all-groups` also marks them as already grouped.
+  Set<int> get _currentGroupMemberIds =>
+      group.value?.members.map((m) => m.userSysId).whereType<int>().toSet() ??
+      <int>{};
+
+  /// IDs of students already placed in other groups.
+  Set<int> get _takenStudentIds {
+    final currentMemberIds = _currentGroupMemberIds;
+    return allGroups
+        .expand((g) => g.members)
+        .map((m) => m.userSysId)
+        .whereType<int>()
+        .where((id) => !currentMemberIds.contains(id))
+        .toSet();
+  }
+
+  /// Rebuild filteredStudents considering both search keyword and taken students.
+  /// Students in the current group must remain selectable during edit.
+  void _rebuildFilteredStudents() {
+    final taken = _takenStudentIds;
+    final currentMemberIds = _currentGroupMemberIds;
+
+    var available = students.where((s) {
+      final userId = s.userSysId;
+      return currentMemberIds.contains(userId) || !taken.contains(userId);
+    }).toList();
+
+    if (_searchKeyword.isNotEmpty) {
+      available = available.where((s) {
+        final name = '${s.firstName} ${s.lastName}'.toLowerCase();
+        return name.contains(_searchKeyword);
+      }).toList();
+    }
+
+    available.sort((a, b) {
+      final aSelected = currentMemberIds.contains(a.userSysId);
+      final bSelected = currentMemberIds.contains(b.userSysId);
+      if (aSelected != bSelected) return aSelected ? -1 : 1;
+      final aName = '${a.firstName} ${a.lastName}'.trim().toLowerCase();
+      final bName = '${b.firstName} ${b.lastName}'.trim().toLowerCase();
+      return aName.compareTo(bName);
+    });
+
+    filteredStudents.assignAll(available);
+  }
+
   Future<void> _loadStudents() async {
     isStudentLoading.value = true;
 
@@ -176,11 +225,12 @@ class AssignmentSubmissionController extends GetxController {
     appLog.info('📡 _loadStudents: fetching for sectionId=$sectionId');
     final list = await repo.getStudentsInSection(sectionId: sectionId);
 
-    // Filter out inactive users — only show Active students
+    // Filter out inactive/deleted users — only show Active students with valid id
     final activeList = list.where((s) {
       final roleOk = s.roleName.toLowerCase().contains('student');
       final active = (s.userStatus ?? '').toLowerCase() == 'active';
-      return roleOk && active;
+      final hasValidId = s.userSysId != 0;
+      return roleOk && active && hasValidId;
     }).toList();
 
     appLog.info(
@@ -224,6 +274,10 @@ class AssignmentSubmissionController extends GetxController {
       group.value?.members.map((e) => e.userSysId).whereType<int>().toList() ??
           [],
     );
+
+    // Rebuild picker so current group's members appear as available
+    _searchKeyword = '';
+    _rebuildFilteredStudents();
   }
 
   void cancelEditingGroupWithConfirm() {
@@ -233,7 +287,7 @@ class AssignmentSubmissionController extends GetxController {
 
   void toggleStudent(int userId) {
     appLog.info(
-      '🔄 toggleStudent: userId=$userId, currently selected=${selectedStudentIds.toList()}',
+      'toggleStudent: userId=$userId, currently selected=${selectedStudentIds.toList()}',
     );
     if (selectedStudentIds.contains(userId)) {
       selectedStudentIds.remove(userId);
@@ -241,7 +295,7 @@ class AssignmentSubmissionController extends GetxController {
       selectedStudentIds.add(userId);
     }
     appLog.info(
-      '🔄 toggleStudent: after toggle, selected=${selectedStudentIds.toList()}',
+      'toggleStudent: after toggle, selected=${selectedStudentIds.toList()}',
     );
   }
 
@@ -254,13 +308,8 @@ class AssignmentSubmissionController extends GetxController {
   }
 
   void onSearchChanged(String value) {
-    final keyword = value.toLowerCase();
-    filteredStudents.assignAll(
-      students.where((s) {
-        final name = '${s.firstName} ${s.lastName}'.toLowerCase();
-        return name.contains(keyword);
-      }).toList(),
-    );
+    _searchKeyword = value.toLowerCase();
+    _rebuildFilteredStudents();
   }
 
   Future<void> submitGroup() async {
@@ -297,6 +346,9 @@ class AssignmentSubmissionController extends GetxController {
 
       if (success) {
         await _loadMyGroup();
+        await _loadAllGroups();
+        _searchKeyword = '';
+        _rebuildFilteredStudents();
         isEditingGroup.value = false;
       }
     } finally {
