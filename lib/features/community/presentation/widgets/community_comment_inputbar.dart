@@ -30,7 +30,8 @@ class CommunityCommentInputBar extends StatelessWidget {
           displayName.toLowerCase().contains("deleted");
 
       if (!detailController.canInteract() || isPostOwnerDeleted) {
-        return const SizedBox.shrink();
+        //return const SizedBox.shrink();
+        return _buildDisabledBar();
       }
 
       return _buildInputBar(context, detailController);
@@ -161,6 +162,32 @@ class CommunityCommentInputBar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDisabledBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: SafeArea(
+        top: false,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+          ),
+          child: const Text(
+            'ไม่สามารถแสดงความคิดเห็นบนโพสต์นี้ได้',
+            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+          ),
+        ),
       ),
     );
   }

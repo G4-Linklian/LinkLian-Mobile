@@ -660,47 +660,7 @@ class ChatInputArea extends StatelessWidget {
                 // Text input with send button
                 Expanded(
                   child: isDeletedUser
-                      ? Container(
-                          padding: const EdgeInsets.all(1.2),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppColors.primaryPalette[300]!,
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryPalette[100],
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    enabled: false,
-                                    controller: textController,
-                                    decoration: const InputDecoration(
-                                      hintText: 'ไม่สามารถส่งข้อความได้',
-                                      hintStyle: TextStyle(
-                                        color: Color(0xFFBDBDBD),
-                                        fontSize: 15,
-                                      ),
-                                      border: InputBorder.none,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 10,
-                                      ),
-                                    ),
-                                    style: const TextStyle(fontSize: 15),
-                                    minLines: 1,
-                                    maxLines: 4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
+                      ? _buildDisabledChatBar()
                       : Container(
                           decoration: BoxDecoration(
                             color: AppColors.primaryPalette[100],
@@ -713,7 +673,7 @@ class ChatInputArea extends StatelessWidget {
                                   enabled: true,
                                   controller: textController,
                                   decoration: const InputDecoration(
-                                    hintText: 'Aa...',
+                                    hintText: 'พิมพ์ข้อความ...',
                                     hintStyle: TextStyle(
                                       color: Color(0xFFBDBDBD),
                                       fontSize: 15,
@@ -759,6 +719,32 @@ class ChatInputArea extends StatelessWidget {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDisabledChatBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        //border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: SafeArea(
+        top: false,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+          ),
+          child: const Text(
+            'ไม่สามารถส่งข้อความได้',
+            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+          ),
         ),
       ),
     );
