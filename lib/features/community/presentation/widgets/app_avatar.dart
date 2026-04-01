@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:flutter/material.dart';
 
 class AppAvatar extends StatelessWidget {
@@ -17,7 +18,10 @@ class AppAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (profilePic != null && profilePic!.isNotEmpty) {
+    final isDeletedUser =
+        (firstName.isEmpty && lastName.isEmpty) ||
+        firstName == 'ไม่มีบัญชีผู้ใช้งาน';
+    if (!isDeletedUser && profilePic != null && profilePic!.isNotEmpty) {
       return CircleAvatar(
         radius: radius,
         backgroundImage: NetworkImage(profilePic!),
@@ -27,20 +31,25 @@ class AppAvatar extends StatelessWidget {
 
     final initials =
         "${firstName.isNotEmpty ? firstName[0] : ''}"
-        "${lastName.isNotEmpty ? lastName[0] : ''}"
+                "${lastName.isNotEmpty ? lastName[0] : ''}"
             .toUpperCase();
 
     return CircleAvatar(
       radius: radius,
-      backgroundColor: AppColors.primaryPalette[300],
-      child: Text(
-        initials,
-        style: TextStyle(
-          fontSize: radius * 0.8,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
+      backgroundColor: isDeletedUser
+          ? Colors.grey
+          : AppColors.primaryPalette[300],
+      child: isDeletedUser
+          ? Icon(LinkLianIcon.useroff, color: Colors.white)
+          : Text(
+              initials,
+              style: TextStyle(
+                fontSize: radius * 0.8,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
     );
   }
 }
+

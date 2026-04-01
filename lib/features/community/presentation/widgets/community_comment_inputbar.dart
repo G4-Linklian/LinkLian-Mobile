@@ -19,9 +19,20 @@ class CommunityCommentInputBar extends StatelessWidget {
     final detailController = Get.find<CommunityDetailController>();
 
     return Obx(() {
-      if (!detailController.canInteract()) {
+      final post = controller.post.value;
+
+      final displayName = "${post?.firstName ?? ''} ${post?.lastName ?? ''}"
+          .trim();
+
+      final isPostOwnerDeleted =
+          displayName.isEmpty ||
+          displayName == "ไม่มีบัญชีผู้ใช้งาน" ||
+          displayName.toLowerCase().contains("deleted");
+
+      if (!detailController.canInteract() || isPostOwnerDeleted) {
         return const SizedBox.shrink();
       }
+
       return _buildInputBar(context, detailController);
     });
   }
@@ -117,9 +128,27 @@ class CommunityCommentInputBar extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
+                    // onTap: () {
+                    //   final text = controller.textController.text.trim();
+                    //   if (text.isEmpty) return;
+                    //   controller.submitComment(text);
+                    // },
                     onTap: () {
                       final text = controller.textController.text.trim();
-                      if (text.isEmpty) return;
+
+                      final post = controller.post.value;
+
+                      final displayName =
+                          "${post?.firstName ?? ''} ${post?.lastName ?? ''}"
+                              .trim();
+
+                      final isPostOwnerDeleted =
+                          displayName.isEmpty ||
+                          displayName == "ไม่มีบัญชีผู้ใช้งาน" ||
+                          displayName.toLowerCase().contains("deleted");
+
+                      if (text.isEmpty || isPostOwnerDeleted) return;
+
                       controller.submitComment(text);
                     },
                     child: const Icon(

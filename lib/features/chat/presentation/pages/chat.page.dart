@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/services/local_storage.dart';
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/auth/controller/auth_controller.dart';
@@ -292,6 +293,13 @@ class _ChatPageState extends State<ChatPage> {
 
   // Build individual chat item
   Widget _buildChatItem(ChatModel chat) {
+    final isDeletedUser =
+        (chat.firstName == null || chat.firstName!.isEmpty) &&
+        (chat.lastName == null || chat.lastName!.isEmpty);
+
+    final displayName = isDeletedUser
+        ? "ไม่มีบัญชีผู้ใช้งาน"
+        : '${chat.firstName ?? ''} ${chat.lastName ?? ''}'.trim();
     return InkWell(
       onTap: () async {
         final navigator = Navigator.of(context);
@@ -353,25 +361,38 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                   child: CircleAvatar(
                     radius: 28,
-                    backgroundColor: _getAvatarColor(chat.firstName ?? ''),
+
+                    backgroundColor: isDeletedUser
+                        ? Colors.grey[300]
+                        : (chat.profileImage == null ||
+                              chat.profileImage!.isEmpty)
+                        ? _getAvatarColor(chat.firstName ?? '')
+                        : Colors.transparent,
+
                     backgroundImage:
-                        chat.profileImage != null &&
+                        !isDeletedUser &&
+                            chat.profileImage != null &&
                             chat.profileImage!.isNotEmpty
                         ? NetworkImage(chat.profileImage!)
                         : null,
-                    child:
-                        chat.profileImage == null || chat.profileImage!.isEmpty
-                        ? (chat.firstName != null || chat.lastName != null
+
+                    child: isDeletedUser
+                        ? Icon(
+                            LinkLianIcon.useroff,
+                            color: Colors.grey[600],
+                            size: 28,
+                          )
+                        : (chat.profileImage == null ||
+                                  chat.profileImage!.isEmpty
                               ? Text(
                                   _getInitials(chat.firstName, chat.lastName),
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 20,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 )
-                              : null)
-                        : null,
+                              : null),
                   ),
                 ),
                 // Online indicator (optional - ถ้ามีข้อมูล online status)
@@ -390,6 +411,7 @@ class _ChatPageState extends State<ChatPage> {
                 // ),
               ],
             ),
+
             const SizedBox(width: 14),
             // Chat Info
             Expanded(
@@ -401,8 +423,7 @@ class _ChatPageState extends State<ChatPage> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${chat.firstName ?? ''} ${chat.lastName ?? ''}'
-                              .trim(),
+                          displayName,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -411,6 +432,7 @@ class _ChatPageState extends State<ChatPage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+
                       const SizedBox(width: 8),
                       Text(
                         _formatTime(chat.lastSent),

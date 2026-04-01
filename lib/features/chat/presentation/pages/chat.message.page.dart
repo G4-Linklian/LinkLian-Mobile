@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:flutter/material.dart';
 import 'package:LinkLian/features/chat/data/models/chat.model.dart';
 import 'package:LinkLian/features/chat/presentation/controllers/chat.message.controller.dart';
@@ -91,8 +92,30 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     }
   }
 
+  // void _handleSend() async {
+  //   final text = _textController.text.trim();
+  //   if (text.isNotEmpty) {
+  //     _textController.clear();
+  //     await _controller.sendMessage(text);
+  //     setState(() {});
+  //     _scrollToBottom();
+  //   }
+  // }
   void _handleSend() async {
     final text = _textController.text.trim();
+
+    final displayName =
+        "${widget.chat.firstName ?? ''} ${widget.chat.lastName ?? ''}".trim();
+
+    final isDeletedUser = displayName.isEmpty;
+
+    if (isDeletedUser) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("ไม่สามารถส่งข้อความได้")));
+      return;
+    }
+
     if (text.isNotEmpty) {
       _textController.clear();
       await _controller.sendMessage(text);
@@ -213,8 +236,13 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
 
   @override
   Widget build(BuildContext context) {
+    final displayName =
+        "${widget.chat.firstName ?? ''} ${widget.chat.lastName ?? ''}".trim();
+
+    final isDeletedUser = displayName.isEmpty;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -232,17 +260,26 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
               ),
               child: CircleAvatar(
                 radius: 18,
-                backgroundColor: _getAvatarColor(widget.chat.firstName ?? ''),
+                backgroundColor: isDeletedUser
+                    ? Colors.grey[300]
+                    : (widget.chat.profileImage == null ||
+                          widget.chat.profileImage!.isEmpty)
+                    ? _getAvatarColor(widget.chat.firstName ?? '')
+                    : Colors.transparent,
                 backgroundImage:
-                    widget.chat.profileImage != null &&
+                    !isDeletedUser &&
+                        widget.chat.profileImage != null &&
                         widget.chat.profileImage!.isNotEmpty
                     ? NetworkImage(widget.chat.profileImage!)
                     : null,
-                child:
-                    widget.chat.profileImage == null ||
-                        widget.chat.profileImage!.isEmpty
-                    ? (widget.chat.firstName != null ||
-                              widget.chat.lastName != null
+                child: isDeletedUser
+                    ? Icon(
+                        LinkLianIcon.useroff,
+                        color: Colors.grey[600],
+                        size: 20,
+                      )
+                    : (widget.chat.profileImage == null ||
+                              widget.chat.profileImage!.isEmpty
                           ? Text(
                               _getInitials(
                                 widget.chat.firstName,
@@ -250,22 +287,24 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                               ),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
                             )
-                          : null)
-                    : null,
+                          : null),
               ),
             ),
+
             const SizedBox(width: 12),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${widget.chat.firstName ?? ''} ${widget.chat.lastName ?? ''}'
-                        .trim(),
+                    displayName.isNotEmpty
+                        ? displayName
+                        : "ไม่มีบัญชีผู้ใช้งาน",
                     style: const TextStyle(
                       color: Colors.black,
                       fontSize: 16,
@@ -273,14 +312,6 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  // Optional: Online status
-                  // Text(
-                  //   'Active now',
-                  //   style: TextStyle(
-                  //     color: Colors.grey[600],
-                  //     fontSize: 12,
-                  //   ),
-                  // ),
                 ],
               ),
             ),
@@ -332,7 +363,9 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _scrollToBottom();
                         Future.delayed(const Duration(milliseconds: 450), () {
-                          if (!mounted || !_suppressScrollToLatestButton) return;
+                          if (!mounted || !_suppressScrollToLatestButton) {
+                            return;
+                          }
                           setState(() {
                             _suppressScrollToLatestButton = false;
                           });
@@ -364,7 +397,12 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                         final replyMessage = _controller.findReplyMessage(
                           message.replyId,
                         );
-
+                        final isReplyDeletedUser =
+                            replyMessage != null &&
+                            ((replyMessage.firstName == null ||
+                                    replyMessage.firstName!.isEmpty) &&
+                                (replyMessage.lastName == null ||
+                                    replyMessage.lastName!.isEmpty));
                         // Check if we need to show date separator
                         bool showDateSeparator = false;
                         if (index == 0) {
@@ -416,6 +454,8 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                               highlight:
                                   _highlightMessageId != null &&
                                   message.messageId == _highlightMessageId,
+
+                              isReplyDeletedUser: isReplyDeletedUser,
                               onReply: (msg) {
                                 setState(() {
                                   _controller.replyingMessage = msg;
@@ -556,7 +596,14 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                 ),
               ChatInputArea(
                 textController: _textController,
-                onSend: _handleSend,
+                isDeletedUser: isDeletedUser,
+
+                ///onSend: isDeletedUser ? null : _handleSend,
+                onSend: () {
+                  if (!isDeletedUser) {
+                    _handleSend();
+                  }
+                },
                 controller: _controller,
               ),
             ],

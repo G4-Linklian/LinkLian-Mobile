@@ -1,3 +1,4 @@
+import 'package:LinkLian/features/community/presentation/widgets/community_card_post.dart';
 import 'package:LinkLian/features/shared/presentations/bookmark_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -105,13 +106,29 @@ class BookmarkSwitcher extends GetView<BookmarkController> {
 
         Obx(() {
           if (controller.type.value == BookmarkType.community) {
-            return const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(
-                child: Text(
-                  'ยังไม่รองรับบุ๊กมาร์กชุมชน',
-                  style: TextStyle(color: Colors.grey),
-                ),
+            if (controller.loadingCommunity.value) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (controller.communityBookmarks.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('ยังไม่มีบุ๊กมาร์กชุมชน')),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Column(
+                children: controller.communityBookmarks
+                    .map(
+                      (post) =>
+                          CardPostCommunity(post: post, showMoreButton: false),
+                    )
+                    .toList(),
               ),
             );
           }

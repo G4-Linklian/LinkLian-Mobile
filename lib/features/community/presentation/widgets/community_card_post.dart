@@ -141,38 +141,55 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
                     children: [
                       _buildProfileAvatar(),
                       const SizedBox(width: 12),
+
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "${widget.post.firstName} ${widget.post.lastName}",
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
+                        child: Builder(
+                          builder: (context) {
+                            final displayName =
+                                "${widget.post.firstName ?? ''} ${widget.post.lastName ?? ''}"
+                                    .trim();
+
+                            final isDeletedUser =
+                                displayName.isEmpty ||
+                                displayName == "ไม่มีบัญชีผู้ใช้งาน";
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  Icons.access_time,
-                                  size: 16,
-                                  color: AppColors.black.withValues(alpha: 0.5),
-                                ),
-                                const SizedBox(width: 4),
                                 Text(
-                                  _formatDateTime(widget.post.createdAt),
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.black.withValues(
-                                      alpha: 0.5,
-                                    ),
+                                  isDeletedUser
+                                      ? "ไม่มีบัญชีผู้ใช้งาน"
+                                      : displayName,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 16,
+                                      color: AppColors.black.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _formatDateTime(widget.post.createdAt),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.black.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
                       // if (widget.showMoreButton) _buildMoreButton(context),
@@ -814,9 +831,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   void _onDeletePost() async {
     appLog.info("[community]DELETE POST ID: ${widget.post.postId}");
-    appLog.info(
-      "[community]DELETE COMMUNITY ID: ${widget.post.communityId}",
-    );
+    appLog.info("[community]DELETE COMMUNITY ID: ${widget.post.communityId}");
     final confirm = await Get.dialog<bool>(
       AlertDialog(
         title: const Text('ยืนยันการลบ'),
@@ -865,7 +880,15 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   // ================= PROFILE AVATAR =================
   Widget _buildProfileAvatar() {
-    if (widget.post.profilePic != null && widget.post.profilePic!.isNotEmpty) {
+    final displayName =
+        "${widget.post.firstName ?? ''} ${widget.post.lastName ?? ''}".trim();
+
+    final isDeletedUser =
+        displayName.isEmpty || displayName == "ไม่มีบัญชีผู้ใช้งาน";
+
+    if (!isDeletedUser &&
+        widget.post.profilePic != null &&
+        widget.post.profilePic!.isNotEmpty) {
       return CircleAvatar(
         radius: 24,
         backgroundImage: NetworkImage(widget.post.profilePic!),
@@ -873,11 +896,19 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
       );
     }
 
+    if (isDeletedUser) {
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.grey[300],
+        child: Icon(LinkLianIcon.useroff, color: Colors.grey[600], size: 28),
+      );
+    }
+
     return CircleAvatar(
       radius: 24,
       backgroundColor: AppColors.primaryPalette[200],
       child: Text(
-        _getInitial("${widget.post.firstName} ${widget.post.lastName}"),
+        _getInitial(displayName),
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -888,8 +919,21 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
   }
 
   String _getInitial(String? name) {
-    if (name == null || name.isEmpty) return '?';
-    return name[0].toUpperCase();
+    if (name == null) return '?';
+
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) return '?';
+
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   String _formatDateTime(DateTime dt) {
@@ -926,7 +970,9 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
         type: NotificationType.success,
       );
     } catch (e) {
-      DialogHelper.showErrorDialog(description: "ไม่สามารถดำเนินการกับบุ๊กมาร์กได้");
+      DialogHelper.showErrorDialog(
+        description: "ไม่สามารถดำเนินการกับบุ๊กมาร์กได้",
+      );
     } finally {
       if (mounted) {
         setState(() => _isBookmarkLoading = false);

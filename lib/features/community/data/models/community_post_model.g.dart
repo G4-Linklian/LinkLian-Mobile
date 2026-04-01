@@ -13,8 +13,8 @@ CommunityPostModel _$CommunityPostModelFromJson(Map<String, dynamic> json) =>
       userId: CommunityPostModel._intFromJson(json['user_sys_id']),
       content: json['content'] as String,
       createdAt: CommunityPostModel._dateFromJson(json['created_at']),
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
       profilePic: json['profile_pic'] as String?,
       attachments: CommunityPostModel._attachmentsFromJson(json['attachments']),
     );

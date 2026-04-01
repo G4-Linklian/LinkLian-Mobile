@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/utils/chat_navigation_helper.dart';
 import 'package:LinkLian/features/auth/controller/auth_controller.dart';
 import 'package:LinkLian/features/shared/models/profile_model.dart';
@@ -15,7 +16,7 @@ class ProfilePopup extends StatelessWidget {
     final isTeacher = profile.isTeacher;
     final auth = Get.find<AuthController>();
     final viewerRole = auth.roleName.value?.toLowerCase();
-
+    final isDeletedUser = profile.fullName.isEmpty;
     final viewerIsTeacher =
         viewerRole == 'teacher' || viewerRole == 'instructor';
 
@@ -23,7 +24,8 @@ class ProfilePopup extends StatelessWidget {
 
     final isSelf = auth.userId.value == profile.userSysId;
 
-    final canSendMessage = viewerIsTeacher != targetIsTeacher && !isSelf;
+    final canSendMessage =
+        viewerIsTeacher != targetIsTeacher && !isSelf && !isDeletedUser;
 
     final role = profile.roleName.toLowerCase();
 
@@ -31,6 +33,23 @@ class ProfilePopup extends StatelessWidget {
     final isUniversity = role.contains('uni');
 
     final codeLabel = isHighSchool ? "รหัสนักเรียน" : "รหัสนักศึกษา";
+    final edu = profile.education;
+
+    String educationText = "-";
+
+    if (edu != null) {
+      final level = edu.level ?? '-';
+      final classroom = edu.classroom;
+
+      final hasClassroom =
+          classroom != null && classroom.isNotEmpty && classroom != '-';
+
+      if (isUniversity) {
+        educationText = hasClassroom ? "$level ชั้นปี $classroom" : level;
+      } else {
+        educationText = "$level / ${classroom ?? '-'}";
+      }
+    }
 
     return GestureDetector(
       onTap: () => Get.back(),
@@ -53,28 +72,43 @@ class ProfilePopup extends StatelessWidget {
                     /// PROFILE IMAGE
                     CircleAvatar(
                       radius: 40,
-                      backgroundImage: profile.profilePic != null
+                      backgroundImage:
+                          (profile.profilePic != null &&
+                              profile.profilePic!.isNotEmpty)
                           ? NetworkImage(profile.profilePic!)
                           : null,
-                      child: profile.profilePic == null
-                          ? Text(
-                              profile.fullName.isNotEmpty
-                                  ? profile.fullName[0]
-                                  : "?",
-                              style: const TextStyle(fontSize: 28),
-                            )
+                      child:
+                          (profile.profilePic == null ||
+                              profile.profilePic!.isEmpty)
+                          ? _buildAvatarContent()
                           : null,
                     ),
 
                     const SizedBox(height: 12),
 
                     /// NAME
-                    Text(
-                      profile.fullName,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Column(
+                      children: [
+                        if (profile.code != null && profile.code!.isNotEmpty)
+                          Text(
+                            profile.code!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+
+                        Text(
+                          profile.fullName.isNotEmpty
+                              ? profile.fullName
+                              : "ไม่มีบัญชีผู้ใช้งาน",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 4),
@@ -99,21 +133,8 @@ class ProfilePopup extends StatelessWidget {
                     if (profile.isStudent) ...[
                       _infoRow(codeLabel, profile.code ?? "-"),
                       const SizedBox(height: 6),
-                      _infoRow(
-                        "ระดับชั้น",
-                        profile.education != null
-                            ? isUniversity
-                                  ? profile.education!.classroom != null &&
-                                            profile
-                                                .education!
-                                                .classroom!
-                                                .isNotEmpty &&
-                                            profile.education!.classroom != "-"
-                                        ? "${profile.education!.level ?? '-'} ชั้นปี ${profile.education!.classroom}"
-                                        : profile.education!.level ?? '-'
-                                  : "${profile.education!.level ?? '-'} / ${profile.education!.classroom ?? '-'}"
-                            : "-",
-                      ),
+                      _infoRow("ระดับชั้น", educationText),
+
                       const SizedBox(height: 6),
                       _infoRow("อีเมล", profile.email),
                     ],
@@ -156,6 +177,32 @@ class ProfilePopup extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAvatarContent() {
+    final name = profile.fullName.trim();
+
+    if (name.isEmpty) {
+      return const Icon(LinkLianIcon.useroff, size: 28);
+    }
+
+    final parts = name.split(" ");
+
+    if (parts.isEmpty || parts[0].isEmpty) {
+      return const Icon(LinkLianIcon.user, size: 28);
+    }
+
+    if (parts.length == 1) {
+      return Text(
+        parts[0][0].toUpperCase(),
+        style: const TextStyle(fontSize: 28),
+      );
+    }
+
+    return Text(
+      (parts[0][0] + parts[1][0]).toUpperCase(),
+      style: const TextStyle(fontSize: 28),
     );
   }
 

@@ -1190,9 +1190,25 @@ class _CardPostState extends State<CardPost> {
 
       final repo = ProfileRepository(ApiClient());
 
+      // final profile = await repo.getProfile(widget.post.userSysId!);
+
+      // Get.back();
+
+      // showProfilePopup(profile);
       final profile = await repo.getProfile(widget.post.userSysId!);
 
       Get.back();
+
+      final isDeletedUser = profile.fullName.isEmpty;
+
+      if (isDeletedUser) {
+        DialogHelper.showNotification(
+          title: 'ไม่มีบัญชีผู้ใช้งาน',
+          message: 'บัญชีนี้ถูกลบแล้ว',
+          type: NotificationType.warning,
+        );
+        return;
+      }
 
       showProfilePopup(profile);
     } catch (e) {

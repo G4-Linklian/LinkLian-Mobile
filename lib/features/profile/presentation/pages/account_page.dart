@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:LinkLian/core/constants/linklian-icon.dart';
+import 'package:LinkLian/core/utils/dialog_helper.dart';
 import 'package:LinkLian/features/shared/models/profile_model.dart';
 import 'package:LinkLian/features/auth/controller/auth_controller.dart';
 import 'package:flutter/material.dart';
@@ -106,15 +107,27 @@ class _AccountPageState extends State<AccountPage> {
     final phone = phoneCtrl.text.trim();
 
     if (firstName.isEmpty || lastName.isEmpty) {
-      _showResultDialog(success: false, message: 'กรุณากรอกชื่อและนามสกุล');
+      DialogHelper.showNotification(
+        title: 'แจ้งเตือน',
+        message: 'กรุณากรอกชื่อและนามสกุล',
+        type: NotificationType.warning,
+      );
       return;
     }
     if (phone.isEmpty) {
-      _showResultDialog(success: false, message: 'กรุณากรอกเบอร์โทรศัพท์');
+      DialogHelper.showNotification(
+        title: 'แจ้งเตือน',
+        message: 'กรุณากรอกเบอร์โทรศัพท์',
+        type: NotificationType.warning,
+      );
       return;
     }
     if (phone.isNotEmpty && !RegExp(r'^0[0-9]{9}$').hasMatch(phone)) {
-      _showResultDialog(success: false, message: 'กรุณากรอกเบอร์โทรให้ถูกต้อง');
+      DialogHelper.showNotification(
+        title: 'แจ้งเตือน',
+        message: 'กรุณากรอกเบอร์โทรให้ถูกต้อง',
+        type: NotificationType.warning,
+      );
       return;
     }
 
@@ -149,7 +162,7 @@ class _AccountPageState extends State<AccountPage> {
         await controller.updateProfile(
           firstName: firstName,
           lastName: lastName,
-          phone: phone, 
+          phone: phone,
         );
       }
 
@@ -160,65 +173,18 @@ class _AccountPageState extends State<AccountPage> {
         isEditing = false;
       });
 
-      _showResultDialog(success: true, message: 'บันทึกสำเร็จ');
-      //await Future.delayed(const Duration(milliseconds: 1500));
-      // Get.back(result: true);
-      // Get.back();
+      DialogHelper.showNotification(
+        title: 'สำเร็จ',
+        message: 'บันทึกสำเร็จ',
+        type: NotificationType.success,
+      );
     } catch (e) {
-      _showResultDialog(success: false, message: 'บันทึกไม่สำเร็จ');
+      DialogHelper.showNotification(
+        title: 'ผิดพลาด',
+        message: 'บันทึกไม่สำเร็จ',
+        type: NotificationType.error,
+      );
     }
-  }
-
-  void _showResultDialog({required bool success, required String message}) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 24),
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 40),
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-              decoration: BoxDecoration(
-                color: success
-                    ? AppColors.successPalette[500]
-                    : AppColors.dangerPalette[500],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    success ? LinkLianIcon.check : LinkLianIcon.cancel,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    message,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-    });
   }
 
   @override
