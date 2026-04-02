@@ -24,6 +24,10 @@ abstract class _BaseHugeIcon {
 class LinkLianHugeIcon {
   const LinkLianHugeIcon._();
 
+  static Widget userOff({double size = 18, Color color = Colors.black}) {
+    return Icon(Icons.person_off, size: size, color: color);
+  }
+
   static Widget anonymous({double size = 18, Color color = Colors.black}) {
     return _BaseHugeIcon.build(
       icon: HugeIcons.strokeRoundedAnonymous,

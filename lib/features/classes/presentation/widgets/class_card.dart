@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:palette_generator/palette_generator.dart';
 
 import '../../data/models/class_feed_model.dart';
 import '../../data/models/class_schedule_model.dart';
@@ -145,6 +146,7 @@ class ClassCard extends StatefulWidget {
 
 class _ClassCardState extends State<ClassCard> {
   bool isExpanded = false;
+  Color _textColor = Colors.white;
 
   bool get isTeacher =>
       widget.roleName == 'teacher' || widget.roleName == 'instructor';
@@ -152,6 +154,43 @@ class _ClassCardState extends State<ClassCard> {
   bool get isStudent =>
       widget.roleName == 'high school student' ||
       widget.roleName == 'uni student';
+
+  @override
+  void initState() {
+    super.initState();
+    _analyzeImageColor();
+  }
+
+  Future<void> _analyzeImageColor() async {
+    try {
+      final palette = await PaletteGenerator.fromImageProvider(
+        NetworkImage(LinkLianBg.classCardDefault),
+        maximumColorCount: 16,
+      );
+
+      final bgColor =
+          palette.dominantColor?.color ??
+          palette.vibrantColor?.color ??
+          palette.mutedColor?.color ??
+          const Color(0xFFCCBFA0);
+
+      // Gradient ที่ top ของ card (บริเวณ title/subtitle) มี opacity = 0.0
+      // จึงใช้ raw dominant color โดยตรง ไม่ต้อง blend
+      final effectiveLuminance = bgColor.computeLuminance();
+
+      // > 0.4 → background สว่าง → text ดำ
+      // ≤ 0.4 → background มืด  → text ขาว
+      final useLightText = effectiveLuminance <= 0.4;
+
+      if (mounted) {
+        setState(() {
+          _textColor = useLightText ? Colors.white : Colors.black87;
+        });
+      }
+    } catch (_) {
+      // safe default: white text
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +242,9 @@ class _ClassCardState extends State<ClassCard> {
                         isTeacher
                             ? widget.data.effectiveClassName
                             : widget.data.subjectNameTh,
-                        style: AppTextStyles.titleBold,
+                        style: AppTextStyles.titleBold.copyWith(
+                          color: _textColor,
+                        ),
                       ),
 
                       const SizedBox(height: AppSizes.xs),
@@ -213,7 +254,7 @@ class _ClassCardState extends State<ClassCard> {
                             ? widget.data.subjectNameTh
                             : widget.data.effectiveClassName,
                         style: AppTextStyles.descriptionRegular.copyWith(
-                          color: AppColors.black.withValues(alpha: 0.6),
+                          color: _textColor.withValues(alpha: 0.7),
                         ),
                       ),
 

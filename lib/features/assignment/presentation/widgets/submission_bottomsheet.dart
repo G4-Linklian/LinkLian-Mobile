@@ -8,6 +8,7 @@ import '../controllers/teacher_submission_controller.dart';
 import '../../data/models/group_model.dart';
 import '../../data/models/student_submission_status_model.dart';
 import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/file_viewer_page.dart';
 import 'teacher_submission_list_tab.dart';
 
 const double _kSheetMinSize = 0.25;
@@ -971,6 +972,7 @@ class _StudentSubmissionTabState extends State<_StudentSubmissionTab> {
                           final fileType = file['file_type'] ?? '';
                           final fileSize = file['file_size'] as int? ?? 0;
                           final isUploading = file['is_uploading'] == true;
+                          final fileUrl = file['file_url'] as String?;
 
                           return _buildFileTile(
                             originalName: originalName,
@@ -979,6 +981,7 @@ class _StudentSubmissionTabState extends State<_StudentSubmissionTab> {
                             isUploading: isUploading,
                             canModifyFiles: canModifyFiles,
                             onRemove: () => controller.removeFile(index),
+                            fileUrl: fileUrl,
                           );
                         },
                         separatorBuilder: (_, _) =>
@@ -1001,8 +1004,17 @@ class _StudentSubmissionTabState extends State<_StudentSubmissionTab> {
     required bool isUploading,
     required bool canModifyFiles,
     required VoidCallback onRemove,
+    String? fileUrl,
   }) {
-    return SizedBox(
+    return GestureDetector(
+      onTap: (!isUploading && fileUrl != null && fileUrl.isNotEmpty)
+          ? () => FileViewerPage.open(
+                fileUrl: fileUrl,
+                fileName: originalName,
+                fileType: fileType,
+              )
+          : null,
+      child: SizedBox(
       height: 64,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1083,7 +1095,7 @@ class _StudentSubmissionTabState extends State<_StudentSubmissionTab> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

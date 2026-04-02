@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/colors.dart';
-import '../../../../core/constants/linklian-icon.dart';
 import '../../data/models/comment_model.dart';
 
 class CardComment extends StatelessWidget {
@@ -105,7 +104,7 @@ class CardComment extends StatelessWidget {
       return const CircleAvatar(
         radius: 20,
         backgroundColor: Color(0xFFE5E7EB),
-        child: Icon(LinkLianIcon.userOff, color: Color(0xFF9CA3AF), size: 20),
+        child: Icon(Icons.person_off, color: Color(0xFF9CA3AF), size: 20),
       );
     }
 
