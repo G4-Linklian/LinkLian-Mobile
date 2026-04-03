@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../core/services/local_storage.dart';
@@ -72,23 +73,18 @@ class AuthController extends GetxController {
   }
 
   Future<void> _tryAutoLogin() async {
+    status.value = AuthStatus.checking;
+
+    final storedToken = await LocalStorage.getToken();
+    final storedUserId = await LocalStorage.getLastLoginUserId();
+
+    if (storedToken == null || storedUserId == null) {
+      _clearSession();
+      return;
+    }
+
     try {
-      status.value = AuthStatus.checking;
-
-      final storedToken = await LocalStorage.getToken();
-      final storedUserId = await LocalStorage.getLastLoginUserId();
-
-      if (storedToken == null || storedUserId == null) {
-        _clearSession();
-        return;
-      }
-
       final res = await _authRepository.verifyAuthContext();
-      if (res['require_reset_password'] == true) {
-        await LocalStorage.clearAuthSession();
-        status.value = AuthStatus.unauthenticated;
-        return;
-      }
 
       final int tokenUserId = int.parse(res['data']['user_id'].toString());
 
@@ -99,12 +95,24 @@ class AuthController extends GetxController {
 
       token.value = storedToken;
       userId.value = tokenUserId;
-      roleName.value = res['data']['role_name'];
-      instId.value = res['data']['inst_id'];
+      roleName.value = res['data']['role_name']?.toString();
+      instId.value = int.tryParse(res['data']['inst_id'].toString());
 
       status.value = AuthStatus.authenticated;
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 401 || statusCode == 403) {
+        _clearSession();
+      } else {
+        // network error / server error → ใช้ข้อมูลจาก storage แทน
+        token.value = storedToken;
+        userId.value = storedUserId;
+        status.value = AuthStatus.authenticated;
+      }
     } catch (_) {
-      _clearSession();
+      token.value = storedToken;
+      userId.value = storedUserId;
+      status.value = AuthStatus.authenticated;
     }
   }
 
@@ -133,6 +141,7 @@ class AuthController extends GetxController {
   }
 
   void _clearSession() async {
+    debugPrint('🚨 _clearSession() called — stack: ${StackTrace.current}');
     await LocalStorage.clearAuthSession();
 
     token.value = null;

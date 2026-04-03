@@ -9,8 +9,13 @@ class AuthRepository {
   // VERIFY AUTH CONTEXT (มี token)
   // ===============================
   Future<Map<String, dynamic>> verifyAuthContext() async {
+    final token = await LocalStorage.getToken();
+    if (token == null) throw Exception('No token in storage');
+
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/auth/verify',
+      requiresAuth: false,
+      data: {'token': token},
     );
 
     if (response.data == null) {
@@ -52,23 +57,19 @@ class AuthRepository {
   }
 
   // ===============================
-  // RESET PASSWORD (ยังไม่มี token)
+  // RESET PASSWORD (ใช้ token จาก OTP)
   // ===============================
   Future<void> resetPassword({
-    required String email,
-    required String password,
     required String newPassword,
     required String confirmPassword,
   }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/auth/reset-password',
       data: {
-        'email': email,
-        'password': password,
         'new_password': newPassword,
         'confirm_password': confirmPassword,
       },
-      requiresAuth: false,
+      requiresAuth: true,
     );
 
     if (response.data == null || response.data!['success'] != true) {

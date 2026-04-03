@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../core/services/local_storage.dart';
-import '../widgets/re-password_bottom_sheet.dart';
 import 'otp_controller.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../layout/controllers/navigation_controller.dart';
@@ -42,27 +41,6 @@ class LoginController extends GetxController {
         password: password.value,
         userGroup: selectedUserGroup.value,
       );
-
-      // ต้อง reset password (flag_valid = false)
-      if (result['require_reset_password'] == true) {
-        Get.back(); //
-
-        // แสดงข้อความแจ้งเตือนก่อนเปิด reset password
-        DialogHelper.showNotification(
-          title: 'ต้องตั้งรหัสผ่านใหม่',
-          message: 'กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัย',
-          type: NotificationType.info,
-        );
-
-        // เปิด reset password bottom sheet
-        Get.bottomSheet(
-          ResetPasswordBottomSheet(email: email.value.trim()),
-          isScrollControlled: true,
-          isDismissible: false,
-          enableDrag: false,
-        );
-        return;
-      }
 
       // ต้อง OTP (ตรวจสอบว่ามี otp_session_id)
       if (result['otp_session_id'] != null) {
@@ -136,13 +114,8 @@ class LoginController extends GetxController {
 
       DialogHelper.showNotification(
         title: 'ส่งรหัสผ่านชั่วคราวแล้ว',
-        message: 'กรุณาตรวจสอบอีเมลของคุณ',
+        message: 'กรุณาตรวจสอบอีเมลและนำรหัสชั่วคราวมาเข้าสู่ระบบ',
         type: NotificationType.success,
-      );
-
-      Get.bottomSheet(
-        ResetPasswordBottomSheet(email: email.value.trim()),
-        isScrollControlled: true,
       );
     } catch (e) {
       DialogHelper.showNotification(
