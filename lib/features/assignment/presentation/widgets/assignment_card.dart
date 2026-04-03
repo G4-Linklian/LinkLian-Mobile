@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:palette_generator/palette_generator.dart';
 import '../../data/models/assignment_model.dart';
 import '../../../../core/constants/linklian-bg.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/linklian-icon.dart';
 
-class AssignmentCard extends StatelessWidget {
+class AssignmentCard extends StatefulWidget {
   final AssignmentModel assignment;
   final bool isTeacher;
   final VoidCallback? onTap;
@@ -18,9 +19,71 @@ class AssignmentCard extends StatelessWidget {
   });
 
   @override
+  State<AssignmentCard> createState() => _AssignmentCardState();
+}
+
+class _AssignmentCardState extends State<AssignmentCard> {
+  // default: light text สำหรับ bg มืด (classCardDefault เป็น blue/dark)
+  Color _textColor = AppColors.primaryPalette[100]!;
+
+  AssignmentModel get assignment => widget.assignment;
+  bool get isTeacher => widget.isTeacher;
+
+  @override
+  void initState() {
+    super.initState();
+    _analyzeImageColor();
+  }
+
+  Future<void> _analyzeImageColor() async {
+    try {
+      final palette = await PaletteGenerator.fromImageProvider(
+        NetworkImage(LinkLianBg.classCardDefault),
+        maximumColorCount: 16,
+      );
+
+      final bgColor =
+          palette.dominantColor?.color ??
+          palette.vibrantColor?.color ??
+          palette.mutedColor?.color ??
+          const Color(0xFFCCBFA0);
+
+      // Gradient overlay: primaryPalette[300] = 0xFFFFCF9A
+      // top@0.2 → bottom@0.5 → ใช้ @0.35 เป็นค่ากลาง
+      final blended = _blendColor(bgColor, const Color(0xFFFFCF9A), 0.35);
+      final effectiveLuminance = blended.computeLuminance();
+
+      // > 0.4 → background สว่าง → primaryPalette[900] (dark brown)
+      // ≤ 0.4 → background มืด  → primaryPalette[100] (light cream)
+      if (mounted) {
+        setState(() {
+          _textColor = effectiveLuminance > 0.4
+              ? AppColors.primaryPalette[900]!
+              : AppColors.primaryPalette[100]!;
+        });
+      }
+    } catch (_) {
+      // safe default: primaryPalette[100]
+    }
+  }
+
+  Color _blendColor(Color src, Color dst, double dstOpacity) {
+    final r = (src.r * 255 * (1 - dstOpacity) + dst.r * 255 * dstOpacity)
+        .round()
+        .clamp(0, 255);
+    final g = (src.g * 255 * (1 - dstOpacity) + dst.g * 255 * dstOpacity)
+        .round()
+        .clamp(0, 255);
+    final b = (src.b * 255 * (1 - dstOpacity) + dst.b * 255 * dstOpacity)
+        .round()
+        .clamp(0, 255);
+    return Color.fromARGB(255, r, g, b);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
@@ -112,7 +175,7 @@ class AssignmentCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primaryPalette[800]!,
+                    color: _textColor,
                   ),
                 ),
               ),
@@ -129,14 +192,14 @@ class AssignmentCard extends StatelessWidget {
               Icon(
                 LinkLianIcon.clock,
                 size: 14,
-                color: AppColors.primaryPalette[800],
+                color: _textColor,
               ),
               const SizedBox(width: 4),
               Text(
                 'กำหนด : ${_formatDueDate(assignment.dueDate!)}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.primaryPalette[800]!,
+                  color: _textColor,
                 ),
               ),
             ],
@@ -179,7 +242,7 @@ class AssignmentCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primaryPalette[800]!,
+                    color: _textColor,
                   ),
                 ),
               ),
@@ -196,14 +259,14 @@ class AssignmentCard extends StatelessWidget {
               Icon(
                 LinkLianIcon.clock,
                 size: 14,
-                color: AppColors.primaryPalette[800]!,
+                color: _textColor,
               ),
               const SizedBox(width: 4),
               Text(
                 'กำหนด : ${_formatDueDate(assignment.dueDate!)}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.primaryPalette[800]!,
+                  color: _textColor,
                 ),
               ),
             ],
