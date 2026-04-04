@@ -42,12 +42,8 @@ class ChatMessageController {
     await _loadMessages();
 
     // Socket functionality
-    // await _socketService.connect(
-    //   dotenv.env['SOCKET_URL'] ?? 'wss://socket-wachawich.linklian.org/ws',
-    // );
-    
     final socketUrl =
-        dotenv.env['SOCKET_URL'] ?? 'wss://socket-wachawich.linklian.org/ws';
+        '${dotenv.env['SOCKET_URL'] ?? 'wss://socket-wachawich.linklian.org/ws'}/chat';
     if (!_socketService.isConnected) {
       await _socketService.connect(socketUrl);
     }
