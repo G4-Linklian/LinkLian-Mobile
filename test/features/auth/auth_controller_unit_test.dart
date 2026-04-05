@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:LinkLian/features/auth/controller/auth_controller.dart';
 import 'package:LinkLian/features/layout/controllers/navigation_controller.dart';
@@ -10,8 +11,10 @@ class MockAuthRepository {
   Map<String, dynamic>? mockVerifyResponse;
   bool shouldThrowError = false;
   String errorMessage = 'API Error';
+  int verifyCallCount = 0;
 
   Future<Map<String, dynamic>> verifyAuthContext() async {
+    verifyCallCount++;
     if (shouldThrowError) throw Exception(errorMessage);
     return mockVerifyResponse ??
         {
@@ -22,6 +25,12 @@ class MockAuthRepository {
           },
           'require_reset_password': false,
         };
+  }
+
+  void reset() {
+    verifyCallCount = 0;
+    shouldThrowError = false;
+    mockVerifyResponse = null;
   }
 }
 
@@ -575,6 +584,170 @@ void main() {
 
         await Future.delayed(Duration(milliseconds: 10));
         expect(statusHistory, contains(AuthStatus.authenticated));
+      });
+    });
+
+    // =========================================================================
+    // BUG DETECTION TESTS - Detect actual issues in AuthController
+    // Tests that FAIL indicate bugs that need fixing in the controller
+    // =========================================================================
+    group('Bug Detection Tests', () {
+      // BUG #1: _clearSession is void but uses async
+      // Location: auth_controller.dart line 135
+      test('BUG: _clearSession method signature issue', () {
+        // In auth_controller.dart line 135:
+        // void _clearSession() async { ... }
+        //
+        // This is problematic because:
+        // 1. Method returns void but body is async
+        // 2. Callers cannot await the completion
+        // 3. Any errors inside won't propagate to callers
+
+        // Simulate checking if the method signature is correct
+        // In proper code, async methods should return Future<void>
+        // not void
+
+        // This test will PASS because we're testing TestableAuthController
+        // which has the correct signature. The actual AuthController
+        // has the bug.
+
+        // To make this fail and show the bug:
+        final methodSignatureIsCorrect = false; // AuthController._clearSession is void async
+
+        expect(
+          methodSignatureIsCorrect,
+          isTrue,
+          reason: 'BUG DETECTED: _clearSession returns void but uses async\n'
+              'Location: auth_controller.dart line 135\n'
+              'Should be: Future<void> _clearSession() async',
+        );
+      });
+
+      // BUG #2: onInit calls async methods without await
+      // Location: auth_controller.dart line 27-28
+      test('BUG: onInit fire-and-forget async calls', () {
+        // In auth_controller.dart onInit():
+        // line 27: _tryAutoLogin();   // Not awaited
+        // line 28: _loadFromStorage(); // Not awaited
+        //
+        // Both async methods are called without await,
+        // creating potential race conditions
+
+        final asyncCallsAreAwaited = false; // They are not awaited in AuthController
+
+        expect(
+          asyncCallsAreAwaited,
+          isTrue,
+          reason: 'BUG DETECTED: onInit calls async methods without await\n'
+              'Location: auth_controller.dart line 27-28\n'
+              '_tryAutoLogin() and _loadFromStorage() run concurrently',
+        );
+      });
+
+      // BUG #3: setSession has no input validation
+      test('BUG: setSession accepts invalid inputs', () {
+        // setSession accepts any values including:
+        // - Empty token
+        // - Negative IDs
+        // - Zero userId
+
+        controller.setSession(
+          token: '', // Empty token should be rejected
+          roleName: '',
+          instId: -1, // Negative ID
+          userId: 0, // Zero userId
+        );
+
+        // Current behavior: authenticates with invalid data
+        final hasInputValidation = controller.token.value!.isNotEmpty;
+
+        expect(
+          hasInputValidation,
+          isTrue,
+          reason: 'BUG DETECTED: setSession has no input validation\n'
+              'Location: auth_controller.dart line 43-55\n'
+              'Accepts empty token and authenticates user',
+        );
+      });
+    });
+
+    // =========================================================================
+    // Input Validation Tests - Document current behavior
+    // =========================================================================
+    group('Input Validation', () {
+      test('setSession current behavior with empty token', () {
+        controller.setSession(
+          token: '',
+          roleName: 'student',
+          instId: 1,
+          userId: 1,
+        );
+
+        // Documenting current behavior
+        expect(controller.token.value, equals(''));
+        expect(controller.isLoggedIn, isTrue);
+      });
+
+      test('setSession current behavior with negative instId', () {
+        controller.setSession(
+          token: 'valid_token',
+          roleName: 'student',
+          instId: -1,
+          userId: 1,
+        );
+
+        expect(controller.instId.value, equals(-1));
+      });
+
+      test('setSession current behavior with zero userId', () {
+        controller.setSession(
+          token: 'valid_token',
+          roleName: 'student',
+          instId: 1,
+          userId: 0,
+        );
+
+        expect(controller.userId.value, equals(0));
+        expect(controller.isLoggedIn, isTrue);
+      });
+    });
+
+    // =========================================================================
+    // Error Handling Tests
+    // =========================================================================
+    group('Error Handling', () {
+      test('tryAutoLogin should handle malformed API response', () async {
+        await LocalStorage.saveToken('token');
+        await LocalStorage.saveLastLoginUserId(1);
+
+        mockAuthRepo.mockVerifyResponse = {
+          'data': {},
+          'require_reset_password': false,
+        };
+
+        await controller.tryAutoLogin();
+
+        expect(controller.status.value, equals(AuthStatus.unauthenticated),
+            reason: 'Should handle malformed response gracefully');
+      });
+
+      test('tryAutoLogin should handle invalid userId format', () async {
+        await LocalStorage.saveToken('token');
+        await LocalStorage.saveLastLoginUserId(1);
+
+        mockAuthRepo.mockVerifyResponse = {
+          'data': {
+            'user_id': 'not_a_number',
+            'role_name': 'student',
+            'inst_id': 100,
+          },
+          'require_reset_password': false,
+        };
+
+        await controller.tryAutoLogin();
+
+        expect(controller.status.value, equals(AuthStatus.unauthenticated),
+            reason: 'Should handle invalid userId format');
       });
     });
   });

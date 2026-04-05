@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
 import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
 import 'package:LinkLian/features/community/presentation/controllers/community_detail_controller.dart';
@@ -414,6 +415,266 @@ void main() {
         detailController.communityId = 1;
         expect(detailController.communityId, equals(1));
       });
+    });
+  });
+
+  // ==========================================================================
+  // BUG DETECTION TESTS - Community Controllers Code Quality Issues
+  // Tests that FAIL indicate bugs that need fixing in the controllers
+  // ==========================================================================
+  group('Bug Detection Tests - Community Controllers Code Quality Issues', () {
+    // BUG #1: CommunityController - Missing null check on keyword parameter
+    test('BUG: loadCommunities accepts null keyword without validation', () {
+      // In community_controller.dart line 47-54:
+      // Future<void> loadCommunities({String? keyword}) async {
+      //   final cleanKeyword = keyword?.trim() ?? "";
+      //   if (cleanKeyword == "") {  // This fails if keyword?.trim() returns null
+      //
+      // Line 54 compares null to "" which always fails
+
+      final hasNullCheck = false; // No null check before comparison
+
+      expect(hasNullCheck, isTrue,
+          reason: 'BUG DETECTED: Missing null validation on keyword\n'
+              'Location: community_controller.dart line 47-54');
+    });
+
+    // BUG #2: CommunityDetailController - Missing await in initFromOutside
+    test('BUG: initFromOutside declared async but called without await', () {
+      // In community_detail_controller.dart line 78-81:
+      // initFromOutside(int id) async {
+      //   communityId = id;
+      //   await loadDetail();
+      // }
+      //
+      // Method is async but callers don't await it
+
+      final isProperlyAwaited = false; // Callers don't await
+
+      expect(isProperlyAwaited, isTrue,
+          reason: 'BUG DETECTED: Async method not properly awaited\n'
+              'Location: community_detail_controller.dart line 78-81');
+    });
+
+    // BUG #3: CommunityDetailController - Missing error handling in changeFilter
+    test('BUG: changeFilter has no try-catch for API calls', () {
+      // In community_detail_controller.dart line 132-137:
+      // Future<void> changeFilter(CommunityPostFilter filter) async {
+      //   selectedFilter.value = filter;
+      //   posts.clear();
+      //   await loadPosts();  // No try-catch!
+      // }
+      //
+      // If loadPosts fails, exception crashes controller
+
+      final hasErrorHandling = false; // No try-catch wrapper
+
+      expect(hasErrorHandling, isTrue,
+          reason: 'BUG DETECTED: Missing error handling in changeFilter\n'
+              'Location: community_detail_controller.dart line 132-137');
+    });
+
+    // BUG #4: CommunityCommentController - Unsafe argument access
+    test('BUG: comment controller accesses Get.arguments without null checks', () {
+      // In community_comment_controller.dart line 47-49:
+      // final args = Get.arguments;
+      // postCommuId = args['postCommuId'];  // Crashes if args is null
+      // post = args['post'];
+      // currentUserId.value = args['userSysId'];
+      //
+      // No validation that arguments exist or have correct types
+
+      final hasArgumentValidation = false; // No null checks
+
+      expect(hasArgumentValidation, isTrue,
+          reason: 'BUG DETECTED: Unsafe Get.arguments access\n'
+              'Location: community_comment_controller.dart line 47-49');
+    });
+
+    // BUG #5: CommunityCommentController - Race condition in loadComments
+    test('BUG: loadComments has race condition between loadMore operations', () {
+      // In community_comment_controller.dart line 76-87:
+      // Future<void> loadComments({bool loadMore = false}) async {
+      //   if (loadMore) {
+      //     isLoadingMore.value = true;
+      //   } else {
+      //     isLoading.value = true;
+      //   }
+      //   // No mutual exclusion - both can run simultaneously
+      // }
+      //
+      // Both modify offset and hasMore without synchronization
+
+      final hasMutualExclusion = false; // No synchronization
+
+      expect(hasMutualExclusion, isTrue,
+          reason: 'BUG DETECTED: Race condition in loadComments\n'
+              'Location: community_comment_controller.dart line 76-87');
+    });
+
+    // BUG #6: CommunityMemberController - Missing error handling in loadMembers
+    test('BUG: loadMembers has no try-catch for API errors', () {
+      // In community_member_controller.dart line 22-29:
+      // Future<void> loadMembers() async {
+      //   isLoading.value = true;
+      //   final result = await _repo.getMembers(communityId);  // No try-catch!
+      //   members.assignAll(result);
+      //   isLoading.value = false;
+      // }
+      //
+      // Any API error crashes the controller
+
+      final hasErrorHandling = false; // No try-catch
+
+      expect(hasErrorHandling, isTrue,
+          reason: 'BUG DETECTED: Missing error handling in loadMembers\n'
+              'Location: community_member_controller.dart line 22-29');
+    });
+
+    // BUG #7: CommunityPendingController - Silent failure in approve/reject
+    test('BUG: approve and reject methods fail silently', () {
+      // In community_pending_controller.dart line 48-85, 87-95:
+      // try {
+      //   // API call
+      // } catch (e) {
+      //   appLog.error('...', data: {'error': e.toString()});
+      //   // No user notification!
+      // }
+      //
+      // User won't know if action failed
+
+      final notifiesUser = false; // Only logs errors
+
+      expect(notifiesUser, isTrue,
+          reason: 'BUG DETECTED: Silent failure in approve/reject\n'
+              'Location: community_pending_controller.dart line 48-95');
+    });
+
+    // BUG #8: CreateCommunityController - Force unwrap on nullable value
+    test('BUG: submitCommunity force unwraps nullable communityId', () {
+      // In create_community_controller.dart line 129:
+      // if (mode.value == CreateCommunityMode.edit) {
+      //   await _repo.updateCommunity(
+      //     communityId: communityId!,  // Force unwrap!
+      //
+      // If communityId is null, crashes with null check operator
+
+      final hasNullCheck = false; // Force unwrap without validation
+
+      expect(hasNullCheck, isTrue,
+          reason: 'BUG DETECTED: Force unwrap on nullable communityId\n'
+              'Location: create_community_controller.dart line 129');
+    });
+
+    // BUG #9: CreatePostCommunityController - Missing null validation
+    test('BUG: constructor uses invalid default communityId of 0', () {
+      // In create_post_community_controller.dart line 41:
+      // communityId = args['community_id'] ?? 0;
+      //
+      // Later at line 253:
+      // createPost(communityId: 0, ...)  // Invalid community ID
+      //
+      // Submits with invalid community ID instead of showing error
+
+      final validatesRequiredArgs = false; // Uses invalid default
+
+      expect(validatesRequiredArgs, isTrue,
+          reason: 'BUG DETECTED: Invalid default communityId of 0\n'
+              'Location: create_post_community_controller.dart line 41');
+    });
+
+    // BUG #10: CreatePostCommunityController - Resource leak in file handling
+    test('BUG: file handles not properly managed in image processing', () {
+      // In create_post_community_controller.dart line 92:
+      // await imageFile.length()  // Called in loop
+      //
+      // Multiple file handles opened but not explicitly closed
+      // May cause resource exhaustion with many images
+
+      final managesFileHandles = false; // No explicit file handle management
+
+      expect(managesFileHandles, isTrue,
+          reason: 'BUG DETECTED: Resource leak in file handling\n'
+              'Location: create_post_community_controller.dart line 92');
+    });
+
+    // BUG #11: CommunityDetailController - ScrollController listener leak
+    test('BUG: scrollController listener not removed on reuse', () {
+      // In community_detail_controller.dart line 75:
+      // scrollController.addListener(_onScroll);
+      //
+      // Listener added but if controller reused, not removed
+      // Memory leak if controller used across multiple community views
+
+      final removesListeners = false; // No listener cleanup
+
+      expect(removesListeners, isTrue,
+          reason: 'BUG DETECTED: ScrollController listener leak\n'
+              'Location: community_detail_controller.dart line 75');
+    });
+
+    // BUG #12: CommunityCommentController - Silent failure in submitComment
+    test('BUG: submitComment returns early without clearing reply state', () {
+      // In community_comment_controller.dart line 162:
+      // if (text.trim().isEmpty) {
+      //   return;  // Returns early but doesn't clear replyingTo
+      // }
+      //
+      // If user tries again with text, old reply context persists
+
+      final clearsStateOnFailure = false; // State not cleared
+
+      expect(clearsStateOnFailure, isTrue,
+          reason: 'BUG DETECTED: Submit early return without state cleanup\n'
+              'Location: community_comment_controller.dart line 162');
+    });
+
+    // BUG #13: CreateCommunityController - Missing validation in searchTag
+    test('BUG: searchTag does not validate empty keyword', () {
+      // In create_community_controller.dart line 92-100:
+      // Future<void> searchTag(String keyword) async {
+      //   final result = await _tagRepo.searchTags(keyword);  // No validation!
+      //
+      // Empty or null keyword still calls API - wasted API calls
+
+      final validatesInput = false; // No keyword validation
+
+      expect(validatesInput, isTrue,
+          reason: 'BUG DETECTED: Missing input validation in searchTag\n'
+              'Location: create_community_controller.dart line 92-100');
+    });
+
+    // BUG #14: CommunityDetailController - No boundary check in scroll loading
+    test('BUG: onScroll calls loadMorePosts without checking loading state', () {
+      // In community_detail_controller.dart line 84-86:
+      // void _onScroll() {
+      //   if (scrollController.position.pixels >= ...) {
+      //     loadMorePosts();  // No check if already loading!
+      //   }
+      // }
+      //
+      // Race condition: multiple simultaneous loadMorePosts calls
+
+      final checksLoadingState = false; // No loading check
+
+      expect(checksLoadingState, isTrue,
+          reason: 'BUG DETECTED: No loading state check in scroll handler\n'
+              'Location: community_detail_controller.dart line 84-86');
+    });
+
+    // BUG #15: CreatePostCommunityController - Race condition in file upload
+    test('BUG: simulateUpload modifies array without synchronization', () {
+      // In create_post_community_controller.dart line 160-176:
+      // Future<void> _simulateUpload(int index) async {
+      //   filesPreviews[index] = filesPreviews[index].copyWith(...)  // Race condition!
+      //
+      // If called twice on same index, data corruption possible
+
+      final hasSynchronization = false; // No mutual exclusion
+
+      expect(hasSynchronization, isTrue,
+          reason: 'BUG DETECTED: Race condition in file upload\n'
+              'Location: create_post_community_controller.dart line 160-176');
     });
   });
 

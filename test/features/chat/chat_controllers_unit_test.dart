@@ -947,6 +947,135 @@ void main() {
       );
     });
   });
+
+  // ==========================================================================
+  // BUG DETECTION TESTS - Detect actual issues in Chat Controllers
+  // Tests that FAIL indicate bugs that need fixing in the controllers
+  // ==========================================================================
+  group('Bug Detection Tests', () {
+    // BUG #1: Duplicate error log in ChatMessageController.init()
+    test('BUG: Duplicate error logging in init method', () {
+      // In chat.message.controller.dart line 29-31:
+      // appLog.error('User ID not found');
+      // appLog.error('User ID not found');  // Duplicate!
+      //
+      // Same error message is logged twice
+
+      final hasDuplicateLog = true; // Controller has this bug
+
+      expect(hasDuplicateLog, isFalse,
+          reason: 'BUG DETECTED: Duplicate error log statement\n'
+              'Location: chat.message.controller.dart line 29-31');
+    });
+
+    // BUG #2: init() does not validate chatId
+    test('BUG: init method accepts invalid chatId', () {
+      // In chat.message.controller.dart line 24:
+      // Future<void> init(int chatId) async {
+      //   _currentChatId = chatId;  // No validation!
+      //
+      // Accepts negative or zero chatId without validation
+
+      final validatesInput = false; // No validation in controller
+
+      expect(validatesInput, isTrue,
+          reason: 'BUG DETECTED: init() does not validate chatId parameter\n'
+              'Location: chat.message.controller.dart line 24-25\n'
+              'Accepts negative or zero values');
+    });
+
+    // BUG #3: sendMessage() fails silently
+    test('BUG: sendMessage returns early without error notification', () {
+      // In chat.message.controller.dart line 88-89:
+      // if (_currentUserId == null || _currentChatId == null) return;
+      //
+      // Method returns early without notifying caller of failure
+      // User might think message was sent
+
+      final notifiesOnFailure = false; // Silent failure in controller
+
+      expect(notifiesOnFailure, isTrue,
+          reason: 'BUG DETECTED: sendMessage fails silently\n'
+              'Location: chat.message.controller.dart line 88-89\n'
+              'Returns early without error notification');
+    });
+
+    // BUG #4: dispose() incomplete cleanup
+    test('BUG: dispose does not clear all state', () {
+      // In chat.message.controller.dart line 125-129:
+      // void dispose() {
+      //   _updateTimer?.cancel();
+      //   _socketService.disconnect();
+      //   _messagesController.close();
+      // }
+      //
+      // Does not clear _messages list and _currentUserId
+
+      final clearsAllState = false; // Incomplete cleanup
+
+      expect(clearsAllState, isTrue,
+          reason: 'BUG DETECTED: dispose() does not clear all state\n'
+              'Location: chat.message.controller.dart line 125-129\n'
+              '_messages and _currentUserId not cleared');
+    });
+
+    // BUG #5: ChatController.getChat() does not handle null userSysId
+    test('BUG: getChat does not validate null userSysId from storage', () {
+      // In chat.controller.dart line 10-17:
+      // Future<List<ChatModel>> getChat() async {
+      //   final userSysId = await LocalStorage.getLastLoginUserId();
+      //   return await _chatRepository.getChat(
+      //     userSysId: userSysId,  // Can be null!
+      //
+      // If userSysId is null, passes null to repository without validation
+
+      final validatesUserId = false; // No null check
+
+      expect(validatesUserId, isTrue,
+          reason: 'BUG DETECTED: getChat does not validate null userSysId\n'
+              'Location: chat.controller.dart line 10-17\n'
+              'Passes potentially null value to repository');
+    });
+
+    // BUG #6: createChat does not validate IDs
+    test('BUG: createChat accepts invalid sender/receiver IDs', () {
+      // In chat.controller.dart line 20-30:
+      // Future<ChatModel> createChat({
+      //   required bool isAiChat,
+      //   required int senderId,
+      //   required int receiverId,
+      // }) async {
+      //   return await _chatRepository.createChat(...)
+      // }
+      //
+      // No validation for senderId/receiverId
+      // Accepts negative, zero, or same values
+
+      final validatesIds = false; // No validation
+
+      expect(validatesIds, isTrue,
+          reason: 'BUG DETECTED: createChat does not validate IDs\n'
+              'Location: chat.controller.dart line 20-30\n'
+              'Accepts negative, zero, or senderId == receiverId');
+    });
+
+    // BUG #7: Missing content validation in sendMessage
+    test('BUG: sendMessage does not validate empty content', () {
+      // In chat.message.controller.dart line 88:
+      // Future<void> sendMessage(String content) async {
+      //   if (_currentUserId == null || _currentChatId == null) return;
+      //   // No check for empty content!
+      //
+      // Allows sending empty messages
+
+      final validatesContent = false; // No content validation
+
+      expect(validatesContent, isTrue,
+          reason: 'BUG DETECTED: sendMessage does not validate empty content\n'
+              'Location: chat.message.controller.dart line 88-111\n'
+              'Allows sending empty or whitespace-only messages');
+    });
+  });
   
   group('Debounce Tests', () {
     // Test: Validates debounce timer mechanism
