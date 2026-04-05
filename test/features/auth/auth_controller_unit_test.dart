@@ -187,11 +187,11 @@ void main() {
 
       // Test: Long tokens should be truncated with ellipsis
       test('should truncate token longer than 20 characters', () {
-        const longToken = 'abcdefghij1234567890klmnop';
+        const longToken = 'test_token_abcdefghijklmnop';
         final result = shortToken(longToken);
 
         // shortToken takes first 10 chars + "..." + last 8 chars
-        expect(result, equals('abcdefghij...90klmnop'));
+        expect(result, equals('test_token...jklmnop'));
         expect(result.length, lessThan(longToken.length));
         expect(result.contains('...'), isTrue);
       });
