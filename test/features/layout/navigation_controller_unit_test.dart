@@ -5,8 +5,6 @@ import 'package:LinkLian/features/layout/controllers/navigation_controller.dart'
 import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/features/assignment/data/repositories/assignment_repository.dart';
 import 'package:LinkLian/features/shared/repositories/class_feed_repository.dart';
-import 'package:LinkLian/features/assignment/presentation/controllers/class_assignment_controller.dart';
-import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
 
 // ─── Mock Dependencies ─────────────────────────────────────────────────────────
 
