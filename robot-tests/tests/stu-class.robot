@@ -39,7 +39,8 @@ Login Student Successfully
     Click Element    xpath=(//android.widget.EditText)
     Input Text    xpath=(//android.widget.EditText)    ${OTP}
     Click Element    accessibility_id=ยืนยัน    
-    Sleep    3s
+    Sleep    8s
+
 #    Close Application
 
 Select Class
