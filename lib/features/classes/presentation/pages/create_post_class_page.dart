@@ -1200,27 +1200,6 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     return;
                   }
 
-                  // Show success notification
-                  if (res['warning'] != null &&
-                      (res['warning'] as List).isNotEmpty) {
-                    DialogHelper.showNotification(
-                      title: 'โพสต์สำเร็จ',
-                      message: res['warning'][0]['message'],
-                      type: NotificationType.warning,
-                    );
-                  } else {
-                    DialogHelper.showNotification(
-                      title: 'โพสต์สำเร็จ',
-                      message: 'ระบบได้บันทึกโพสต์ของคุณเรียบร้อยแล้ว',
-                      type: NotificationType.success,
-                    );
-                  }
-
-                  await Future.delayed(const Duration(milliseconds: 1500));
-
-                  if (Get.isSnackbarOpen == true) Get.closeAllSnackbars();
-                  if (Get.isDialogOpen == true) Get.back();
-
                   appLog.info('[CreatePost Class page] Starting redirect');
                   appLog.info(
                     '[CreatePost Class page] Source',
@@ -1239,6 +1218,7 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
 
                   // EDIT MODE
                   if (controller.mode.value == CreatePostMode.edit) {
+                    controller.markCurrentStateAsSaved();
                     appLog.info(
                       '[CreatePost Class page] Edit mode: Going back',
                     );
@@ -1255,15 +1235,19 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                         'attachments': controller.attachments,
                       },
                     });
-                    Future.delayed(const Duration(milliseconds: 300), () {
-                      if (Get.isRegistered<ClassDetailController>()) {
-                        Get.find<ClassDetailController>().fetchPosts(
-                          keepScroll: true,
-                        );
-                      }
-                    });
                     return;
                   }
+
+                  final hasWarning =
+                      res['warning'] != null &&
+                      (res['warning'] as List).isNotEmpty;
+                  final successMessage = hasWarning
+                      ? res['warning'][0]['message'].toString()
+                      : 'ระบบได้บันทึกโพสต์ของคุณเรียบร้อยแล้ว';
+                  final successType = hasWarning
+                      ? NotificationType.warning
+                      : NotificationType.success;
+                  controller.clearDraftState();
 
                   // FROM CLASS ASSIGNMENT PAGE
                   if (controller.source == CreatePostSource.classAssignment) {
@@ -1272,6 +1256,11 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     );
                     Get.back(result: {'success': true, 'refresh': true});
                     await Future.delayed(const Duration(milliseconds: 200));
+                    DialogHelper.showNotification(
+                      title: 'โพสต์สำเร็จ',
+                      message: successMessage,
+                      type: successType,
+                    );
                     if (Get.isRegistered<ClassAssignmentController>()) {
                       Get.find<ClassAssignmentController>()
                           .refreshAssignments();
@@ -1286,6 +1275,11 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     );
                     Get.back(result: {'success': true, 'refresh': true});
                     await Future.delayed(const Duration(milliseconds: 200));
+                    DialogHelper.showNotification(
+                      title: 'โพสต์สำเร็จ',
+                      message: successMessage,
+                      type: successType,
+                    );
                     if (Get.isRegistered<ClassDetailController>()) {
                       final detailController =
                           Get.find<ClassDetailController>();
@@ -1319,6 +1313,12 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     final navController = Get.find<NavigationController>();
                     navController.showClassDetailFromRedirect(detailArgs);
                     Get.back();
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    DialogHelper.showNotification(
+                      title: 'โพสต์สำเร็จ',
+                      message: successMessage,
+                      type: successType,
+                    );
                     return;
                   }
 
@@ -1349,6 +1349,12 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                         'role': auth.roleName.value,
                       },
                     );
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    DialogHelper.showNotification(
+                      title: 'โพสต์สำเร็จ',
+                      message: successMessage,
+                      type: successType,
+                    );
 
                     return;
                   }
@@ -1357,11 +1363,13 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                   appLog.info(
                     '[CreatePost Class page] Multiple/all classes: back to feed',
                   );
-                  Get.until((route) {
-                    return route.settings.name != '/create-post' &&
-                        route.settings.name != '/CreatePostClassPage';
-                  });
+                  Get.back(result: {'success': true, 'refresh': true});
                   await Future.delayed(const Duration(milliseconds: 200));
+                  DialogHelper.showNotification(
+                    title: 'โพสต์สำเร็จ',
+                    message: successMessage,
+                    type: successType,
+                  );
                   if (Get.isRegistered<ClassFeedController>()) {
                     Get.find<ClassFeedController>().refreshFeed();
                   }

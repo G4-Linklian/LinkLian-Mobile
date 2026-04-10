@@ -51,9 +51,10 @@ dependencies:
   share_plus: ^10.1.2
   metadata_fetch: ^0.4.2
   url_launcher: ^6.1.7
-
+  scrollable_positioned_list: ^0.3.8
 
   profile_picture: ^1.0.0
+  dropdown_button2: ^2.3.9
   
   # State Management and Storage
   shared_preferences: ^2.2.2
@@ -111,7 +112,18 @@ flutter:
   fonts:
     - family: IBMPlexSansThai
       fonts:
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Light.ttf
+          weight: 300
         - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-SemiBold.ttf
+          weight: 600
         - asset: assets/fonts/IBM_Plex_Sans_Thai/IBMPlexSansThai-Bold.ttf
           weight: 700
 

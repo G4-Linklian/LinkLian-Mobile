@@ -19,29 +19,40 @@ class SectionEducatorModel {
   @JsonKey(name: 'last_name')
   final String? lastName;
 
+  @JsonKey(name: 'display_name')
+  final String? rawDisplayName;
+
   @JsonKey(name: 'profile_pic')
   final String? profilePic;
 
   @JsonKey(name: 'position')
   final String? position;
 
+  @JsonKey(name: 'is_main_teacher', defaultValue: false)
+  final bool isMainTeacherFlag;
+
   const SectionEducatorModel({
     required this.userSysId,
     this.firstName,
     this.lastName,
+    this.rawDisplayName,
     this.profilePic,
     this.position,
+    this.isMainTeacherFlag = false,
   });
 
   String get fullName {
     final first = firstName ?? '';
     final last = lastName ?? '';
-    return '$first $last'.trim();
+    final combinedName = '$first $last'.trim();
+    if (combinedName.isNotEmpty) return combinedName;
+    return rawDisplayName?.trim() ?? '';
   }
 
   String get displayName => fullName;
 
   bool get isMainTeacher {
+    if (isMainTeacherFlag) return true;
     final pos = position?.toLowerCase() ?? '';
     return pos.contains('teacher') || pos.contains('instructor') || pos.contains('main');
   }

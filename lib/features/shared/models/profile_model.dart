@@ -3,7 +3,10 @@ import '../../../data/model/education_model.dart';
 
 part 'profile_model.g.dart';
 
-int _intFromJson(dynamic value) => int.parse(value.toString());
+int _intFromJson(dynamic value) {
+  if (value == null) return 0;
+  return int.tryParse(value.toString()) ?? 0;
+}
 String _intToJson(int value) => value.toString();
 
 @JsonSerializable()

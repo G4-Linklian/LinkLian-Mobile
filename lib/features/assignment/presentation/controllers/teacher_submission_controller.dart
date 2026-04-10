@@ -3,6 +3,7 @@ import '../../data/repositories/assignment_repository.dart';
 import '../../data/repositories/submission_repository.dart';
 import '../../data/models/student_submission_status_model.dart';
 import '../../data/models/submission_detail_model.dart';
+import '../../data/models/group_model.dart';
 import '../../../../core/utils/dialog_helper.dart';
 import '../../../../core/utils/logger.dart';
 
@@ -123,9 +124,10 @@ class TeacherSubmissionController extends GetxController {
       final result = await repo.getStudentsSubmissionStatus(
         assignmentId: assignmentId!,
       );
-      allStudents.assignAll(result);
+      final groups = await repo.getAllGroups(assignmentId: assignmentId!);
 
-      _buildGroupedList(result);
+      allStudents.assignAll(result);
+      _buildGroupedList(result, groups);
       _applyFilters();
     } catch (e) {
       appLog.error('[TeacherSubmission] fetchStudents error: $e');
@@ -134,75 +136,125 @@ class TeacherSubmissionController extends GetxController {
     }
   }
 
-  void _buildGroupedList(List<StudentSubmissionStatusModel> students) {
-    final Map<int, GroupSubmissionItem> groupMap = {};
+  Map<String, dynamic> _memberEntryFromGroupMember(GroupMemberModel member) {
+    return <String, dynamic>{
+      'user_sys_id': member.userSysId,
+      'first_name': member.firstName,
+      'last_name': member.lastName,
+      'profile_pic': member.profilePic,
+      'code': null,
+    };
+  }
+
+  Map<String, dynamic> _memberEntryFromStudent(StudentSubmissionStatusModel s) {
+    return <String, dynamic>{
+      'user_sys_id': s.userSysId,
+      'first_name': s.firstName,
+      'last_name': s.lastName,
+      'profile_pic': s.profilePic,
+      'code': s.code,
+    };
+  }
+
+  bool _isSameMember(
+    Map<String, dynamic> member,
+    StudentSubmissionStatusModel student,
+  ) {
+    final memberId = member['user_sys_id'];
+    if (memberId != null && student.userSysId != null) {
+      return memberId == student.userSysId;
+    }
+
+    return (member['first_name'] ?? '') == student.firstName &&
+        (member['last_name'] ?? '') == student.lastName;
+  }
+
+  List<Map<String, dynamic>> _mergeMemberIntoGroup(
+    List<Map<String, dynamic>> members,
+    StudentSubmissionStatusModel student,
+  ) {
+    final incoming = _memberEntryFromStudent(student);
+    final index = members.indexWhere((m) => _isSameMember(m, student));
+    if (index < 0) return [...members, incoming];
+
+    final updated = [...members];
+    updated[index] = {
+      ...updated[index],
+      ...incoming,
+      'code': incoming['code'] ?? updated[index]['code'],
+      'profile_pic': incoming['profile_pic'] ?? updated[index]['profile_pic'],
+    };
+    return updated;
+  }
+
+  GroupSubmissionItem _mergeSubmissionIntoGroup(
+    GroupSubmissionItem existing,
+    StudentSubmissionStatusModel s,
+  ) {
+    final incomingHasSubmitted =
+        s.hasSubmitted || s.submissionId != null || s.submittedAt != null;
+    final mergedMarkedAt = _latestDate(existing.markedAt, s.markedAt);
+    final mergedSubmittedAt = _latestDate(existing.submittedAt, s.submittedAt);
+    final useIncomingGrade =
+        s.markedAt != null &&
+        (existing.markedAt == null || s.markedAt!.isAfter(existing.markedAt!));
+    final useIncomingSubmission =
+        s.submissionId != null &&
+        (existing.submissionId == null ||
+            (s.submittedAt != null &&
+                (existing.submittedAt == null ||
+                    s.submittedAt!.isAfter(existing.submittedAt!))) ||
+            (s.submittedAt != null &&
+                existing.submittedAt != null &&
+                s.submittedAt!.isAtSameMomentAs(existing.submittedAt!) &&
+                s.submissionId! > existing.submissionId!));
+
+    return GroupSubmissionItem(
+      groupId: existing.groupId,
+      groupName: s.groupName ?? existing.groupName,
+      hasSubmitted: existing.hasSubmitted || incomingHasSubmitted,
+      submissionId: useIncomingSubmission
+          ? s.submissionId
+          : (existing.submissionId ?? s.submissionId),
+      submittedAt: mergedSubmittedAt,
+      score: useIncomingGrade ? s.score : (existing.score ?? s.score),
+      feedback: useIncomingGrade
+          ? s.feedback
+          : (existing.feedback ?? s.feedback),
+      markedAt: mergedMarkedAt,
+      members: _mergeMemberIntoGroup(existing.members, s),
+    );
+  }
+
+  void _buildGroupedList(
+    List<StudentSubmissionStatusModel> students,
+    List<GroupModel> groups,
+  ) {
+    final Map<int, GroupSubmissionItem> groupMap = {
+      for (final group in groups)
+        if (group.groupId != null)
+          group.groupId!: GroupSubmissionItem(
+            groupId: group.groupId!,
+            groupName: group.groupName,
+            hasSubmitted: false,
+            members: group.members.map(_memberEntryFromGroupMember).toList(),
+          ),
+    };
 
     for (final s in students) {
       if (s.groupId == null) continue;
 
       final gid = s.groupId!;
-      final existing = groupMap[gid];
+      final existing =
+          groupMap[gid] ??
+          GroupSubmissionItem(
+            groupId: gid,
+            groupName: s.groupName ?? 'กลุ่ม $gid',
+            hasSubmitted: false,
+            members: const [],
+          );
 
-      final memberEntry = <String, dynamic>{
-        'user_sys_id': s.userSysId,
-        'first_name': s.firstName,
-        'last_name': s.lastName,
-        'profile_pic': s.profilePic,
-        'code': s.code,
-      };
-
-      if (existing == null) {
-        groupMap[gid] = GroupSubmissionItem(
-          groupId: gid,
-          groupName: s.groupName ?? 'กลุ่ม $gid',
-          hasSubmitted:
-              s.hasSubmitted || s.submissionId != null || s.submittedAt != null,
-          submissionId: s.submissionId,
-          submittedAt: s.submittedAt,
-          score: s.score,
-          feedback: s.feedback,
-          markedAt: s.markedAt,
-          members: [memberEntry],
-        );
-      } else {
-        final incomingHasSubmitted =
-            s.hasSubmitted || s.submissionId != null || s.submittedAt != null;
-        final mergedMarkedAt = _latestDate(existing.markedAt, s.markedAt);
-        final mergedSubmittedAt = _latestDate(
-          existing.submittedAt,
-          s.submittedAt,
-        );
-        final useIncomingGrade =
-            s.markedAt != null &&
-            (existing.markedAt == null ||
-                s.markedAt!.isAfter(existing.markedAt!));
-        final useIncomingSubmission =
-            s.submissionId != null &&
-            (existing.submissionId == null ||
-                (s.submittedAt != null &&
-                    (existing.submittedAt == null ||
-                        s.submittedAt!.isAfter(existing.submittedAt!))) ||
-                (s.submittedAt != null &&
-                    existing.submittedAt != null &&
-                    s.submittedAt!.isAtSameMomentAs(existing.submittedAt!) &&
-                    s.submissionId! > existing.submissionId!));
-
-        groupMap[gid] = GroupSubmissionItem(
-          groupId: existing.groupId,
-          groupName: existing.groupName,
-          hasSubmitted: existing.hasSubmitted || incomingHasSubmitted,
-          submissionId: useIncomingSubmission
-              ? s.submissionId
-              : (existing.submissionId ?? s.submissionId),
-          submittedAt: mergedSubmittedAt,
-          score: useIncomingGrade ? s.score : (existing.score ?? s.score),
-          feedback: useIncomingGrade
-              ? s.feedback
-              : (existing.feedback ?? s.feedback),
-          markedAt: mergedMarkedAt,
-          members: [...existing.members, memberEntry],
-        );
-      }
+      groupMap[gid] = _mergeSubmissionIntoGroup(existing, s);
     }
 
     final sorted = groupMap.values.toList()
@@ -296,9 +348,10 @@ class TeacherSubmissionController extends GetxController {
       groupResult = groupResult.where((g) {
         final nameMatch = g.groupName.toLowerCase().contains(keyword);
         final memberMatch = g.members.any((m) {
-          final full = '${m['first_name'] ?? ''} ${m['last_name'] ?? ''}'
-              .toLowerCase();
-          return full.contains(keyword);
+          final full = m['user_sys_id'] == null
+              ? 'ไม่มีบัญชีผู้ใช้งาน'
+              : '${m['first_name'] ?? ''} ${m['last_name'] ?? ''}'.trim();
+          return full.toLowerCase().contains(keyword);
         });
         return nameMatch || memberMatch;
       }).toList();
@@ -394,5 +447,4 @@ class TeacherSubmissionController extends GetxController {
       fetchSubmissionDetail(group.submissionId!);
     }
   }
-
 }

@@ -179,13 +179,14 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                       }
 
                       final post = controller.posts[index];
+                      //
                       return CardPost(
                         post: post,
                         classDetailController: controller,
                         onSelectForAI: isTeacher
                             ? null
-                            : (postId) {
-                                controller.togglePostSelection(postId);
+                            : (postContentId) {
+                                controller.togglePostSelection(postContentId);
                               },
                       );
                     },
@@ -251,25 +252,30 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
           const Color(0xFFCCBFA0); // fallback warm neutral
 
       // ── คำนวณ composite color หลัง gradient overlay ──────────────────
-      // Layer 1: AppColors.white (opacity 1.0 ที่ top)
-      // Layer 2: primaryPalette[100] = 0xFFFFF2DD, opacity 0.5
-      // Layer 3: primaryPalette[800] = 0xFF93381B, opacity 0.25
-      // บริเวณ text อยู่ใกล้ bottom → ได้รับผลหลักจาก layer 2 + 3
+      // Gradient จริง (topCenter→bottomCenter):
+      //   stop 0%  : white (solid)
+      //   stop 33% : primaryPalette[100] = 0xFFFFF2DD @ 0.75
+      //   stop 67% : primaryPalette[200] = 0xFFFFE3BB @ 0.5
+      //   stop 100%: primaryPalette[700] = 0xFFB7552B @ 0.25
+      // Text อยู่บริเวณ bottom → ได้รับผลหลักจาก stop 67% และ 100%
 
-      // blend ทีละ layer บน bgColor
       Color blended = _blendColor(
         bgColor,
-        Colors.white,
-        0.15,
-      ); // layer top (ลดลงเพราะ text อยู่ล่าง)
-      blended = _blendColor(blended, const Color(0xFFFFF2DD), 0.5); // layer 2
-      blended = _blendColor(blended, const Color(0xFF93381B), 0.25); // layer 3
+        const Color(0xFFFFE3BB), // primaryPalette[200]
+        0.5,
+      );
+      blended = _blendColor(
+        blended,
+        const Color(0xFFB7552B), // primaryPalette[700]
+        0.25,
+      );
 
       final effectiveLuminance = blended.computeLuminance();
 
-      // WCAG: > 0.5 → background สว่าง → text ดำ
-      //        ≤ 0.5 → background มืด → text ขาว
-      final useLightText = effectiveLuminance <= 0.5;
+      // threshold 0.4: เอียงฝั่ง dark text เพื่อป้องกัน edge case
+      // > 0.4 → background สว่าง → text ดำ
+      // ≤ 0.4 → background มืด  → text ขาว
+      final useLightText = effectiveLuminance <= 0.4;
 
       if (mounted) {
         setState(() {
@@ -337,7 +343,7 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
       fit: StackFit.expand,
       children: [
         // รูปภาพ — ไม่เปลี่ยน
-        Image.network(LinkLianBg.classCardHeader, fit: BoxFit.cover,),
+        Image.network(LinkLianBg.classCardHeader, fit: BoxFit.cover),
 
         // Gradient layer — ไม่เปลี่ยน
         Container(
@@ -609,7 +615,7 @@ class _FilterSection extends StatelessWidget {
             Obx(() {
               final count = controller.selectedPostIdsForAI.length;
               if (count == 0) return const SizedBox.shrink();
-              
+
               return TextButton.icon(
                 onPressed: controller.generateAISummary,
                 icon: Icon(

@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/constants/colors.dart';
 import 'package:flutter/material.dart';
 import '../../../shared/models/profile_model.dart';
 
@@ -17,32 +18,29 @@ class ProfileHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (profile.isStudent &&
-                    profile.code != null &&
-                    profile.code!.isNotEmpty) ...[
-                  Text(
-                    profile.code!,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (profile.code != null && profile.code!.isNotEmpty)
+                      Text(
+                        profile.code!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black54,
+                        ),
+                      ),
+
+                    Text(
+                      profile.fullName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  Text(
-                    profile.fullName,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ] else ...[
-                  Text(
-                    profile.fullName,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
+
                 Text(profile.email, style: const TextStyle(color: Colors.grey)),
                 if (profile.isTeacher &&
                     profile.phone != null &&
@@ -96,18 +94,41 @@ class ProfileHeader extends StatelessWidget {
   }
 
   Widget _avatar() {
-    if (profile.profilePic != null && profile.profilePic!.isNotEmpty) {
+    final hasImage =
+        profile.profilePic != null && profile.profilePic!.isNotEmpty;
+
+    final fullName = profile.fullName.trim();
+
+    if (hasImage) {
       return CircleAvatar(
         radius: 42,
         backgroundImage: NetworkImage(profile.profilePic!),
-        onBackgroundImageError: (exception, stackTrace) {},
+        onBackgroundImageError: (_, _) {},
       );
     }
+
+    if (fullName.isEmpty) {
+      return const CircleAvatar(radius: 42, child: Icon(Icons.person_off));
+    }
+
+    final parts = fullName.split(" ");
+
+    String initials;
+    if (parts.length == 1) {
+      initials = parts[0][0];
+    } else {
+      initials = parts[0][0] + parts[1][0];
+    }
+
     return CircleAvatar(
       radius: 42,
       child: Text(
-        profile.firstName[0] + profile.lastName[0],
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        initials.toUpperCase(),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 28,
+          color: AppColors.primaryPalette[700],
+        ),
       ),
     );
   }

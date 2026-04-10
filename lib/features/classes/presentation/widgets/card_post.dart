@@ -1,5 +1,9 @@
 import 'package:LinkLian/core/constants/linklian-icon.dart';
+import 'package:LinkLian/core/utils/file_viewer_page.dart';
+import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/core/utils/profile_popup_helper.dart';
+import 'package:LinkLian/features/shared/repositories/profile_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:get/get.dart';
@@ -96,10 +100,7 @@ class _CardPostState extends State<CardPost> {
     return role == 'teacher' || role == 'instructor';
   }
 
-  bool get _isTeacherPost {
-    final roleName = widget.post.roleName?.toLowerCase() ?? '';
-    return roleName == 'teacher' || roleName == 'instructor';
-  }
+  bool get _shouldShowTitle => widget.post.title.trim().isNotEmpty;
 
   bool get _canSelectForAI {
     final postType = widget.post.postType.toLowerCase();
@@ -163,19 +164,47 @@ class _CardPostState extends State<CardPost> {
                   const SizedBox(height: 12),
 
                   // ===== PROFILE ROW =====
+                  // Row(
+                  //   children: [
+                  //     _buildProfileAvatar(),
                   Row(
                     children: [
-                      _buildProfileAvatar(),
+                      GestureDetector(
+                        onTap: () {
+                          final auth = Get.find<AuthController>();
+
+                          if (widget.post.userSysId == auth.userId.value) {
+                            return;
+                          }
+
+                          _openProfilePopup();
+                        },
+                        child: _buildProfileAvatar(),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              widget.post.displayName ?? 'ไม่ทราบชื่อ',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                            GestureDetector(
+                              onTap: () {
+                                final auth = Get.find<AuthController>();
+
+                                if (widget.post.userSysId ==
+                                    auth.userId.value) {
+                                  return;
+                                }
+
+                                _openProfilePopup();
+                              },
+                              child: Text(
+                                widget.post.isUserDeleted
+                                    ? 'ไม่มีบัญชีผู้ใช้งาน'
+                                    : widget.post.displayName ?? 'ไม่ทราบชื่อ',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                             if (!widget.post.isAnonymous &&
@@ -195,8 +224,9 @@ class _CardPostState extends State<CardPost> {
 
                   const SizedBox(height: 16),
 
-                  // TITLE - แสดงเฉพาะครู
-                  if (_isTeacherPost) ...[
+                  // TITLE - show whenever post_content has a title,
+                  // even if the posting user has been deleted.
+                  if (_shouldShowTitle) ...[
                     Text(
                       widget.post.title,
                       style: const TextStyle(
@@ -385,7 +415,10 @@ class _CardPostState extends State<CardPost> {
       // No URLs, show plain text
       return Text(
         content,
-        style: TextStyle(fontSize: 15, color: AppColors.black.withValues(alpha: 0.8)),
+        style: TextStyle(
+          fontSize: 15,
+          color: AppColors.black.withValues(alpha: 0.8),
+        ),
         maxLines: maxLines,
         overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
       );
@@ -612,16 +645,18 @@ class _CardPostState extends State<CardPost> {
       }
 
       final isSelected = _classController!.selectedPostIdsForAI.contains(
-        widget.post.postId,
+        widget.post.postContentId,
       );
 
       // Check if can select this post (either already selected or has room)
-      final canSelect = _classController!.canSelectForAI(widget.post.postId);
+      final canSelect = _classController!.canSelectForAI(
+        widget.post.postContentId,
+      );
 
       return GestureDetector(
         onTap: () {
           if (canSelect && widget.onSelectForAI != null) {
-            widget.onSelectForAI!(widget.post.postId);
+            widget.onSelectForAI!(widget.post.postContentId);
           }
         },
         child: Container(
@@ -1034,7 +1069,7 @@ class _CardPostState extends State<CardPost> {
 
     if (result?['success'] == true && result?['edited'] == true) {
       debugPrint('📝 Refreshing posts after edit...');
-      await _classController!.fetchPosts();
+      await _classController!.fetchPosts(keepScroll: true);
       DialogHelper.showNotification(
         title: 'แก้ไขโพสต์สำเร็จ',
         message: 'โพสต์ของคุณถูกอัปเดตแล้ว',
@@ -1076,23 +1111,13 @@ class _CardPostState extends State<CardPost> {
       );
 
       if (widget.returnAfterDelete) {
-        Get.back(
-          result: {
-            'deleted': true,
-            'deletedPostId': postId,
-          },
-        );
+        Get.back(result: {'deleted': true, 'deletedPostId': postId});
       } else if (_hasClassController) {
         _classController!.removePostOptimistic(postId);
         await _classController!.fetchPosts(keepScroll: true);
       } else {
         // When deleting from CommentPage, return to ClassDetail with delete result.
-        Get.back(
-          result: {
-            'deleted': true,
-            'deletedPostId': postId,
-          },
-        );
+        Get.back(result: {'deleted': true, 'deletedPostId': postId});
       }
 
       DialogHelper.showNotification(
@@ -1148,6 +1173,52 @@ class _CardPostState extends State<CardPost> {
     );
   }
 
+  Future<void> _openProfilePopup() async {
+    if (widget.post.isAnonymous) return;
+    if (widget.post.userSysId == null) return;
+
+    final auth = Get.find<AuthController>();
+
+    if (auth.userId.value == widget.post.userSysId) {
+      return;
+    }
+
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      final repo = ProfileRepository(ApiClient());
+
+      // final profile = await repo.getProfile(widget.post.userSysId!);
+
+      // Get.back();
+
+      // showProfilePopup(profile);
+      final profile = await repo.getProfile(widget.post.userSysId!);
+
+      Get.back();
+
+      final isDeletedUser = profile.fullName.isEmpty;
+
+      if (isDeletedUser) {
+        DialogHelper.showNotification(
+          title: 'ไม่มีบัญชีผู้ใช้งาน',
+          message: 'บัญชีนี้ถูกลบแล้ว',
+          type: NotificationType.warning,
+        );
+        return;
+      }
+
+      showProfilePopup(profile);
+    } catch (e) {
+      if (Get.isDialogOpen ?? false) Get.back();
+
+      Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลโปรไฟล์ได้');
+    }
+  }
+
   String _formatDateTime(DateTime dt) {
     final formatter = DateFormat('HH:mm • dd/MM/yyyy', 'th');
     return formatter.format(dt);
@@ -1173,6 +1244,23 @@ class _CardPostState extends State<CardPost> {
   }
 
   Widget _buildProfileAvatar() {
+    if (widget.post.isUserDeleted) {
+      return Container(
+        width: 48,
+        height: 48,
+        decoration: const BoxDecoration(
+          color: Color(0xFFE5E7EB),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: LinkLianHugeIcon.userOff(
+            size: 26,
+            color: const Color(0xFF9CA3AF),
+          ),
+        ),
+      );
+    }
+
     if (widget.post.isAnonymous) {
       return Container(
         width: 48,
@@ -1212,8 +1300,15 @@ class _CardPostState extends State<CardPost> {
   }
 
   String _getInitial(String? name) {
-    if (name == null || name.isEmpty) return '?';
-    return name[0].toUpperCase();
+    if (name == null) return '?';
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   String _getRoleLabel(String roleName) {
@@ -1233,10 +1328,10 @@ class _CardPostState extends State<CardPost> {
 
   /// Open file in fullscreen mode
   void _openFileFullscreen(PostAttachmentModel file) {
-    Get.to(
-      () => _FileViewerPage(file: file),
-      transition: Transition.fadeIn,
-      fullscreenDialog: true,
+    FileViewerPage.open(
+      fileUrl: file.fileUrl,
+      fileName: file.originalName ?? 'ไฟล์แนบ',
+      fileType: file.fileType,
     );
   }
 
@@ -1355,231 +1450,6 @@ class _CardPostState extends State<CardPost> {
         backgroundColor: AppColors.dangerPalette[100],
       );
     }
-  }
-}
-
-/// Fullscreen File Viewer Page
-class _FileViewerPage extends StatefulWidget {
-  final PostAttachmentModel file;
-
-  const _FileViewerPage({required this.file});
-
-  @override
-  State<_FileViewerPage> createState() => _FileViewerPageState();
-}
-
-class _FileViewerPageState extends State<_FileViewerPage> {
-  String? _localPdfPath;
-  bool _isPdfLoading = false;
-  bool _pdfLoadFailed = false;
-  int _currentPage = 0;
-  int _totalPages = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    if (_isPdf(widget.file.fileType)) {
-      _loadPdf(widget.file.fileUrl);
-    }
-  }
-
-  bool _isImage(String type) {
-    final t = type.toLowerCase();
-    return t == 'jpg' ||
-        t == 'jpeg' ||
-        t == 'png' ||
-        t == 'webp' ||
-        t.contains('image');
-  }
-
-  bool _isPdf(String type) {
-    final t = type.toLowerCase();
-    return t == 'pdf' || t.contains('pdf');
-  }
-
-  Future<void> _loadPdf(String url) async {
-    if (!mounted) return;
-
-    setState(() {
-      _isPdfLoading = true;
-      _pdfLoadFailed = false;
-    });
-
-    try {
-      final fileName = url.split('/').last.split('?').first;
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/$fileName');
-
-      if (!await file.exists()) {
-        final response = await http.get(Uri.parse(url));
-        if (response.statusCode != 200) {
-          throw Exception('HTTP ${response.statusCode}');
-        }
-        await file.writeAsBytes(response.bodyBytes);
-      }
-
-      if (mounted) {
-        setState(() {
-          _localPdfPath = file.path;
-          _isPdfLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('PDF download error: $e');
-      if (mounted) {
-        setState(() {
-          _isPdfLoading = false;
-          _pdfLoadFailed = true;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primaryPalette[200],
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryPalette[500]!.withValues(alpha: 0.8),
-        leading: IconButton(
-          icon: Icon(LinkLianIcon.close, color: AppColors.dangerPalette[700]),
-          onPressed: () => Get.back(),
-        ),
-        title: Text(
-          widget.file.originalName ?? 'ไฟล์แนบ',
-          style: TextStyle(color: AppColors.primaryPalette[900], fontSize: 16),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        actions: [
-          if (_isPdf(widget.file.fileType) && _totalPages > 0)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  '${_currentPage + 1}/$_totalPages',
-                  style: TextStyle(
-                    color: AppColors.primaryPalette[900],
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: _buildFileContent(),
-    );
-  }
-
-  Widget _buildFileContent() {
-    if (_isImage(widget.file.fileType)) {
-      return Center(
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 4.0,
-          child: Image.network(
-            widget.file.fileUrl,
-            fit: BoxFit.contain,
-            errorBuilder: (_, _, _) =>
-                _buildErrorState('ไม่สามารถโหลดรูปภาพได้'),
-          ),
-        ),
-      );
-    }
-
-    if (_isPdf(widget.file.fileType)) {
-      if (_pdfLoadFailed) {
-        return _buildErrorState('ไม่สามารถโหลด PDF ได้');
-      }
-
-      if (_isPdfLoading || _localPdfPath == null) {
-        return const Center(
-          child: CircularProgressIndicator(color: AppColors.white),
-        );
-      }
-
-      return PDFView(
-        filePath: _localPdfPath!,
-        enableSwipe: true,
-        swipeHorizontal: false,
-        autoSpacing: true,
-        pageFling: true,
-        pageSnap: true,
-        defaultPage: 0,
-        fitPolicy: FitPolicy.BOTH,
-        onRender: (pages) {
-          setState(() {
-            _totalPages = pages ?? 0;
-          });
-          debugPrint('PDF rendered: $pages pages');
-        },
-        onPageChanged: (page, total) {
-          setState(() {
-            _currentPage = page ?? 0;
-            _totalPages = total ?? 0;
-          });
-        },
-        onError: (error) {
-          debugPrint('PDF error: $error');
-        },
-      );
-    }
-
-    return _buildUnsupportedFileType();
-  }
-
-  Widget _buildErrorState(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.white.withValues(alpha: 0.7),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: TextStyle(
-              color: AppColors.white.withValues(alpha: 0.7),
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUnsupportedFileType() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.insert_drive_file,
-            size: 64,
-            color: AppColors.white.withValues(alpha: 0.7),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'ไม่รองรับการดูไฟล์ประเภทนี้',
-            style: TextStyle(
-              color: AppColors.white.withValues(alpha: 0.7),
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'กรุณาดาวน์โหลดเพื่อเปิดดู',
-            style: TextStyle(
-              color: AppColors.white.withValues(alpha: 0.5),
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

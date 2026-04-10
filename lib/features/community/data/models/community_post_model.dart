@@ -17,10 +17,10 @@ class CommunityPostModel {
   final DateTime createdAt;
 
   @JsonKey(name: 'first_name')
-  final String firstName;
+  final String? firstName;
 
   @JsonKey(name: 'last_name')
-  final String lastName;
+  final String? lastName;
 
   @JsonKey(name: 'profile_pic')
   final String? profilePic;
@@ -29,16 +29,16 @@ class CommunityPostModel {
   final List<CommunityAttachmentModel> attachments;
 
   @JsonKey(name: 'community_id', fromJson: _intFromJson)
-final int communityId;
+  final int communityId;
 
   const CommunityPostModel({
     required this.postId,
     required this.communityId,
-    required this.userId, 
+    required this.userId,
     required this.content,
     required this.createdAt,
-    required this.firstName,
-    required this.lastName,
+    this.firstName,
+    this.lastName,
     this.profilePic,
     required this.attachments,
   });
@@ -48,7 +48,7 @@ final int communityId;
 
   Map<String, dynamic> toJson() => _$CommunityPostModelToJson(this);
 
-  // SAFE CONVERTERS 
+  // SAFE CONVERTERS
 
   static int _intFromJson(dynamic value) {
     if (value is int) return value;

@@ -61,20 +61,35 @@ class _ClassInfoPopupState extends State<ClassInfoPopup> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (controller.error.value.isNotEmpty) {
-                return Center(
-                  child: Text(
-                    controller.error.value,
-                    style: TextStyle(color: AppColors.dangerPalette[500]),
-                  ),
-                );
-              }
-
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (controller.error.value.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryPalette[50],
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.primaryPalette[200]!,
+                          ),
+                        ),
+                        child: Text(
+                          controller.error.value,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.primaryPalette[700],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     _buildSectionTitle('สถานที่'),
                     const SizedBox(height: 8),
                     _buildLocationSection(controller),

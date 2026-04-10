@@ -21,15 +21,13 @@ import '../../../core/constants/strings.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/constants/logo.dart';
 import '../widgets/activeIcon.dart';
-import '../../classes/presentation/pages/create_post_class_page.dart';
 import '../../notification/pages/notification_page.dart';
-import '../../chat/pages/chat.page.dart';
+import '../../chat/presentation/pages/chat.page.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
 import '../../classes/presentation/controllers/class_feed_controller.dart';
 import '../../shared/repositories/class_feed_repository.dart';
 import '../../../data/repository/semester_repository.dart';
-import '../../classes/presentation/bindings/create_post_binding.dart';
 import '../controllers/navigation_controller.dart';
 import '../../classes/presentation/pages/class_detail_page.dart';
 import '../../classes/presentation/controllers/create_post_controller.dart';
@@ -230,9 +228,12 @@ class _MainPageState extends State<MainPage> {
                               },
                             );
                           } else if (_selectedIndex == 1) {
-                            Get.to(
-                              () => const CreatePostClassPage(),
-                              binding: CreatePostBinding(),
+                            Get.toNamed(
+                              AppRoutes.createPost,
+                              arguments: {
+                                'mode': CreatePostMode.create,
+                                'source': CreatePostSource.classFeed,
+                              },
                             );
                           } else if (_selectedIndex == 2) {
                             Get.toNamed(AppRoutes.createCommunity);

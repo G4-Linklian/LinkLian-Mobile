@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/community_comment_model.dart';
 import '../../../../core/constants/colors.dart';
@@ -9,6 +10,7 @@ class CardCommentCommunity extends StatelessWidget {
   final VoidCallback? onShowMore;
   final int? remainingReplies;
   final int currentUserId;
+  final bool isPostOwnerDeleted;
 
   const CardCommentCommunity({
     super.key,
@@ -18,10 +20,13 @@ class CardCommentCommunity extends StatelessWidget {
     this.onShowMore,
     this.remainingReplies,
     required this.currentUserId,
+    required this.isPostOwnerDeleted,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDeletedUser =
+        comment.displayName == null || comment.displayName!.trim().isEmpty;
     return Padding(
       padding: EdgeInsets.only(
         left: 16.0 + depth * 32.0,
@@ -42,7 +47,9 @@ class CardCommentCommunity extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        comment.displayName ?? 'Anonymous',
+                        isDeletedUser
+                            ? 'ไม่มีบัญชีผู้ใช้งาน'
+                            : comment.displayName!,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -65,16 +72,19 @@ class CardCommentCommunity extends StatelessWidget {
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: onReply,
+                      onTap: isPostOwnerDeleted ? null : onReply,
                       child: Text(
                         'ตอบกลับ',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.primaryPalette[600],
+                          color: isPostOwnerDeleted
+                              ? Colors.grey
+                              : AppColors.primaryPalette[600],
                         ),
                       ),
                     ),
+
                     if (onShowMore != null && (remainingReplies ?? 0) > 0) ...[
                       const SizedBox(width: 12),
                       GestureDetector(
@@ -100,17 +110,48 @@ class CardCommentCommunity extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
+    final isDeletedUser = comment.displayName == 'ไม่มีบัญชีผู้ใช้งาน';
+
     return CircleAvatar(
       radius: 20,
-      backgroundColor: AppColors.primaryPalette[200],
-      foregroundImage:
-          (comment.profilePic != null && comment.profilePic!.isNotEmpty)
+
+      backgroundColor: isDeletedUser
+          ? Colors.grey[300]
+          : AppColors.primaryPalette[200],
+
+      backgroundImage:
+          (!isDeletedUser &&
+              comment.profilePic != null &&
+              comment.profilePic!.isNotEmpty)
           ? NetworkImage(comment.profilePic!)
           : null,
-      child: (comment.profilePic == null || comment.profilePic!.isEmpty)
-          ? Icon(Icons.person, color: AppColors.primaryPalette[600])
-          : null,
+
+      child: isDeletedUser
+          ? Icon(LinkLianIcon.useroff, color: Colors.grey[600], size: 20)
+          : (comment.profilePic == null || comment.profilePic!.isEmpty
+                ? Text(
+                    _getInitials(comment.displayName ?? ''),
+                    style: TextStyle(
+                      color: AppColors.primaryPalette[700],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                : null),
+      //           : null),
     );
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+
+    final parts = name.trim().split(' ');
+
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   String _formatTime(DateTime dateTime) {

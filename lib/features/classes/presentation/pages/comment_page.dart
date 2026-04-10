@@ -1,3 +1,6 @@
+import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
+import 'package:LinkLian/features/chat/presentation/services/ai_summary_notification_service.dart';
+import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -60,7 +63,10 @@ class CommentPage extends StatelessWidget {
           ),
 
           // ===== INPUT =====
-          CommentInputBar(controller: controller),
+          CommentInputBar(
+            controller: controller,
+            isUserDeleted: controller.post?.isUserDeleted ?? false,
+          ),
         ],
       ),
     );
@@ -96,8 +102,45 @@ class CommentPage extends StatelessWidget {
             ),
             child: CardPost(
               post: controller.post!,
-              onSelectForAI: null,
-              returnAfterDelete: true,
+              onSelectForAI: (postId) async {
+                final repo = AIChatRepository();
+                final summaryFuture = repo.generateSummary(postId);
+                final post = controller.post!;
+                final attachments =
+                    post.attachments
+                        ?.map(
+                          (attachment) => {
+                            "url": attachment.fileUrl,
+                            "type": attachment.fileType,
+                            "name": attachment.fileName,
+                            "original_name": attachment.originalName,
+                          },
+                        )
+                        .toList() ??
+                    const <Map<String, dynamic>>[];
+
+                AISummaryNotificationService.watchSummary(
+                  summaryFuture: summaryFuture,
+                  postContentId: postId,
+                  fallbackPostTitle: post.title,
+                  content: post.content,
+                  attachments: List<Map<String, dynamic>>.from(attachments),
+                );
+
+                Get.to(
+                  () => AIChatDetailPage(
+                    title: post.title,
+                    documentTitle: 'AI Chat',
+                    aiChatId: 0,
+                    summary: "",
+                    content: post.content,
+                    attachments: attachments,
+                    postContentId: postId,
+                    initialSummaryFuture: summaryFuture,
+                    // className: controller.post?.effectiveClassName ?? "",
+                  ),
+                );
+              },
             ),
           );
         }
@@ -151,6 +194,7 @@ class CommentPage extends StatelessWidget {
               CardComment(
                 comment: comment,
                 depth: depth,
+                disableReply: controller.post?.isUserDeleted ?? false,
                 onReply: () {
                   controller.replyingTo.value = comment;
                   controller.focusNode.requestFocus();

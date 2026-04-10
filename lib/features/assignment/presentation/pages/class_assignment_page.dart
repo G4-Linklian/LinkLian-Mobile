@@ -403,12 +403,23 @@ class _ClassAssignmentHeaderState extends State<_ClassAssignmentHeader> {
           palette.mutedColor?.color ??
           const Color(0xFFCCBFA0);
 
-      Color blended = _blendColor(bgColor, Colors.white, 0.15);
-      blended = _blendColor(blended, const Color(0xFFFFF2DD), 0.5);
-      blended = _blendColor(blended, const Color(0xFF93381B), 0.25);
+      // Gradient จริง (topCenter→bottomCenter):
+      //   stop 67% : primaryPalette[200] = 0xFFFFE3BB @ 0.5
+      //   stop 100%: primaryPalette[700] = 0xFFB7552B @ 0.25
+      // Text อยู่บริเวณ bottom → blend เฉพาะ 2 layer ล่าง
+      Color blended = _blendColor(
+        bgColor,
+        const Color(0xFFFFE3BB), // primaryPalette[200]
+        0.5,
+      );
+      blended = _blendColor(
+        blended,
+        const Color(0xFFB7552B), // primaryPalette[700]
+        0.25,
+      );
 
       final effectiveLuminance = blended.computeLuminance();
-      final useLightText = effectiveLuminance <= 0.5;
+      final useLightText = effectiveLuminance <= 0.4;
 
       if (mounted) {
         setState(() {

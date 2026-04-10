@@ -73,7 +73,7 @@ class AppColors {
 
   // Assignment Status Colors
   static const Color assignmentSubmitted = Color(0xFF3DA725);       // green - ส่งแล้ว
-  static const Color assignmentNotSubmitted = Color(0xFFFF9C57);    // orange - ยังไม่ส่ง
+  static const Color assignmentNotSubmitted = AppColors.gray;    // orange - ยังไม่ส่ง
   static const Color assignmentOverdue = Color(0xFFD30000);         // red - ยังไม่ส่งเกินกำหนด
   static const Color assignmentLateSubmitted = Color(0xFFDB763F);   // deep orange - ส่งแล้วเกินกำหนด
 }

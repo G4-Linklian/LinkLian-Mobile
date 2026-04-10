@@ -15,6 +15,63 @@ class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
 
+MediaType _resolveMediaType(String fileName) {
+    final extension = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : '';
+
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+      case 'png':
+        return MediaType('image', 'png');
+      case 'gif':
+        return MediaType('image', 'gif');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'bmp':
+        return MediaType('image', 'bmp');
+      case 'svg':
+        return MediaType('image', 'svg+xml');
+      case 'pdf':
+        return MediaType('application', 'pdf');
+      case 'doc':
+        return MediaType('application', 'msword');
+      case 'docx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.wordprocessingml.document',
+        );
+      case 'xls':
+        return MediaType('application', 'vnd.ms-excel');
+      case 'xlsx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+      case 'ppt':
+        return MediaType('application', 'vnd.ms-powerpoint');
+      case 'pptx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.presentationml.presentation',
+        );
+      case 'txt':
+        return MediaType('text', 'plain');
+      case 'csv':
+        return MediaType('text', 'csv');
+      case 'mp4':
+        return MediaType('video', 'mp4');
+      case 'mov':
+        return MediaType('video', 'quicktime');
+      case 'mp3':
+        return MediaType('audio', 'mpeg');
+      default:
+        return MediaType('application', 'octet-stream');
+    }
+  }
+
   ApiClient._internal() {
     _dio = Dio(
       BaseOptions(
@@ -238,7 +295,7 @@ extension MultipartApi on ApiClient {
           await MultipartFile.fromFile(
             file.path,
             filename: fileName,
-            contentType: MediaType('image', 'jpeg'),
+            contentType: _resolveMediaType(fileName),
           ),
         ),
       );
@@ -256,6 +313,10 @@ extension MultipartApi on ApiClient {
       extra: {'requiresAuth': requiresAuth},
     );
 
-    return _dio.post(path, data: formData, options: options);
+    return _dio.request(
+      path,
+      data: formData,
+      options: options,
+    );
   }
 }

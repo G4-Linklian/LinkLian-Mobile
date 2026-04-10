@@ -78,7 +78,7 @@ Submit Group Homework
     Input Text    xpath=//android.view.View[@content-desc="เลือกสมาชิก"]/android.widget.EditText[2]    ${FIND_MEMBER}
     Sleep    2s
     Click Element    xpath=//android.view.View[@content-desc="กิตติกร พิมเทศ"]
-        Click Element    android=new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(new UiSelector().descriptionContains("บันทึก"))
+    Click Element    android=new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(new UiSelector().descriptionContains("บันทึก"))
     Sleep    3s
     Click Element     xpath=//android.view.View[@content-desc="ส่งงาน"]
     Click Element    accessibility_id=เพิ่มไฟล์

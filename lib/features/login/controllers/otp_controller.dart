@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../../data/repository/auth_repository.dart';
+import '../../../core/services/local_storage.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../controllers/login_controller.dart';
+import '../widgets/re-password_bottom_sheet.dart';
 
 class OtpController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
@@ -110,20 +112,37 @@ class OtpController extends GetxController {
       final int userId = int.parse(result['user_id'].toString());
       final int instId = int.parse(result['inst_id'].toString());
       final String roleName = result['role_name'];
+      final bool isRepassword = result['is_repassword'] as bool? ?? true;
 
-      // 🔥 ส่งให้ AuthController คนเดียวดูแล session
-      final authController = Get.find<AuthController>();
-      Get.log('🧠 OTP using AuthController hash = ${authController.hashCode}');
-      await authController.establishSession(
-        token: token,
-        userId: userId,
-        instId: instId,
-        roleName: roleName,
-      );
-
-      Get.back(); // ปิด dialog
+      Get.back(); // ปิด OTP dialog
       Get.delete<OtpController>();
-      // Get.offAllNamed('/home');
+
+      if (!isRepassword) {
+        // save token ลง storage ก่อน เพื่อให้ ApiClient แนบ Authorization ได้
+        await LocalStorage.saveToken(token);
+
+        // ยังไม่ establish session — อยู่บน LoginPage แล้วเปิด reset bottom sheet
+        Get.bottomSheet(
+          ResetPasswordBottomSheet(
+            token: token,
+            roleName: roleName,
+            instId: instId,
+            userId: userId,
+          ),
+          isScrollControlled: true,
+          isDismissible: false,
+          enableDrag: false,
+        );
+      } else {
+        // เข้าระบบได้เลย
+        final authController = Get.find<AuthController>();
+        await authController.establishSession(
+          token: token,
+          userId: userId,
+          instId: instId,
+          roleName: roleName,
+        );
+      }
     } catch (e) {
       DialogHelper.showNotification(
         title: "เกิดข้อผิดพลาด",

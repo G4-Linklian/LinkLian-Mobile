@@ -8,6 +8,7 @@ import '../controllers/teacher_submission_controller.dart';
 import '../../data/models/group_model.dart';
 import '../../data/models/student_submission_status_model.dart';
 import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/file_viewer_page.dart';
 import 'teacher_submission_list_tab.dart';
 
 const double _kSheetMinSize = 0.25;
@@ -410,6 +411,7 @@ class _GroupTab extends StatelessWidget {
               ),
               itemBuilder: (_, index) {
                 final member = group.members[index];
+                final isDeleted = member.userSysId == null;
                 return Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -417,18 +419,35 @@ class _GroupTab extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      _buildAvatar(
-                        member.profilePic,
-                        member.firstName,
-                        member.lastName,
-                      ),
+                      isDeleted
+                          ? Container(
+                              width: 48,
+                              height: 48,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFE5E7EB),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                LinkLianIcon.userOff,
+                                size: 24,
+                                color: Color(0xFF9CA3AF),
+                              ),
+                            )
+                          : _buildAvatar(
+                              member.profilePic,
+                              member.firstName,
+                              member.lastName,
+                            ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          member.fullName,
-                          style: const TextStyle(
+                          isDeleted ? 'ไม่มีบัญชีผู้ใช้งาน' : member.fullName,
+                          style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
+                            color: isDeleted
+                                ? Colors.grey[500]
+                                : AppColors.black,
                           ),
                         ),
                       ),
@@ -953,6 +972,7 @@ class _StudentSubmissionTabState extends State<_StudentSubmissionTab> {
                           final fileType = file['file_type'] ?? '';
                           final fileSize = file['file_size'] as int? ?? 0;
                           final isUploading = file['is_uploading'] == true;
+                          final fileUrl = file['file_url'] as String?;
 
                           return _buildFileTile(
                             originalName: originalName,
@@ -961,6 +981,7 @@ class _StudentSubmissionTabState extends State<_StudentSubmissionTab> {
                             isUploading: isUploading,
                             canModifyFiles: canModifyFiles,
                             onRemove: () => controller.removeFile(index),
+                            fileUrl: fileUrl,
                           );
                         },
                         separatorBuilder: (_, _) =>
@@ -983,8 +1004,17 @@ class _StudentSubmissionTabState extends State<_StudentSubmissionTab> {
     required bool isUploading,
     required bool canModifyFiles,
     required VoidCallback onRemove,
+    String? fileUrl,
   }) {
-    return SizedBox(
+    return GestureDetector(
+      onTap: (!isUploading && fileUrl != null && fileUrl.isNotEmpty)
+          ? () => FileViewerPage.open(
+                fileUrl: fileUrl,
+                fileName: originalName,
+                fileType: fileType,
+              )
+          : null,
+      child: SizedBox(
       height: 64,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1065,7 +1095,7 @@ class _StudentSubmissionTabState extends State<_StudentSubmissionTab> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -1444,6 +1474,7 @@ class _TeacherGroupTab extends StatelessWidget {
                     ...members.asMap().entries.map((entry) {
                       final index = entry.key;
                       final member = entry.value;
+                      final isDeleted = member.userSysId == null;
                       return Container(
                         margin: EdgeInsets.only(
                           bottom: index < members.length - 1 ? 8 : 0,
@@ -1458,19 +1489,37 @@ class _TeacherGroupTab extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            _buildAvatar(
-                              member.profilePic,
-                              member.firstName,
-                              member.lastName,
-                            ),
+                            isDeleted
+                                ? Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFE5E7EB),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      LinkLianIcon.userOff,
+                                      size: 20,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  )
+                                : _buildAvatar(
+                                    member.profilePic,
+                                    member.firstName,
+                                    member.lastName,
+                                  ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                member.fullName,
-                                style: const TextStyle(
+                                isDeleted
+                                    ? 'ไม่มีบัญชีผู้ใช้งาน'
+                                    : member.fullName,
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.black,
+                                  color: isDeleted
+                                      ? Colors.grey[500]
+                                      : AppColors.black,
                                 ),
                               ),
                             ),
