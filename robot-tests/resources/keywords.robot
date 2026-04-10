@@ -12,5 +12,3 @@ Open Mobile App
     ...    appPackage=${APP_PACKAGE}
     ...    appActivity=${APP_ACTIVITY}
 
-Close Mobile App
-    Close Application

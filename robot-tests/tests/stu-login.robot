@@ -7,7 +7,6 @@ ${APPIUM_SERVER}    http://localhost:4723
 ${PLATFORM_NAME}    Android
 ${DEVICE_NAME}      emulator-5554
 ${APP}              ${CURDIR}/../../build/app/outputs/flutter-apk/app-debug.apk
-
 ${EMAIL}            jantimaploy9@gmail.com
 ${PASSWORD}         LinkLian1511
 ${OTP}              111111
