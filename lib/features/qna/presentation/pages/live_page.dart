@@ -204,7 +204,7 @@ class _LivePageState extends State<LivePage> {
                                       MediaQuery.of(context).size.height *
                                       (_chatSheetFraction <= 0.5
                                           ? 0.34
-                                          : 0.44), // 👈 ขยาย slide
+                                          : 0.44), 
                                   width: double.infinity,
                                   child: _buildSlideArea(),
                                 ),
