@@ -96,6 +96,12 @@ class NavigationController extends GetxController {
     isShowingCommunityDetail.value = true;
   }
 
+  void showCommunityDetailFromRedirect(Map<String, dynamic> args) {
+    communityDetailArgs.value = args;
+    isShowingCommunityDetail.value = true;
+    selectedIndex.value = 2;
+  }
+
   void hideCommunityDetail() {
     isShowingCommunityDetail.value = false;
     communityDetailArgs.value = null;

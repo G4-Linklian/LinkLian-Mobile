@@ -21,7 +21,8 @@ import '../../../core/constants/strings.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/constants/logo.dart';
 import '../widgets/activeIcon.dart';
-import '../../notification/pages/notification_page.dart';
+import '../../notification/presentation/pages/notification_page.dart';
+import '../../notification/presentation/bindings/notification_binding.dart';
 import '../../chat/presentation/pages/chat.page.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
@@ -247,7 +248,10 @@ class _MainPageState extends State<MainPage> {
                       ),
                     if (!_hideAddIcon) const SizedBox(width: 12),
                     GestureDetector(
-                      onTap: () => _goTo(const NotificationPage()),
+                      onTap: () => Get.to(
+                        () => const NotificationPage(),
+                        binding: NotificationBinding(),
+                      ),
                       child: Icon(
                         LinkLianIcon.notification,
                         color: AppColors.warningPalette[500],

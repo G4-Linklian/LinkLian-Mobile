@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "222221002021",
+    "project_id": "linklian-project",
+    "storage_bucket": "linklian-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:222221002021:android:8625a187d5561068d226cc",
+        "android_client_info": {
+          "package_name": "com.example.linklian"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCle8ZxGelFJipVcW7A2YltyHWytlfsdZo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -137,6 +137,13 @@ class LinkLianIcon {
   static const IconData cancel = TablerIcons.cancel;
   static const IconData delete = TablerIcons.trash;
 
+  // notification feature badges
+  static const IconData notifSocialFeed = TablerIcons.pencil;
+  static const IconData notifCommunity = TablerIcons.users_group;
+  static const IconData notifQna = TablerIcons.help_circle;
+  static const IconData notifChat = TablerIcons.message_circle_filled;
+  static const IconData notifDefault = TablerIcons.bell;
+
   // user states
   static const IconData userOff = TablerIcons.user_off;
 
