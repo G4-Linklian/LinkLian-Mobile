@@ -104,7 +104,18 @@ class _LiveHistoryPageState extends State<LiveHistoryPage> {
   void _openHistoryLive(QaLive liveItem, {bool isHistoryMode = true}) {
     final sectionId = _sectionId;
     final qaLiveId = liveItem.qaLiveId;
+    
     if (sectionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ไม่พบข้อมูลห้องเรียน')),
+      );
+      return;
+    }
+    
+    if (qaLiveId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ข้อมูลไลฟ์ไม่ถูกต้อง')),
+      );
       return;
     }
 

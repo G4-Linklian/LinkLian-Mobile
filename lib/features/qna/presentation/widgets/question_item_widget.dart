@@ -228,7 +228,7 @@ class QuestionItemWidget extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: !readOnly
+                  onPressed: slideNumber != null && slideNumber.toString().isNotEmpty
                       ? () {
                           onReply?.call(slideNumber);
                         }

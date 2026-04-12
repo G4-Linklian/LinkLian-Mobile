@@ -70,8 +70,8 @@ class LiveController extends GetxController {
     final nextLiveId = _toInt(args?['qaLiveId']);
     final nextIsHistoryMode = args?['isHistoryMode'] == true;
 
-    if (nextLiveId == null) {
-      appLog.warning('qaLiveId is null', actionPage: 'LiveController.enterLiveSessionFromArgs');
+    if (nextLiveId == null || nextLiveId <= 0) {
+      appLog.warning('qaLiveId is invalid', actionPage: 'LiveController.enterLiveSessionFromArgs', data: {'qaLiveId': nextLiveId});
       return;
     }
 
