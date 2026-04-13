@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../pages/account_page.dart';
+import '../pages/report_page.dart';
 
 class SettingsBottomSheetWithIcon extends StatelessWidget {
   const SettingsBottomSheetWithIcon({super.key});
@@ -110,9 +111,15 @@ class SettingsBottomSheet extends StatelessWidget {
           const Divider(indent: 16, endIndent: 16),
 
           _SettingItem(
-            icon: LinkLianIcon.privacy,
-            title: 'ข้อปฏิบัติส่วนบุคคล',
-            onTap: () {},
+            icon: LinkLianIcon.report,
+            title: 'รายงานปัญหา',
+            onTap: () async {
+              final result = await Get.to(() => const ReportPage());
+
+              if (result == true && context.mounted) {
+                Navigator.pop(context);
+              }
+            },
           ),
 
           const Divider(indent: 16, endIndent: 16),

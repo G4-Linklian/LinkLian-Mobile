@@ -1,9 +1,11 @@
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/core/services/api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../shared/models/profile_model.dart';
 import '../../../shared/repositories/profile_repository.dart';
 import '../../data/repositories/teaching_schedule_repository.dart';
+import '../../data/repositories/report_repository.dart';
 import '../../../auth/controller/auth_controller.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -14,15 +16,26 @@ import '../../../../config/app_routes.dart';
 class ProfileController extends GetxController {
   final ProfileRepository repo;
   final TeachingScheduleRepository scheduleRepo;
+  late final ReportRepository reportRepo;
 
-  ProfileController(this.repo, this.scheduleRepo);
+  ProfileController(this.repo, this.scheduleRepo) {
+    if (Get.isRegistered<ReportRepository>()) {
+      reportRepo = Get.find<ReportRepository>();
+    } else {
+      reportRepo = ReportRepository(ApiClient());
+    }
+  }
 
   final profile = Rxn<ProfileModel>();
   final loading = false.obs;
   final saving = false.obs;
   final ImagePicker _picker = ImagePicker();
+  final reportImages = <File>[].obs;
+  final reporting = false.obs;
   final teachingSchedules = <TeachingScheduleModel>[].obs;
   final loadingSchedule = false.obs;
+
+  static const int maxReportImages = 3;
 
   late TextEditingController firstNameCtrl;
   late TextEditingController lastNameCtrl;
@@ -352,6 +365,68 @@ class ProfileController extends GetxController {
     } else {
       profile.value = currentProfile.copyWith(profilePic: originalPic);
       _log('↩️ Avatar restored');
+    }
+  }
+
+  Future<void> pickReportImagesFromGallery() async {
+    if (reportImages.length >= maxReportImages) {
+      throw Exception('อัปโหลดรูปได้สูงสุด $maxReportImages รูป');
+    }
+
+    final picks = await _picker.pickMultiImage();
+    if (picks.isEmpty) return;
+
+    final remaining = maxReportImages - reportImages.length;
+    final selected = picks.take(remaining).map((x) => File(x.path)).toList();
+
+    reportImages.addAll(selected);
+  }
+
+  void removeReportImageAt(int index) {
+    if (index < 0 || index >= reportImages.length) return;
+    reportImages.removeAt(index);
+  }
+
+  Future<void> submitInstitutionReport({
+    required String title,
+    required String detail,
+  }) async {
+    final cleanTitle = title.trim();
+    final cleanDetail = detail.trim();
+
+    if (cleanTitle.isEmpty) {
+      throw Exception('กรุณาระบุหัวข้อปัญหา');
+    }
+    if (cleanDetail.isEmpty) {
+      throw Exception('กรุณาระบุรายละเอียดปัญหา');
+    }
+
+    final auth = Get.find<AuthController>();
+    final reporterId = auth.userId.value;
+    final instId = auth.instId.value;
+
+    if (reporterId == null || instId == null) {
+      throw Exception('ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่');
+    }
+
+    try {
+      reporting.value = true;
+
+      final reportFiles = await reportRepo.uploadReportImages(
+        reportImages.toList(),
+      );
+
+      await reportRepo.createInstitutionReport(
+        instId: instId,
+        reporterId: reporterId,
+        title: cleanTitle,
+        detail: cleanDetail,
+        reportFiles: reportFiles,
+      );
+
+      reportImages.clear();
+    } finally {
+      reporting.value = false;
     }
   }
 
