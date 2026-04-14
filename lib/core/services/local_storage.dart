@@ -10,11 +10,9 @@ class LocalStorage {
 
   static late SharedPreferences _prefs;
 
-    /// 🔥 ต้องเรียกก่อนใช้งาน
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
-
 
   static Future<void> saveToken(String token) async {
     await _prefs.setString(_tokenKey, token);
@@ -52,6 +50,18 @@ class LocalStorage {
     await _prefs.remove(_userDataKey);
   }
 
+  static Future<void> saveStringList(String key, List<String> values) async {
+    await _prefs.setStringList(key, values);
+  }
+
+  static Future<List<String>> getStringList(String key) async {
+    return _prefs.getStringList(key) ?? <String>[];
+  }
+
+  static Future<void> removeKey(String key) async {
+    await _prefs.remove(key);
+  }
+
   static Future<void> clearAll() async {
     await _prefs.clear();
   }
@@ -85,10 +95,7 @@ class LocalStorage {
 
   static Future<void> saveTokenExpiredAt(DateTime dateTime) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _tokenExpiredAtKey,
-      dateTime.toIso8601String(),
-    );
+    await prefs.setString(_tokenExpiredAtKey, dateTime.toIso8601String());
   }
 
   static Future<DateTime?> getTokenExpiredAt() async {
@@ -102,7 +109,6 @@ class LocalStorage {
     await prefs.remove(_tokenExpiredAtKey);
   }
 
-
   /// 🔥 ใช้กับ forgot password / logout
   static Future<void> clearAuthSession() async {
     final prefs = await SharedPreferences.getInstance();
@@ -112,5 +118,4 @@ class LocalStorage {
     await prefs.remove(_rememberMeKey);
     await prefs.remove(_tokenExpiredAtKey);
   }
-  
 }
