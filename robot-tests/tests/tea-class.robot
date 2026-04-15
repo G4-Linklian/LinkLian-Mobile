@@ -17,7 +17,7 @@ ${HOMEWORK_NAME}        รายงานเรื่องนักคณิ�
 ${HOMEWORK_DETAIL}      เขียนรายงานเกี่ยวกับนักคณิตศาสตร์ที่ชื่นชอบ ความยาวกระดาษ A4 1 หน้า พร้อมตกแต่ง
 
 *** Test Cases ***
-Login Student Successfully
+Login Teacher Successfully
     Open Application
     ...    ${APPIUM_SERVER}
     ...    platformName=${PLATFORM_NAME}
@@ -47,7 +47,7 @@ Login Student Successfully
 #    Close Application
 
 Select Class
-    Sleep    3s
+    Sleep    5s
     Wait Until Page Contains    ห้องเรียนของคุณ    10s
     Click Element    xpath=//android.view.View[contains(@content-desc,"คณิตศาสตร์พื้นฐาน")]
 
@@ -57,21 +57,30 @@ Create Homework
     Click Element    xpath=//android.widget.ImageView/android.view.View/android.view.View[3]
     Wait Until Page Contains    สร้างโพสต์    10s
     Click Element    accessibility_id=การบ้าน
-    Click Element    accessibility_id=งานเดี่ยว
+    #Click Element    accessibility_id=งานเดี่ยว
+    Sleep    3s
     Click Element    xpath=//android.view.View[7]//android.widget.EditText[1] 
     Input Text       xpath=//android.view.View[7]//android.widget.EditText[1]    ${HOMEWORK_NAME}
+    Press Keycode    4
+    Sleep    3s
     Click Element    xpath=//android.view.View[7]//android.widget.EditText[2]
     Input Text       xpath=//android.view.View[7]//android.widget.EditText[2]    ${HOMEWORK_DETAIL}
+    Press Keycode    4
     Sleep    2s
-    Click Element    xpath=(//android.view.View)[5]
+    Click Element    xpath=//android.view.View[5]
+    Sleep    3s
     Click Element    xpath=//android.widget.Button[contains(@content-desc,"24")]
     Click Element    accessibility_id=ตกลง
+    Sleep    2s        
     Click Element    accessibility_id=สลับไปใช้โหมดป้อนข้อมูลข้อความ
-    Click Element    accessibility_id=เลือกชั่วโมง 11
-    Click Element    accessibility_id=เลือกนาที 59
+    Sleep    2s    
+    #Click Element    xpath=//android.widget.SeekBar[contains(@content-desc,"11")]
+    #Click Element    xpath=//android.widget.SeekBar[contains(@content-desc,"59")]
     Click Element    accessibility_id=ตกลง
     Sleep    2s
-    Input Text       xpath=//android.widget.EditText[@text="10"]
+    Click Element    xpath=//android.widget.EditText[@text="100.0"]
+    Clear Text       xpath=//android.widget.EditText
+    Input Text       xpath=//android.widget.EditText    10
     Click Element    accessibility_id=โพสต์
     Sleep    3s
     Click Element    xpath=//android.view.View[1]/android.widget.Button

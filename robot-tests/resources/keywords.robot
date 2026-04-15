@@ -11,6 +11,3 @@ Open Mobile App
     ...    automationName=${AUTOMATION_NAME}
     ...    appPackage=${APP_PACKAGE}
     ...    appActivity=${APP_ACTIVITY}
-
-Close Mobile App
-    Close Application
