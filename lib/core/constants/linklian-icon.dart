@@ -127,6 +127,7 @@ class LinkLianIcon {
 
   static const IconData chevronleft = TablerIcons.chevron_left;
   static const IconData chevronright = TablerIcons.chevron_right;
+  static const IconData report = TablerIcons.help_circle;
   static const IconData arrowForward = TablerIcons.arrow_forward;
 
   static const IconData dashboard = TablerIcons.layout_dashboard;
