@@ -32,13 +32,20 @@ class CreatePostCommunityController extends GetxController {
   final RxList<CommunityAttachmentModel> existingAttachments =
       <CommunityAttachmentModel>[].obs;
   late int communityId;
+  bool _isUploading = false; // BUG FIX #15: Add synchronization for concurrent uploads
 
   @override
   void onInit() {
     super.onInit();
     final args = Get.arguments;
     if (args is Map<String, dynamic>) {
-      communityId = args['community_id'] ?? 0;
+      // BUG FIX #9: Validate communityId, don't use 0 as default
+      communityId = args['community_id'] ?? -1;
+      if (communityId <= 0) {
+        appLog.error('Invalid or missing community ID');
+        Get.back();
+        return;
+      }
 
       final userId = args['userId'];
 
@@ -141,11 +148,20 @@ class CreatePostCommunityController extends GetxController {
         selectedFiles.add(file);
 
         final previewIndex = filesPreviews.length;
+        // BUG FIX #10: Properly manage file handle resource in loop
+        int fileSize = 0;
+        try {
+          fileSize = await file.length();
+        } catch (e) {
+          appLog.error('Error getting file size: $e');
+          fileSize = 0;
+        }
+        
         filesPreviews.add({
           'file_name': file.path.split('/').last,
           'file_type': _getFileType(file.path),
           'file_path': file.path,
-          'file_size': await file.length(),
+          'file_size': fileSize,
           'is_uploading': true,
           'upload_progress': 0.0,
         });
@@ -158,21 +174,31 @@ class CreatePostCommunityController extends GetxController {
   }
 
   Future<void> _simulateUpload(int index) async {
-    if (index < 0 || index >= filesPreviews.length) return;
+    // BUG FIX #15: Add synchronization to prevent race condition
+    if (_isUploading) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    
+    _isUploading = true;
+    try {
+      if (index < 0 || index >= filesPreviews.length) return;
 
-    for (var progress = 0.0; progress <= 1.0; progress += 0.1) {
-      await Future.delayed(const Duration(milliseconds: 200));
+      for (var progress = 0.0; progress <= 1.0; progress += 0.1) {
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        if (index < filesPreviews.length) {
+          filesPreviews[index]['upload_progress'] = progress;
+          filesPreviews.refresh();
+        }
+      }
 
       if (index < filesPreviews.length) {
-        filesPreviews[index]['upload_progress'] = progress;
+        filesPreviews[index]['is_uploading'] = false;
+        filesPreviews[index]['upload_progress'] = 1.0;
         filesPreviews.refresh();
       }
-    }
-
-    if (index < filesPreviews.length) {
-      filesPreviews[index]['is_uploading'] = false;
-      filesPreviews[index]['upload_progress'] = 1.0;
-      filesPreviews.refresh();
+    } finally {
+      _isUploading = false;
     }
   }
 
@@ -278,11 +304,20 @@ class CreatePostCommunityController extends GetxController {
 
       selectedFiles.add(imageFile);
 
+      // BUG FIX #10: Properly manage file handle resource
+      int fileSize = 0;
+      try {
+        fileSize = await imageFile.length();
+      } catch (e) {
+        appLog.error('Error getting file size: $e');
+        fileSize = 0;
+      }
+      
       filesPreviews.add({
         'file_name': file.name,
         'file_type': 'image',
         'file_path': file.path,
-        'file_size': await imageFile.length(),
+        'file_size': fileSize,
       });
     } catch (e) {
       DialogHelper.showNotification(

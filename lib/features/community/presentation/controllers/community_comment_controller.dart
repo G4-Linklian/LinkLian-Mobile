@@ -44,9 +44,20 @@ class CommunityCommentController extends GetxController {
 
     final args = Get.arguments;
 
-    postCommuId = args['postCommuId'];
-    post.value = args['post'];
-    userSysId = args['userSysId'];
+    // Validate arguments exist and are of correct types
+    if (args == null) {
+      DialogHelper.showErrorDialog(description: 'ข้อมูลโพสต์ไม่ถูกต้อง');
+      return;
+    }
+
+    if (args['postCommuId'] == null || args['userSysId'] == null) {
+      DialogHelper.showErrorDialog(description: 'ข้อมูลโพสต์ไม่ถูกต้อง');
+      return;
+    }
+
+    postCommuId = args['postCommuId'] as int;
+    post.value = args['post'] as CommunityPostModel?;
+    userSysId = args['userSysId'] as int;
 
     final int? communityId = args['communityId'] as int?;
     if (communityId == null) {
@@ -75,7 +86,8 @@ class CommunityCommentController extends GetxController {
 
   Future<void> loadComments({bool loadMore = false}) async {
     if (loadMore) {
-      if (isLoadingMore.value || !hasMore) return;
+      // Prevent race condition: don't load more if regular load is in progress
+      if (isLoadingMore.value || isLoading.value || !hasMore) return;
       isLoadingMore.value = true;
     } else {
       if (isLoading.value) return;
@@ -164,9 +176,6 @@ class CommunityCommentController extends GetxController {
     final parent = replyingTo.value;
     final parentId = parent?.commentId;
 
-    textController.clear();
-    replyingTo.value = null;
-
     try {
       await _repo.createComment(
         postCommuId: postCommuId,
@@ -174,6 +183,10 @@ class CommunityCommentController extends GetxController {
         text: text,
         parentId: parentId,
       );
+
+      // Clear state only after successful submission
+      textController.clear();
+      replyingTo.value = null;
 
       await refreshComments();
 
