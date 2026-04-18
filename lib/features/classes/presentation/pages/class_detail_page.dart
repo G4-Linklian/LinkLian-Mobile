@@ -88,8 +88,12 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
       body: RefreshIndicator(
         color: AppColors.primaryPalette[500],
         onRefresh: () async {
-          appLog.info('[Class detail page] Pull to refresh', actionPage: 'ClassDetailScreen');
+          appLog.info(
+            '[Class detail page] Pull to refresh',
+            actionPage: 'ClassDetailScreen',
+          );
           await controller.fetchPosts();
+          await controller.fetchActiveLive();
         },
         child: CustomScrollView(
           controller: controller.scrollController,
@@ -325,12 +329,14 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
       0,
       255,
     );
-    final g = (srcG * (1 - dstOpacity) + dstG * dstOpacity)
-        .round()
-        .clamp(0, 255);
-    final b = (srcB * (1 - dstOpacity) + dstB * dstOpacity)
-        .round()
-        .clamp(0, 255);
+    final g = (srcG * (1 - dstOpacity) + dstG * dstOpacity).round().clamp(
+      0,
+      255,
+    );
+    final b = (srcB * (1 - dstOpacity) + dstB * dstOpacity).round().clamp(
+      0,
+      255,
+    );
     return Color.fromARGB(255, r, g, b);
   }
 
@@ -387,15 +393,17 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                             Get.find<NavigationController>().hideClassDetail(),
                       ),
                       const Spacer(),
-                      BlurIconButton(
-                        icon: Icons.search,
-                        iconSize: iconSize,
-                        onTap: () => Get.toNamed(
-                          AppRoutes.searchPost,
-                          arguments: {
-                            'sectionId': controller.sectionId.value,
-                            'subjectName': controller.subjectNameTh.value,
-                          },
+                      _PulsingSearchButton(
+                        child: BlurIconButton(
+                          icon: Icons.search,
+                          iconSize: iconSize,
+                          onTap: () => Get.toNamed(
+                            AppRoutes.searchPost,
+                            arguments: {
+                              'sectionId': controller.sectionId.value,
+                              'subjectName': controller.subjectNameTh.value,
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -432,7 +440,7 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                             style: TextStyle(
                               fontSize: titleFontSize,
                               fontWeight: FontWeight.w700,
-                              color: _textColor, 
+                              color: _textColor,
                               shadows: _textShadow,
                             ),
                             maxLines: expandRatio > 0.5 ? 2 : 1,
@@ -458,7 +466,7 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                             fontSize: sectionFontSize,
                             fontWeight: FontWeight.w500,
                             color: _textColor.withValues(alpha: 0.85),
-                            shadows: _textShadow, 
+                            shadows: _textShadow,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -485,7 +493,7 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                                 style: TextStyle(
                                   fontSize: teacherFontSize,
                                   fontWeight: FontWeight.w500,
-                                  color: _textColor, 
+                                  color: _textColor,
                                   shadows: _textShadow,
                                 ),
                                 maxLines: 1,
@@ -617,27 +625,28 @@ class _FilterSection extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          if (!isTeacher)
-            Obx(() {
-              final count = controller.selectedPostIdsForAI.length;
-              if (count == 0) return const SizedBox.shrink();
+          // if (!isTeacher)
+          //   Obx(() {
+          //     final count = controller.selectedPostIdsForAI.length;
+          //     if (count == 0) return const SizedBox.shrink();
 
-              return TextButton.icon(
-                onPressed: controller.generateAISummary,
-                icon: Icon(
-                  Icons.auto_awesome,
-                  color: AppColors.primaryPalette[500],
-                  size: 18,
-                ),
-                label: Text(
-                  'เริ่มสรุปเนื้อหา',
-                  style: TextStyle(
-                    color: AppColors.primaryPalette[500],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              );
-            }),
+          //     return TextButton.icon(
+          //       onPressed: controller.generateAISummary,
+          //       icon: Icon(
+          //         Icons.auto_awesome,
+          //         color: AppColors.primaryPalette[500],
+          //         size: 18,
+          //       ),
+          //       label: Text(
+          //         'เริ่มสรุปเนื้อหา',
+          //         style: TextStyle(
+          //           color: AppColors.primaryPalette[500],
+          //           fontWeight: FontWeight.w600,
+          //         ),
+          //       ),
+          //     );
+          //   }),
+          if (!isTeacher) LiveAndAIAction(controller: controller),
         ],
       ),
     );
@@ -731,5 +740,331 @@ class _FilterSectionDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(_FilterSectionDelegate oldDelegate) {
     return oldDelegate.child != child;
+  }
+}
+
+class LiveAndAIAction extends StatelessWidget {
+  final ClassDetailController controller;
+
+  const LiveAndAIAction({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final live = controller.activeLive.value;
+      final selectedCount = controller.selectedPostIdsForAI.length;
+
+      if (selectedCount > 0) {
+        return TextButton.icon(
+          onPressed: controller.generateAISummary,
+          icon: Icon(
+            Icons.auto_awesome,
+            color: AppColors.primaryPalette[500],
+            size: 18,
+          ),
+          label: Text(
+            'เริ่มสรุปเนื้อหา',
+            style: TextStyle(
+              color: AppColors.primaryPalette[500],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      }
+
+      if (live != null) {
+        return Builder(
+          builder: (context) => GestureDetector(
+            onTap: () {
+              final RenderBox button = context.findRenderObject() as RenderBox;
+              final RenderBox overlay =
+                  Overlay.of(context).context.findRenderObject() as RenderBox;
+              final buttonWidth = button.size.width;
+              final buttonPos = button.localToGlobal(
+                Offset.zero,
+                ancestor: overlay,
+              );
+
+              showMenu<String>(
+                context: context,
+                position: RelativeRect.fromLTRB(
+                  buttonPos.dx,
+                  buttonPos.dy + button.size.height + 8,
+                  overlay.size.width - (buttonPos.dx + buttonWidth),
+                  0,
+                ),
+                constraints: BoxConstraints(minWidth: buttonWidth),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                items: const [
+                  PopupMenuItem<String>(
+                    value: 'live',
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Text('เข้าดูไลฟ์'),
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'history',
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Text('ดูประวัติไลฟ์'),
+                    ),
+                  ),
+                ],
+              ).then((value) async {
+                if (value == null) return;
+
+                if (value == 'live') {
+                  final qaLiveId = live?['qa_live_id'];
+                  if (qaLiveId == null) {
+                    Get.snackbar('ข้อผิดพลาด', 'ไม่มีข้อมูลไลฟ์');
+                    return;
+                  }
+
+                  try {
+                    await Get.toNamed(
+                      AppRoutes.livePage,
+                      arguments: {
+                        'qaLiveId': qaLiveId,
+                        'sectionId': controller.sectionId.value,
+                      },
+                    );
+                    await controller.fetchActiveLive();
+                  } catch (e) {
+                    Get.snackbar('ข้อผิดพลาด', 'ไม่สามารถเข้าดูไลฟ์ได้');
+                  }
+                } else if (value == 'history') {
+                  Get.toNamed(
+                    AppRoutes.liveHistory,
+                    arguments: {'sectionId': controller.sectionId.value},
+                  );
+                }
+              });
+            },
+            child: _buildButton(
+              icon: Icons.circle,
+              text: "ไลฟ์",
+              color: Colors.red,
+              animateLive: true,
+            ),
+          ),
+        );
+      }
+
+      if (controller.hasLiveHistory.value) {
+        return GestureDetector(
+          onTap: () {
+            Get.toNamed(
+              AppRoutes.liveHistory,
+              arguments: {'sectionId': controller.sectionId.value},
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              border: Border.all(
+                color: AppColors.primaryPalette[700]!,
+                width: 1.5,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  LinkLianIcon.live,
+                  size: 18,
+                  color: AppColors.primaryPalette[700],
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'ประวัติไลฟ์',
+                  style: TextStyle(
+                    color: AppColors.primaryPalette[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      return const SizedBox.shrink();
+    });
+  }
+
+  Widget _buildButton({
+    required IconData icon,
+    required String text,
+    required Color color,
+    bool animateLive = false,
+  }) {
+    final baseButton = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          animateLive
+              ? const _PulsingLiveIcon()
+              : Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(text, style: const TextStyle(color: Colors.white)),
+        ],
+      ),
+    );
+
+    if (!animateLive) return baseButton;
+
+    return _PulsingLiveButton(child: baseButton);
+  }
+}
+
+class _PulsingLiveButton extends StatefulWidget {
+  final Widget child;
+
+  const _PulsingLiveButton({required this.child});
+
+  @override
+  State<_PulsingLiveButton> createState() => _PulsingLiveButtonState();
+}
+
+class _PulsingLiveButtonState extends State<_PulsingLiveButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final scale = 0.97 + (0.06 * t);
+
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: widget.child,
+    );
+  }
+}
+
+class _PulsingLiveIcon extends StatefulWidget {
+  const _PulsingLiveIcon();
+
+  @override
+  State<_PulsingLiveIcon> createState() => _PulsingLiveIconState();
+}
+
+class _PulsingLiveIconState extends State<_PulsingLiveIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final scale = 0.95 + (0.2 * t);
+        final glowOpacity = (0.40 * (1 - t)).clamp(0.0, 0.40);
+
+        return SizedBox(
+          width: 16,
+          height: 16,
+          child: Transform.scale(
+            scale: scale,
+            child: Icon(
+              LinkLianIcon.live,
+              size: 16,
+              color: Colors.white.withValues(alpha: 0.85 + (0.15 * t)),
+              shadows: [
+                Shadow(
+                  blurRadius: 8,
+                  color: Colors.white.withValues(alpha: glowOpacity),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PulsingSearchButton extends StatefulWidget {
+  final Widget child;
+
+  const _PulsingSearchButton({required this.child});
+
+  @override
+  State<_PulsingSearchButton> createState() => _PulsingSearchButtonState();
+}
+
+class _PulsingSearchButtonState extends State<_PulsingSearchButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final scale = 0.96 + (0.08 * t);
+
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: widget.child,
+    );
   }
 }

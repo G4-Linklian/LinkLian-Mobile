@@ -28,4 +28,7 @@ class AppRoutes {
   static const String studentAssignmentDetail = '/student-assignment-detail';
   static const String notification = '/notification';
   static const String qnaLive = '/qna-live';
+
+  static const String livePage = '/live';
+  static const String liveHistory = '/live-history';
 }

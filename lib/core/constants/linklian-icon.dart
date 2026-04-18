@@ -116,6 +116,7 @@ class LinkLianIcon {
   static const IconData back = TablerIcons.chevron_left;
   static const IconData filterpost = TablerIcons.filter;
   static const IconData send = TablerIcons.brand_telegram;
+  static const IconData upvote = TablerIcons.arrow_big_up_lines;
 
   // settings
   static const IconData settings = TablerIcons.settings;
@@ -126,6 +127,8 @@ class LinkLianIcon {
 
   static const IconData chevronleft = TablerIcons.chevron_left;
   static const IconData chevronright = TablerIcons.chevron_right;
+  static const IconData report = TablerIcons.help_circle;
+  static const IconData arrowForward = TablerIcons.arrow_forward;
 
   static const IconData dashboard = TablerIcons.layout_dashboard;
   static const IconData filter = TablerIcons.filter;
@@ -164,8 +167,9 @@ class LinkLianIcon {
   static const IconData circleDot = TablerIcons.circle_dot;
   static const IconData users = TablerIcons.users;
 
-  static const IconData useroff = Icons.person_off;
-  static const IconData user = Icons.person;
+  static const IconData useroff = TablerIcons.user_off;
+  static const IconData user = TablerIcons.user;
+  static const IconData live = TablerIcons.broadcast;
 
   static double? get fontSubheading => null;
 }

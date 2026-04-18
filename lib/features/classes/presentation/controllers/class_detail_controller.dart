@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
 import 'package:LinkLian/features/chat/presentation/services/ai_summary_notification_service.dart';
+import 'package:LinkLian/features/auth/controller/auth_controller.dart';
 import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
+import 'package:LinkLian/core/services/socket_service.dart';
+import 'package:LinkLian/features/shared/repositories/qna_repository.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'class_detail_filter.dart';
 import '../../../shared/repositories/post_repository.dart';
@@ -24,6 +30,9 @@ class ClassDetailController extends GetxController {
   final RxList<PostModel> posts = <PostModel>[].obs;
   final RxSet<int> selectedPostIdsForAI = <int>{}.obs;
 
+  final Rxn<dynamic> activeLive = Rxn<dynamic>();
+  final hasLiveHistory = false.obs;
+
   static const int maxAISelectCount = 1;
 
   final schedules = <Map<String, dynamic>>[].obs;
@@ -33,7 +42,12 @@ class ClassDetailController extends GetxController {
 
   final PostRepository _postRepository = PostRepository();
   final ClassFeedRepository _classFeedRepository = ClassFeedRepository();
+  final QnaRepository _qnaRepository = QnaRepository();
+  final SocketService _socket = SocketService();
   final ScrollController scrollController = ScrollController();
+  StreamSubscription<dynamic>? _qaSubscription;
+  Timer? _activeLivePollingTimer;
+  int? _joinedSectionId;
 
   // ── Highlight / scroll-to-post (มาจาก notification) ──────────────────────
   int? _highlightPostId;
@@ -69,7 +83,7 @@ class ClassDetailController extends GetxController {
   }
 
   DateTime? _lastFetchTime;
-  static const _refreshThresholdSeconds = 30; 
+  static const _refreshThresholdSeconds = 30;
   List<int> get effectiveSectionIds {
     return [if (sectionId.value != null) sectionId.value!];
   }
@@ -178,6 +192,7 @@ class ClassDetailController extends GetxController {
     effectiveClassName.value = args['className'] as String? ?? '';
 
     fetchClassDetailFromFeed();
+    unawaited(fetchHasLiveHistory());
 
     if (isNewSection) {
       // fetchPosts จะ trigger scroll หลัง load เสร็จ
@@ -195,6 +210,99 @@ class ClassDetailController extends GetxController {
         });
       }
     }
+    fetchActiveLive();
+    unawaited(_connectSectionLiveSocket());
+    _startActiveLivePolling();
+  }
+
+  void _startActiveLivePolling() {
+    _activeLivePollingTimer?.cancel();
+    _activeLivePollingTimer = Timer.periodic(const Duration(seconds: 6), (_) {
+      if (sectionId.value == null) return;
+      unawaited(fetchActiveLive());
+      unawaited(fetchHasLiveHistory());
+    });
+  }
+
+  Future<void> _connectSectionLiveSocket() async {
+    final currentSectionId = sectionId.value;
+    if (currentSectionId == null) {
+      return;
+    }
+
+    final auth = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
+    final userId = auth?.userId.value;
+    if (userId == null) {
+      return;
+    }
+
+    try {
+      if (!_socket.isQaConnected) {
+        final qaSocketUrl =
+            '${dotenv.env['SOCKET_URL'] ?? 'wss://uat-socket.linklian.org/ws'}/qa';
+        await _socket.connectQaLive(qaSocketUrl);
+      }
+
+      if (_joinedSectionId != currentSectionId) {
+        if (_joinedSectionId != null) {
+          _socket.leaveQaSectionRoom(
+            userId: userId,
+            sectionId: _joinedSectionId!,
+          );
+        }
+        _socket.joinQaSectionRoom(userId: userId, sectionId: currentSectionId);
+        _joinedSectionId = currentSectionId;
+      }
+
+      await _qaSubscription?.cancel();
+      _qaSubscription = _socket.qaStream.listen(_handleQaSocketEvent);
+    } catch (e) {
+      appLog.error('[ClassDetail] QA socket connect error: $e');
+    }
+  }
+
+  void _handleQaSocketEvent(dynamic event) {
+    if (event is! Map) return;
+
+    final root = Map<String, dynamic>.from(event);
+    final nestedData = root['data'] is Map
+        ? Map<String, dynamic>.from(root['data'] as Map)
+        : null;
+
+    final type = (root['type'] ?? nestedData?['type'])?.toString();
+    if (type == null || type.isEmpty) return;
+
+    final payloadRaw = root['payload'] ?? nestedData?['payload'] ?? root;
+    final payload = payloadRaw is Map
+        ? Map<String, dynamic>.from(payloadRaw)
+        : <String, dynamic>{};
+
+    final payloadSectionId = _toInt(payload['section_id']);
+    final currentSectionId = sectionId.value;
+    if (payloadSectionId != null &&
+        currentSectionId != null &&
+        payloadSectionId != currentSectionId) {
+      return;
+    }
+
+    if (type == 'QA_LIVE_STARTED') {
+      unawaited(fetchActiveLive());
+      return;
+    }
+
+    if (type == 'QA_LIVE_ENDED') {
+      activeLive.value = null;
+      unawaited(fetchHasLiveHistory());
+    }
+  }
+
+  int? _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
   }
 
   Future<void> refreshIfNeeded() async {
@@ -208,10 +316,7 @@ class ClassDetailController extends GetxController {
 
     final lastFetch = _lastFetchTime;
     if (lastFetch == null) {
-      appLog.info(
-        'Never loaded - fetching',
-        actionPage: 'ClassDetailScreen',
-      );
+      appLog.info('Never loaded - fetching', actionPage: 'ClassDetailScreen');
       await fetchPosts();
       return;
     }
@@ -491,11 +596,9 @@ class ClassDetailController extends GetxController {
       if (selectedPostIdsForAI.length < maxAISelectCount) {
         selectedPostIdsForAI.add(postId);
       }
-
     }
   }
 
- 
   bool canSelectForAI(int postContentId) {
     return selectedPostIdsForAI.contains(postContentId) ||
         selectedPostIdsForAI.length < maxAISelectCount;
@@ -559,6 +662,39 @@ class ClassDetailController extends GetxController {
     }
   }
 
+  Future<void> fetchActiveLive() async {
+    try {
+      if (sectionId.value == null) {
+        activeLive.value = null;
+        return;
+      }
+
+      final res = await _qnaRepository.getActiveLive(
+        sectionId: sectionId.value!,
+      );
+
+      activeLive.value = res?.toJson();
+    } catch (e) {
+      activeLive.value = null;
+    }
+  }
+
+  Future<void> fetchHasLiveHistory() async {
+    try {
+      if (sectionId.value == null) {
+        hasLiveHistory.value = false;
+        return;
+      }
+
+      final history = await _qnaRepository.getLiveHistory(
+        sectionId: sectionId.value!,
+      );
+      hasLiveHistory.value = history.isNotEmpty;
+    } catch (e) {
+      hasLiveHistory.value = false;
+    }
+  }
+
   void scrollToTop() {
     Future.delayed(const Duration(milliseconds: 300), () {
       if (scrollController.hasClients) {
@@ -573,6 +709,17 @@ class ClassDetailController extends GetxController {
 
   @override
   void onClose() {
+    final auth = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
+    final userId = auth?.userId.value;
+    final joinedSectionId = _joinedSectionId;
+    if (userId != null && joinedSectionId != null) {
+      _socket.leaveQaSectionRoom(userId: userId, sectionId: joinedSectionId);
+    }
+    _qaSubscription?.cancel();
+    _activeLivePollingTimer?.cancel();
+    _joinedSectionId = null;
     scrollController.dispose();
     selectedPostIdsForAI.clear();
     super.onClose();

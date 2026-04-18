@@ -5,6 +5,7 @@ import 'package:LinkLian/features/community/data/repositories/community_post_rep
 import 'package:LinkLian/features/community/data/repositories/community_repository.dart';
 import 'package:LinkLian/features/shared/repositories/profile_repository.dart';
 import 'package:LinkLian/features/profile/data/repositories/teaching_schedule_repository.dart';
+import 'package:LinkLian/features/profile/data/repositories/report_repository.dart';
 import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
 import 'package:LinkLian/features/community/presentation/controllers/community_detail_controller.dart';
 import 'package:LinkLian/features/community/presentation/pages/community_detail_page.dart';
@@ -96,6 +97,9 @@ class _MainPageState extends State<MainPage> {
         TeachingScheduleRepository(Get.find<ApiClient>()),
         permanent: true,
       );
+    }
+    if (!Get.isRegistered<ReportRepository>()) {
+      Get.put(ReportRepository(Get.find<ApiClient>()), permanent: true);
     }
     if (!Get.isRegistered<ProfileController>()) {
       Get.put(

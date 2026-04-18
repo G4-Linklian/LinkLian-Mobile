@@ -13,6 +13,8 @@ import 'package:LinkLian/features/community/presentation/pages/community_search_
 import 'package:LinkLian/features/community/presentation/pages/create_community_page.dart';
 import 'package:LinkLian/features/community/presentation/pages/create_post_commu_page.dart';
 import 'package:LinkLian/features/profile/presentation/bindings/profile_binding.dart';
+import 'package:LinkLian/features/qna/presentation/pages/live_history_page.dart';
+import 'package:LinkLian/features/qna/presentation/pages/live_page.dart';
 import 'package:LinkLian/main.dart';
 import 'package:get/get.dart';
 import '../config/app_routes.dart';
@@ -66,6 +68,17 @@ class AppRouter {
       page: () => const ClassDetailPage(),
       bindings: [ClassDetailBinding(), BookmarkBinding()],
       // Use right to left transition for normal navigation
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.livePage,
+      page: () => LivePage(),
+      transition: Transition.rightToLeft,
+    ),
+
+    GetPage(
+      name: AppRoutes.liveHistory,
+      page: () => const LiveHistoryPage(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -148,22 +161,22 @@ class AppRouter {
       binding: ProfileBinding(),
     ),
     GetPage(
-  name: AppRoutes.searchAssignment,
-  page: () => const SearchAssignmentPage(),
-  binding: BindingsBuilder(() {
-    // Ensure repository exists (may already be registered by NavigationController)
-    if (!Get.isRegistered<AssignmentRepository>()) {
-      Get.put<AssignmentRepository>(
-        AssignmentRepository(apiClient: Get.find()),
-        permanent: true,
-      );
-    }
-    Get.lazyPut<SearchAssignmentController>(
-      () => SearchAssignmentController(),
-    );
-  }),
-  transition: Transition.rightToLeft,
-),
+      name: AppRoutes.searchAssignment,
+      page: () => const SearchAssignmentPage(),
+      binding: BindingsBuilder(() {
+        // Ensure repository exists (may already be registered by NavigationController)
+        if (!Get.isRegistered<AssignmentRepository>()) {
+          Get.put<AssignmentRepository>(
+            AssignmentRepository(apiClient: Get.find()),
+            permanent: true,
+          );
+        }
+        Get.lazyPut<SearchAssignmentController>(
+          () => SearchAssignmentController(),
+        );
+      }),
+      transition: Transition.rightToLeft,
+    ),
     GetPage(
       name: AppRoutes.studentAssignmentDetail,
       page: () => const StudentAssignmentDetailPage(),
