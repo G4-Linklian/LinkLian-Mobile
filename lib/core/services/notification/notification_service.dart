@@ -33,19 +33,33 @@ class NotificationService {
     // 2. connect notification socket แล้วส่ง REGISTER_NOTI
     await _socket.connectNotification(userId);
 
-    // 3. listen notification stream สำหรับ NOTIFICATION event
+    // 3. โหลด unread count ครั้งแรก
+    await refreshUnreadCount();
+
+    // 4. listen notification stream สำหรับ NOTIFICATION event
     _socket.notiStream.listen((data) {
       if (data is Map && data['type'] == 'NOTIFICATION') {
-        // DEBUG — ลบออกหลัง verify
         appLog.debug('Socket NOTIFICATION raw payload', data: data['payload']);
         final payload = NotificationPayload.fromSocket(
           Map<String, dynamic>.from(data['payload'] ?? {}),
         );
         inAppNotification.value = payload;
+        // เพิ่ม badge ทันทีโดยไม่ต้องเรียก API ใหม่
+        unreadCount.value++;
       }
     });
 
     appLog.info('NotificationService initialized for user $userId');
+  }
+
+  /// โหลด unread count จาก API — เรียกตอน init และหลัง mark all read
+  Future<void> refreshUnreadCount() async {
+    try {
+      final api = Get.find<ApiClient>();
+      final res = await api.get<Map<String, dynamic>>('/notification/unread-count');
+      final data = res.data?['data'];
+      unreadCount.value = int.tryParse(data?['unread_count']?.toString() ?? '0') ?? 0;
+    } catch (_) {}
   }
 
   Future<void> dispose({required int userId}) async {

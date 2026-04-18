@@ -1,12 +1,24 @@
 import 'dart:io';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/firebase_options.dart';
 import 'notification_payload.dart';
 
-/// Background message handler — ต้องเป็น top-level function
+/// Background message handler — ต้องเป็น top-level function เท่านั้น
+/// Android จะแสดง system notification อัตโนมัติจาก notification block ใน FCM payload
+/// Handler นี้ทำงานใน isolate แยก — ใช้สำหรับ log และ side-effects เท่านั้น
 @pragma('vm:entry-point')
 Future<void> _onBackgroundMessage(RemoteMessage message) async {
-  appLog.info('FCM background: ${message.data}');
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  final payload = NotificationPayload.fromFCM(message.data);
+  appLog.info(
+    'FCM background received: '
+    'type=${payload.refType} '
+    'id=${payload.notificationId} '
+    'from=${payload.actorName}',
+  );
 }
 
 class FCMService {

@@ -8,6 +8,14 @@ class NotiDataModel {
   final String refType;
   final String? sectionId;
   final String? communityId;
+  /// ชื่อโพสต์ที่ถูก comment/reply — ใช้แสดง sub-heading ใน notification card
+  final String? postTitle;
+  /// จำนวนวันก่อนถึงกำหนดส่ง assignment — ใช้แสดง badge "ครบกำหนดในอีก N วัน"
+  final int? daysUntilDeadline;
+  /// ประเภทของโพสต์ใน social-feed: 'assignment' | 'announcement' | 'question'
+  final String? postType;
+  /// QnA Live ID — ใช้ navigate ไปยัง live session ที่ถูกต้อง (มีเฉพาะ ref_type = 'qna-question')
+  final String? qaLiveId;
 
   const NotiDataModel({
     required this.title,
@@ -17,6 +25,10 @@ class NotiDataModel {
     required this.refType,
     this.sectionId,
     this.communityId,
+    this.postTitle,
+    this.daysUntilDeadline,
+    this.postType,
+    this.qaLiveId,
   });
 
   factory NotiDataModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +40,10 @@ class NotiDataModel {
       refType: json['ref_type']?.toString() ?? '',
       sectionId: json['section_id']?.toString(),
       communityId: json['community_id']?.toString(),
+      postTitle: json['post_title']?.toString(),
+      daysUntilDeadline: int.tryParse(json['days_until_deadline']?.toString() ?? ''),
+      postType: json['post_type']?.toString(),
+      qaLiveId: json['qa_live_id']?.toString(),
     );
   }
 }

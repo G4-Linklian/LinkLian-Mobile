@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:LinkLian/core/services/notification/notification_service.dart';
 import 'package:LinkLian/core/utils/notification_navigation_helper.dart';
@@ -26,16 +27,29 @@ class NotificationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadNotifications();
-    loadUnreadCount();
+
+    // ต้อง defer การเซต state ออกไปหลัง build frame ปัจจุบัน
+    // เพราะ onInit() ถูกเรียกระหว่าง build phase ของ GetView
+    // การเซต Rx value ตอนนั้นทำให้ Obx ใน widget อื่น rebuild ทับกัน
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService().unreadCount.value = 0;
+    });
+
+    _loadThenMarkAllRead();
 
     // รีเฟรชเมื่อมี notification ใหม่เข้ามาจาก Socket
     ever(NotificationService().inAppNotification, (NotificationPayload? payload) {
       if (payload != null) {
         loadNotifications(refresh: true);
-        loadUnreadCount();
       }
     });
+  }
+
+  /// โหลด notification ก่อน แล้วค่อย mark all read
+  /// เพื่อให้ badge หายทันที แต่ UI ยังแสดงสถานะถูกต้อง
+  Future<void> _loadThenMarkAllRead() async {
+    await loadNotifications();
+    await markAllAsRead();
   }
 
   Future<void> loadNotifications({bool refresh = false}) async {
@@ -75,12 +89,6 @@ class NotificationController extends GetxController {
     }
   }
 
-  Future<void> loadUnreadCount() async {
-    try {
-      unreadCount.value = await _repo.getUnreadCount();
-    } catch (_) {}
-  }
-
   Future<void> onTapNotification(NotificationModel n) async {
     if (!n.isRead) {
       await _repo.markAsRead(n.notificationId);
@@ -90,6 +98,9 @@ class NotificationController extends GetxController {
       }
       if (unreadCount.value > 0) unreadCount.value--;
     }
+
+    // ปิดหน้าแจ้งเตือนก่อน navigate เสมอ
+    Get.back();
 
     NotificationNavigationHelper.navigate(
       NotificationPayload(

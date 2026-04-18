@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:LinkLian/core/utils/logger.dart';
@@ -74,7 +75,7 @@ class SocketService {
   Future<void> disconnectNotification() async {
     await _notiSub?.cancel();
     _notiSub = null;
-    await _notiChannel?.sink.close();
+    await _notiChannel?.sink.close(WebSocketStatus.normalClosure);
     _notiChannel = null;
     _notiConnected = false;
     _notiUserId = null;
@@ -165,7 +166,7 @@ class SocketService {
 
   void disconnect() {
     if (_isConnected) {
-      _channel?.sink.close();
+      _channel?.sink.close(WebSocketStatus.normalClosure);
       _isConnected = false;
       appLog.info('Socket manual disconnect');
     }

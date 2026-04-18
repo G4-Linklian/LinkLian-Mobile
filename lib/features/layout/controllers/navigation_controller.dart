@@ -19,6 +19,18 @@ class NavigationController extends GetxController {
   final Rxn<Map<String, dynamic>> communityDetailArgs =
       Rxn<Map<String, dynamic>>();
 
+  // ─── Chat Detail (Tab 3) ──────────────────────────────────────────────────
+  final Rxn<int> pendingChatId = Rxn<int>();
+
+  void showChatDetailFromRedirect(int chatId) {
+    pendingChatId.value = chatId;
+    selectedIndex.value = 3;
+  }
+
+  void clearPendingChat() {
+    pendingChatId.value = null;
+  }
+
   // ─── Assignment sub-page (ClassAssignmentPage) ────────────────────────────
   final RxBool isShowingClassAssignment = false.obs;
   final Rxn<Map<String, dynamic>> classAssignmentArgs =

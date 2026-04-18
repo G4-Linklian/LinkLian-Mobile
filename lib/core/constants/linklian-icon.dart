@@ -144,6 +144,14 @@ class LinkLianIcon {
   static const IconData notifChat = TablerIcons.message_circle_filled;
   static const IconData notifDefault = TablerIcons.bell;
 
+  // notification action-type badges (bottom-right badge บน icon)
+  static const IconData notifActionPost = TablerIcons.pencil;
+  static const IconData notifActionComment = TablerIcons.message_2;
+  static const IconData notifActionReply = TablerIcons.message_dots;
+  static const IconData notifActionAnnouncement = TablerIcons.speakerphone;
+  static const IconData notifActionDeadline = TablerIcons.clock;
+  static const IconData notifActionAssignment = TablerIcons.clipboard_list;
+
   // user states
   static const IconData userOff = TablerIcons.user_off;
 

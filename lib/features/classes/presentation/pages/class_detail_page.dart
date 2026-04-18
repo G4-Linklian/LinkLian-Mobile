@@ -181,8 +181,12 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                       }
 
                       final post = controller.posts[index];
-                      //
+                      final isHighlight =
+                          post.postContentId == controller.highlightPostId;
                       return CardPost(
+                        key: isHighlight
+                            ? controller.getOrCreatePostKey(post.postContentId)
+                            : null,
                         post: post,
                         classDetailController: controller,
                         onSelectForAI: isTeacher

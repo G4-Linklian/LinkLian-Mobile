@@ -2,16 +2,20 @@ import 'package:get/get.dart';
 import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/services/notification/notification_payload.dart';
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/features/chat/presentation/pages/chat.page.dart';
 import 'package:LinkLian/features/layout/controllers/navigation_controller.dart';
 
 /// Navigate ตาม ref_type ของ notification
 /// เพิ่ม ref_type ใหม่ได้โดยเพิ่ม entry ใน _handlers เพียงอย่างเดียว
 final Map<String, _NotificationHandler> _handlers = {
-  'feed-post':      _FeedPostHandler(),
-  'community-post': _CommunityPostHandler(),
-  'community':      _CommunityHandler(),
-  'qna-live':       _QnaLiveHandler(),
-  'qna-question':   _QnaQuestionHandler(),
+  'feed-post':         _FeedPostHandler(),
+  'feed-comment':      _FeedPostHandler(), // reply → navigate ไปหน้า post เดียวกัน
+  'community-post':    _CommunityPostHandler(),
+  'community-comment': _CommunityPostHandler(),
+  'community':         _CommunityHandler(),
+  'qna-live':          _QnaLiveHandler(),
+  'qna-question':      _QnaQuestionHandler(),
+  'chat':              _ChatHandler(),
 };
 
 class NotificationNavigationHelper {
@@ -55,7 +59,11 @@ class _FeedPostHandler implements _NotificationHandler {
       return;
     }
 
-    nav.showClassDetailFromRedirect({'sectionId': sectionId});
+    nav.showClassDetailFromRedirect({
+      'sectionId': sectionId,
+      // refId = post_content_id — ใช้ scroll ไปหาโพสต์นั้น
+      'highlightPostId': int.tryParse(payload.refId),
+    });
   }
 }
 
@@ -107,5 +115,20 @@ class _QnaQuestionHandler implements _NotificationHandler {
       AppRoutes.qnaLive,
       arguments: {'qa_question_id': payload.refId},
     );
+  }
+}
+
+class _ChatHandler implements _NotificationHandler {
+  @override
+  void navigate(NotificationPayload payload) {
+    final chatId = int.tryParse(payload.refId);
+    if (chatId == null) return;
+
+    // Set pending chat ID so ChatPage auto-opens the correct conversation
+    final nav = Get.find<NavigationController>();
+    nav.pendingChatId.value = chatId;
+
+    // ChatPage is pushed via Navigator (not a tab), same as AppBar chat icon
+    Get.to(() => const ChatPage());
   }
 }
