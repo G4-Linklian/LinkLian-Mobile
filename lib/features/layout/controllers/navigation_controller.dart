@@ -3,6 +3,7 @@ import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/features/assignment/data/repositories/assignment_repository.dart';
 import 'package:LinkLian/features/assignment/presentation/controllers/class_assignment_controller.dart';
 import 'package:LinkLian/features/shared/repositories/class_feed_repository.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class NavigationController extends GetxController {
@@ -61,6 +62,21 @@ class NavigationController extends GetxController {
     final previousIndex = selectedIndex.value;
     selectedIndex.value = index;
 
+    // Close assignment page when switching tabs
+    if (isShowingClassAssignment.value) {
+      debugPrint('[Navigation] Closing ClassAssignmentPage...');
+      hideClassAssignment();
+      // Force exit assignment page from GetX navigation stack
+      if (Get.isDialogOpen == false && Get.currentRoute != '/') {
+        // We're on assignment page, go back
+        try {
+          Get.back();
+        } catch (e) {
+          debugPrint('[Navigation] Error going back: $e');
+        }
+      }
+    }
+
     if (previousIndex == 2 && index != 2) {
       if (Get.isRegistered<CommunityController>()) {
         Get.find<CommunityController>().resetSearch();
@@ -113,6 +129,9 @@ class NavigationController extends GetxController {
   // Class Assignment (Tab 0 sub-page)
 
   void showClassAssignment(Map<String, dynamic> args) {
+    // 0) Switch to Assignment tab first
+    changeTab(0);
+
     // 1) Ensure repositories exist
     _ensureAssignmentDependencies();
 

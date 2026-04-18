@@ -52,11 +52,14 @@ class CommentController extends GetxController {
     userSysId = auth.userId.value!;
 
     final args = Get.arguments;
-    postId = args['postId'];
+    postId = args['postId'] ?? 0;
+    debugPrint('[CommentController] _init: postId from args = $postId');
 
     if (args['post'] != null) {
       post = args['post'] as PostModel;
+      debugPrint('[CommentController] Post from args (cached)');
     } else {
+      debugPrint('[CommentController] Fetching post from server...');
       await _loadPostFromServer(postId);
     }
 
@@ -121,15 +124,26 @@ class CommentController extends GetxController {
 
   Future<void> _loadPostFromServer(int id) async {
     try {
+      final args = Get.arguments;
+      final sectionId = args['sectionId'] ?? 'unknown';
+      debugPrint('[CommentController] === FETCHING POST START ===');
+      debugPrint('[CommentController] postId=$id, sectionId=$sectionId');
+
       final repo = PostRepository();
       final result = await repo.getPostDetail(id);
 
       post = result;
+      debugPrint('[CommentController] ✓ POST LOADED');
+      debugPrint('[CommentController] Title: ${result.title}');
+      final contentPreview = result.content.length > 100
+          ? result.content.substring(0, 100)
+          : result.content;
+      debugPrint('[CommentController] Content: $contentPreview...');
+      debugPrint('[CommentController] Post type: ${result.postType}');
     } catch (e, stack) {
-      debugPrint('POST DETAIL ERROR: $e');
+      debugPrint('[CommentController] ✗ FETCH FAILED: $e');
       debugPrintStack(stackTrace: stack);
-
-      DialogHelper.showErrorDialog(description: 'โหลดโพสต์ล้มเหลว');
+      DialogHelper.showErrorDialog(description: 'โหลดโพสต์ล้มเหลว: $e');
     }
   }
 

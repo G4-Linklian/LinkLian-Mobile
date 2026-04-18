@@ -13,6 +13,8 @@ import 'package:LinkLian/features/community/presentation/pages/community_search_
 import 'package:LinkLian/features/community/presentation/pages/create_community_page.dart';
 import 'package:LinkLian/features/community/presentation/pages/create_post_commu_page.dart';
 import 'package:LinkLian/features/profile/presentation/bindings/profile_binding.dart';
+import 'package:LinkLian/features/profile/presentation/bindings/dashboard_binding.dart';
+import 'package:LinkLian/features/profile/presentation/pages/dashboard_page.dart';
 import 'package:LinkLian/features/qna/presentation/pages/live_history_page.dart';
 import 'package:LinkLian/features/qna/presentation/pages/live_page.dart';
 import 'package:LinkLian/main.dart';
@@ -157,6 +159,12 @@ class AppRouter {
       name: AppRoutes.profile,
       page: () => const ProfilePage(),
       binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.dashboard,
+      page: () => const DashboardPage(),
+      bindings: [ProfileBinding(), DashboardBinding()],
+      transition: Transition.rightToLeft,
     ),
     GetPage(
       name: AppRoutes.searchAssignment,
