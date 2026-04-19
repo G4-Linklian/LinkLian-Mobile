@@ -143,7 +143,7 @@ class CommentController extends GetxController {
       appLog.debug('[CommentController] Post type: ${result.postType}');
     } catch (e, stack) {
       appLog.debug('[CommentController] ✗ FETCH FAILED: $e');
-      appLog.debugStack(stackTrace: stack);
+      appLog.debug('[CommentController] Stack trace: $stack');
       DialogHelper.showErrorDialog(description: 'โหลดโพสต์ล้มเหลว: $e');
     }
   }

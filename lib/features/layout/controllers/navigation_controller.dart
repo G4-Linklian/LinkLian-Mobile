@@ -1,10 +1,8 @@
-import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
 import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/features/assignment/data/repositories/assignment_repository.dart';
 import 'package:LinkLian/features/assignment/presentation/controllers/class_assignment_controller.dart';
 import 'package:LinkLian/features/shared/repositories/class_feed_repository.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class NavigationController extends GetxController {
@@ -63,11 +61,6 @@ class NavigationController extends GetxController {
     final previousIndex = selectedIndex.value;
     selectedIndex.value = index;
 
-    // Close assignment page when switching tabs
-    if (isShowingClassAssignment.value) {
-      appLog.debug('[Navigation] Closing ClassAssignmentPage...');
-      hideClassAssignment();
-    }
 
     if (previousIndex == 2 && index != 2) {
       if (Get.isRegistered<CommunityController>()) {
