@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/utils/logger.dart';
+import 'package:LinkLian/core/utils/dialog_helper.dart';
 import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
 import 'package:LinkLian/features/community/presentation/controllers/community_detail_controller.dart';
 import 'package:get/get.dart';
@@ -51,6 +52,12 @@ class CommunityPendingController extends GetxController {
 
       pendingMembers.removeWhere((e) => e.userSysId == userId);
 
+      DialogHelper.showNotification(
+        title: "สำเร็จ",
+        message: "อนุมัติคำขอแล้ว",
+        type: NotificationType.success,
+      );
+
       //uadate in community detail page
       if (Get.isRegistered<CommunityDetailController>()) {
         final detailController = Get.find<CommunityDetailController>();
@@ -81,6 +88,11 @@ class CommunityPendingController extends GetxController {
       }
     } catch (e) {
       appLog.info("[community]ERROR APPROVE: $e");
+      DialogHelper.showNotification(
+        title: "ผิดพลาด",
+        message: "ไม่สามารถอนุมัติคำขอได้",
+        type: NotificationType.error,
+      );
     }
   }
 
@@ -89,8 +101,19 @@ class CommunityPendingController extends GetxController {
       await _repo.reject(communityId, userId);
 
       pendingMembers.removeWhere((e) => e.userSysId == userId);
+
+      DialogHelper.showNotification(
+        title: "สำเร็จ",
+        message: "ปฏิเสธคำขอแล้ว",
+        type: NotificationType.success,
+      );
     } catch (e) {
       appLog.info("[community]ERROR REJECT: $e");
+      DialogHelper.showNotification(
+        title: "ผิดพลาด",
+        message: "ไม่สามารถปฏิเสธคำขอได้",
+        type: NotificationType.error,
+      );
     }
   }
 }

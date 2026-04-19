@@ -49,7 +49,7 @@ class CommunityController extends GetxController {
     try {
       isLoading.value = true;
 
-      final cleanKeyword = keyword?.trim();
+      final cleanKeyword = (keyword?.trim() ?? "");
 
       final result = await _repo.getCommunities(
         keyword: cleanKeyword == "" ? null : cleanKeyword,
@@ -57,7 +57,7 @@ class CommunityController extends GetxController {
 
       List<CommunityModel> filtered;
 
-      if (cleanKeyword == null || cleanKeyword.isEmpty) {
+      if (cleanKeyword == "" || cleanKeyword.isEmpty) {
         filtered = result
             .where(
               (c) =>

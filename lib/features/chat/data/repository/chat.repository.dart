@@ -164,20 +164,15 @@ class ChatRepository {
     required int senderId,
     required String content,
     int? replyId,
-    File? file,
+    List<dynamic>? file,
   }) async {
     final formData = FormData.fromMap({
       'chat_id': chatId,
       'sender_id': senderId,
       'content': content,
       if (replyId != null) 'reply_id': replyId,
-      if (file != null)
-        'files': [
-          await MultipartFile.fromFile(
-            file.path,
-            filename: file.path.split('/').last,
-          ),
-        ],
+      if (file != null && file.isNotEmpty)
+        'files': file,
     });
 
     final response = await _apiClient.post(
