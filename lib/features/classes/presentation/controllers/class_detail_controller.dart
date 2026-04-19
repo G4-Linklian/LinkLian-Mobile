@@ -151,7 +151,8 @@ class ClassDetailController extends GetxController {
 
     sectionId.value = newSectionId;
     subjectNameTh.value = args['subjectName'] as String? ?? '';
-    effectiveClassName.value = args['className'] as String? ?? '';
+    effectiveClassName.value =
+      (args['className'] as String?) ?? (args['sectionName'] as String?) ?? '';
 
     fetchClassDetailFromFeed();
     unawaited(fetchHasLiveHistory());

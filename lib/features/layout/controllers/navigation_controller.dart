@@ -66,15 +66,6 @@ class NavigationController extends GetxController {
     if (isShowingClassAssignment.value) {
       debugPrint('[Navigation] Closing ClassAssignmentPage...');
       hideClassAssignment();
-      // Force exit assignment page from GetX navigation stack
-      if (Get.isDialogOpen == false && Get.currentRoute != '/') {
-        // We're on assignment page, go back
-        try {
-          Get.back();
-        } catch (e) {
-          debugPrint('[Navigation] Error going back: $e');
-        }
-      }
     }
 
     if (previousIndex == 2 && index != 2) {

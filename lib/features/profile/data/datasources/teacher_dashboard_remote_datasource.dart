@@ -114,9 +114,8 @@ class TeacherDashboardRemoteDataSource {
             section['assignment_stat'] = [];
           }
 
-          section['lives'] ??= [];
-          section['qa_live_insight'] ??= null;
-          section['files'] ??= [];
+          section['lives'] = [];
+          section['files'] = [];
 
           // Clean lives
           final lives = section['lives'];

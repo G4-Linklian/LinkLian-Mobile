@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../config/app_routes.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/sizes.dart';
 import '../../../../core/constants/linklian-icon.dart';
 import '../../../auth/controller/auth_controller.dart';
-import '../../../layout/controllers/navigation_controller.dart';
 import '../../data/models/dashboard_model.dart';
 import '../controllers/dashboard_controller.dart';
-import '../widgets/dashboard_charts.dart';
 import 'teacher_dashboard_page.dart';
+import '../../../layout/controllers/navigation_controller.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -399,42 +397,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }).toList();
   }
 
-  Widget _buildMonthSelector() {
-    return Material(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300, width: 1.5),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Obx(
-          () => DropdownButton<String>(
-            value: controller.selectedMonth.value.isEmpty
-                ? null
-                : controller.selectedMonth.value,
-            hint: const Text('เลือกเดือน'),
-            isExpanded: true,
-            isDense: false,
-            underline: const SizedBox(),
-            items: controller.availableMonths
-                .toSet()
-                .toList()
-                .map((month) => DropdownMenuItem<String>(
-                      value: month,
-                      child: Text(controller.formatMonth(month)),
-                    ))
-                .toList(),
-            onChanged: (month) {
-              if (month != null) {
-                controller.selectMonth(month);
-                // selectMonth จะ auto-load dashboard ทำแทน
-              }
-            },
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _MonthSelector extends StatelessWidget {
@@ -541,46 +503,6 @@ class _MonthSelector extends StatelessWidget {
   }
 }
 
-class _OverviewSection extends StatelessWidget {
-  final DashboardOverview overview;
-
-  const _OverviewSection({required this.overview});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Chart 1: Summary of submissions
-        DashboardCharts.submissionOverviewChart(
-          title: 'ภาพรวมการส่งงาน',
-          onTime: overview.onTimeTotal,
-          late: overview.lateTotal,
-          missing: overview.missingTotal,
-        ),
-        const SizedBox(height: 16),
-
-        // Chart 2: On-time submissions by subject
-        DashboardCharts.submissionBySubjectChart(
-          title: 'ส่งงานตรงเวลา',
-          data: {'ตรงเวลา': overview.onTimeTotal},
-        ),
-        const SizedBox(height: 16),
-
-        // Chart 3: Late submissions by subject
-        DashboardCharts.submissionBySubjectChart(
-          title: 'ส่งงานล่าช้า',
-          data: {'ล่าช้า': overview.lateTotal},
-        ),
-
-        // Overview Stats
-        const SizedBox(height: 16),
-        _OverviewStatsCard(overview: overview),
-      ],
-    );
-  }
-}
-
 class _OverviewStats extends StatelessWidget {
   final DashboardOverview overview;
 
@@ -676,98 +598,6 @@ class _CompactStatCard extends StatelessWidget {
   }
 }
 
-class _OverviewStatsCard extends StatelessWidget {
-  final DashboardOverview overview;
-
-  const _OverviewStatsCard({required this.overview});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'สรุปข้อมูล',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _StatRow(
-              label: 'จำนวนงานทั้งหมด',
-              value: '${overview.totalAssignments} งาน',
-              valueColor: AppColors.primaryPalette[700]!,
-            ),
-            _StatRow(
-              label: 'ส่งงานตรงเวลา',
-              value: '${overview.onTimeTotal} งาน',
-              valueColor: Colors.green,
-            ),
-            _StatRow(
-              label: 'ส่งงานล่าช้า',
-              value: '${overview.lateTotal} งาน',
-              valueColor: Colors.orange,
-            ),
-            _StatRow(
-              label: 'ไม่ส่งงาน',
-              value: '${overview.missingTotal} งาน',
-              valueColor: Colors.red,
-            ),
-            _StatRow(
-              label: 'เปอร์เซ็นต์ตรงเวลา',
-              value: '${overview.onTimeRate.toStringAsFixed(1)}%',
-              valueColor: Colors.blue,
-            ),
-            _StatRow(
-              label: 'บุ๊กมาร์ก',
-              value: '${overview.bookmarksAdded} โพสต์',
-              valueColor: AppColors.primaryPalette[700]!,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color valueColor;
-
-  const _StatRow({
-    required this.label,
-    required this.value,
-    this.valueColor = const Color(0xFF1F2937), // Dark grey instead of black
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _StudentSectionCard extends StatefulWidget {
   final SectionDetail section;
   final BuildContext context;
@@ -782,6 +612,8 @@ class _StudentSectionCard extends StatefulWidget {
 }
 
 class _StudentSectionCardState extends State<_StudentSectionCard> {
+  bool _isNavigating = false;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -855,127 +687,53 @@ class _StudentSectionCardState extends State<_StudentSectionCard> {
   }
 
   Future<void> _openSectionSheet() async {
+    if (_isNavigating) return;
+    
+    final authController = Get.find<AuthController>();
+    
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _SectionDetailSheet(
+      builder: (bottomSheetContext) => _SectionDetailSheet(
         section: widget.section,
+        initialTab: 0,
       ),
     );
 
-    if (!mounted || result == null) {
-      print('DEBUG: Bottom sheet dismissed without action');
-      return;
+    // ตรวจสอบ result
+    if (!mounted) return;
+    if (result == null) return;
+    if (_isNavigating) return;
+    
+    _isNavigating = true;
+
+    try {
+      if (result['action'] == 'assignment') {
+        final navController = Get.find<NavigationController>();
+        navController.showClassAssignment({
+          'sectionId': widget.section.sectionId,
+          'className': widget.section.sectionName,
+          'subjectName': widget.section.subjectName,
+          'role': authController.roleName.value,
+        });
+        if (mounted) {
+          Navigator.of(context).maybePop();
+        }
+      } else if (result['action'] == 'class_detail') {
+        final navController = Get.find<NavigationController>();
+        navController.showClassDetailFromRedirect({
+          'sectionId': widget.section.sectionId,
+          'className': widget.section.sectionName,
+          'subjectName': widget.section.subjectName,
+        });
+        if (mounted) {
+          Navigator.of(context).maybePop();
+        }
+      }
+    } finally {
+      _isNavigating = false;
     }
-
-    if (result['action'] == 'assignment') {
-      print('DEBUG: Received assignment action, waiting for sheet to close...');
-      final authController = Get.find<AuthController>();
-      final navigationController = Get.find<NavigationController>();
-      
-      // Wait for bottom sheet animation to complete before navigating
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      if (!mounted) return;
-      
-      print('DEBUG: Navigating to ClassAssignmentPage via NavigationController');
-      navigationController.showClassAssignment({
-        'sectionId': widget.section.sectionId,
-        'className': widget.section.sectionName,
-        'subjectName': widget.section.subjectName,
-        'role': authController.roleName.value,
-      });
-      print('DEBUG: Navigation call completed');
-    }
-  }
-
-  Widget _buildAssignmentItem(
-    BuildContext context,
-    AssignmentData assignment,
-    SectionDetail section,
-  ) {
-    Color statusColor = Colors.grey;
-    if (assignment.status == 'on_time') {
-      statusColor = Colors.green;
-    } else if (assignment.status == 'late') {
-      statusColor = Colors.orange;
-    } else if (assignment.status == 'missing') {
-      statusColor = Colors.red;
-    }
-
-    // Format due date
-    final dueDateStr = assignment.dueDate.day.toString().padLeft(2, '0') +
-        '/' +
-        assignment.dueDate.month.toString().padLeft(2, '0') +
-        '/' +
-        assignment.dueDate.year.toString();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title row with status badge on the right
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Title - left side
-              Expanded(
-                child: Text(
-                  assignment.title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Status badge - right side
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.2),
-                  border: Border.all(color: statusColor, width: 1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  assignment.status == 'on_time'
-                      ? 'ตรงเวลา'
-                      : assignment.status == 'late'
-                          ? 'ส่งล่าช้า'
-                          : assignment.status == 'missing'
-                              ? 'ไม่ส่ง'
-                              : 'รอการตรวจสอบ',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: statusColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Due date
-          Text(
-            'ส่งด้วย: $dueDateStr',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildSubmissionStatusChart(SectionDetail section) {
@@ -1069,14 +827,23 @@ class _StudentSectionCardState extends State<_StudentSectionCard> {
 
 class _SectionDetailSheet extends StatefulWidget {
   final SectionDetail section;
+  final int initialTab;
 
-  const _SectionDetailSheet({required this.section});
+  const _SectionDetailSheet({required this.section, this.initialTab = 0});
 
   @override
   State<_SectionDetailSheet> createState() => _SectionDetailSheetState();
 }
 
 class _SectionDetailSheetState extends State<_SectionDetailSheet> {
+  late int _selectedTabIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTabIndex = widget.initialTab;
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -1145,18 +912,98 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
                 padding: const EdgeInsets.only(left: 16),
                 child: const Divider(height: 20),
               ),
+              // Tabs
+              Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedTabIndex = 0),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LinkLianIcon.fileDescription,
+                                  size: 16,
+                                  color: AppColors.primaryPalette[700],
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'การส่งงาน',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryPalette[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              height: 2,
+                              color: _selectedTabIndex == 0
+                                  ? AppColors.primaryPalette[400]
+                                  : Colors.transparent,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedTabIndex = 1),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LinkLianIcon.broadcast,
+                                  size: 16,
+                                  color: AppColors.primaryPalette[700],
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'ไลฟ์และคำถาม',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryPalette[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              height: 2,
+                              color: _selectedTabIndex == 1
+                                  ? AppColors.primaryPalette[400]
+                                  : Colors.transparent,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 16),
               // Content
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(left: 16),
                   child: SingleChildScrollView(
-                    child: _buildAssignmentList(),
+                    child: _selectedTabIndex == 0
+                        ? _buildAssignmentList()
+                        : _buildLiveList(),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              // Footer Button
+              // Footer Button - changes based on tab
               Padding(
                 padding: const EdgeInsets.only(left: 16),
                 child: SizedBox(
@@ -1164,16 +1011,24 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
                   height: 40,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      print('[BottomSheet] Button tapped - closing sheet');
-                      Navigator.of(context).pop({'action': 'assignment'});
-                      print('[BottomSheet] Sheet close initiated');
+                      if (_selectedTabIndex == 0) {
+                        // Tab 0: Assignment - Go to Class Assignment page
+                        Navigator.pop(context, {'action': 'assignment'});
+                      } else if (_selectedTabIndex == 1) {
+                        // Tab 1: Lives - Go to Class Detail page
+                        Navigator.pop(context, {'action': 'class_detail'});
+                      }
                     },
                     icon: Icon(
-                      LinkLianIcon.homework,
+                      _selectedTabIndex == 0
+                          ? LinkLianIcon.homework
+                          : LinkLianIcon.classroom,
                       size: 16,
                     ),
-                    label: const Text(
-                      'ไปที่การบ้าน',
+                    label: Text(
+                      _selectedTabIndex == 0
+                          ? 'ไปที่การบ้าน'
+                          : 'ไปที่ห้องเรียน',
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryPalette[500],
@@ -1210,11 +1065,8 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
         }
 
         // Format due date
-        final dueDateStr = assignment.dueDate.day.toString().padLeft(2, '0') +
-            '/' +
-            assignment.dueDate.month.toString().padLeft(2, '0') +
-            '/' +
-            assignment.dueDate.year.toString();
+        final dueDateStr =
+          '${assignment.dueDate.day.toString().padLeft(2, '0')}/${assignment.dueDate.month.toString().padLeft(2, '0')}/${assignment.dueDate.year}';
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -1274,7 +1126,7 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
                 const SizedBox(height: 8),
                 // Due date
                 Text(
-                  'ส่งด้วย: $dueDateStr',
+                  'กำหนดส่ง: $dueDateStr',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
@@ -1298,638 +1150,14 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
       }).toList(),
     );
   }
-}
 
-class _StatBadge extends StatelessWidget {
-  final String label;
-  final int value;
-  final Color color;
-
-  const _StatBadge({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withAlpha(20),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withAlpha(100)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StudentSectionCardCompact extends StatelessWidget {
-  final SectionDetail section;
-
-  const _StudentSectionCardCompact({required this.section});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        try {
-          // Navigate to class detail page to view assignments
-          if (Get.isRegistered<NavigationController>()) {
-            final navController = Get.find<NavigationController>();
-            final args = {
-              'sectionId': section.sectionId,
-              'sectionName': section.subjectName,
-            };
-            print('[Dashboard] Compact section card tapped: $args');
-            navController.showClassDetail(args);
-          } else {
-            print('[Dashboard] ERROR: NavigationController not registered in compact');
-          }
-        } catch (e) {
-          print('[Dashboard] ERROR tapping compact section card: $e');
-        }
-      },
-      child: Card(
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Subject Name as main title - compact
-              Text(
-                section.subjectName,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              // Assignment count - compact
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: section.assignments.isEmpty
-                      ? Colors.grey[200]
-                      : AppColors.primaryPalette[100],
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      LinkLianIcon.fileDescription,
-                      size: 14,
-                      color: section.assignments.isEmpty
-                          ? Colors.grey[600]
-                          : AppColors.primaryPalette[700],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      section.assignments.isEmpty
-                          ? 'ไม่มี'
-                          : '${section.assignments.length}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: section.assignments.isEmpty
-                            ? Colors.grey[600]
-                            : AppColors.primaryPalette[700],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (section.assignments.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                // Compact submission chart
-                _buildCompactSubmissionChart(section),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactSubmissionChart(SectionDetail section) {
-    final onTimeCount = section.onTimeCount;
-    final lateCount = section.lateCount;
-    final missingCount = section.missingCount;
-    final totalCount = section.assignments.length;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'ส่งงาน',
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 6),
-        // Compact bar chart
-        ClipRRect(
-          borderRadius: BorderRadius.circular(3),
-          child: Container(
-            height: 12,
-            color: Colors.grey[200],
-            child: Row(
-              children: [
-                // On-time segment
-                Expanded(
-                  flex: onTimeCount,
-                  child: Container(color: Colors.green),
-                ),
-                // Late segment
-                Expanded(
-                  flex: lateCount,
-                  child: Container(color: Colors.orange),
-                ),
-                // Missing segment
-                Expanded(
-                  flex: missingCount,
-                  child: Container(color: Colors.red),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _compactLegend('ตรง', onTimeCount, Colors.green),
-            _compactLegend('ล่าช้า', lateCount, Colors.orange),
-            _compactLegend('ไม่ส่ง', missingCount, Colors.red),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _compactLegend(String label, int count, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 3),
-        Text(
-          '$label $count',
-          style: const TextStyle(fontSize: 9),
-        ),
-      ],
-    );
-  }
-}
-
-class _StudentSectionDetailSheet extends StatefulWidget {
-  final SectionDetail section;
-
-  const _StudentSectionDetailSheet({required this.section});
-
-  @override
-  State<_StudentSectionDetailSheet> createState() =>
-      _StudentSectionDetailSheetState();
-}
-
-class _StudentSectionDetailSheetState extends State<_StudentSectionDetailSheet> {
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: ListView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Header
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.section.subjectName,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Submission Status Chart
-              _buildSubmissionChart(widget.section.assignments),
-              const SizedBox(height: 24),
-
-              // Score Chart
-              if (_hasScores(widget.section.assignments)) ...[
-                _buildScoreChart(widget.section.assignments),
-                const SizedBox(height: 24),
-              ],
-
-              // Assignments
-              Text(
-                'งานที่มอบหมาย (${widget.section.assignments.length})',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (widget.section.assignments.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        Icon(
-                          LinkLianIcon.fileDescription,
-                          size: 48,
-                          color: Colors.grey.shade300,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'ไม่มีงานในเดือนนี้',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                ...widget.section.assignments.map((assignment) {
-                  final statusColor = _getStatusColor(assignment.status);
-                  final statusLabel = _getStatusLabel(assignment.status);
-
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: statusColor.withAlpha(30),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  statusLabel,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: statusColor,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  assignment.title,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'กำหนดส่ง: ${assignment.dueDate.toString().split(' ')[0]}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                              if (assignment.score > 0)
-                                Text(
-                                  'คะแนน: ${assignment.score}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.green,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'on_time':
-        return Colors.green;
-      case 'late':
-        return Colors.orange;
-      case 'missing':
-        return Colors.red;
-      case 'pending':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusLabel(String status) {
-    switch (status) {
-      case 'on_time':
-        return 'ตรงเวลา';
-      case 'late':
-        return 'ล่าช้า';
-      case 'missing':
-        return 'ไม่ส่ง';
-      case 'pending':
-        return 'รอส่ง';
-      default:
-        return 'ไม่ทราบ';
-    }
-  }
-
-  bool _hasScores(List<AssignmentData> assignments) {
-    return assignments.any((a) => a.score > 0);
-  }
-
-  Widget _buildSubmissionChart(List<AssignmentData> assignments) {
-    final onTime = assignments.where((a) => a.status == 'on_time').length;
-    final late = assignments.where((a) => a.status == 'late').length;
-    final missing = assignments.where((a) => a.status == 'missing').length;
-    final total = assignments.length;
-
-    final items = [
-      ('งานทั้งหมด', total, AppColors.primaryPalette[700]!),
-      ('ตรงเวลา', onTime, Colors.green),
-      ('ล่าช้า', late, Colors.orange),
-      ('ไม่ส่ง', missing, Colors.red),
-    ];
-
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'สัญแสดงการส่ง',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: items.map((item) {
-                final (label, value, color) = item;
-                final height = total > 0 ? (value / total) * 100 : 0.0;
-
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          height: height + 10,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(6),
-                              topRight: Radius.circular(6),
-                            ),
-                          ),
-                          child: Center(
-                            child: height > 20
-                                ? Text(
-                                    value.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  )
-                                : const SizedBox(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          label,
-                          style: const TextStyle(fontSize: 11),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScoreChart(List<AssignmentData> assignments) {
-    final submittedAssignments =
-        assignments.where((a) => a.score > 0).toList();
-
-    if (submittedAssignments.isEmpty) {
-      return const SizedBox();
+  Widget _buildLiveList() {
+    if (widget.section.lives.isEmpty) {
+      return const Center(child: Text('ไม่มีไลฟ์'));
     }
 
-    final scores = submittedAssignments.map((a) => a.score).toList();
-    final avgScore =
-        scores.isNotEmpty ? scores.reduce((a, b) => a + b) / scores.length : 0;
-    final maxScore = scores.isNotEmpty ? scores.reduce((a, b) => a > b ? a : b) : 0;
-    final minScore = scores.isNotEmpty ? scores.reduce((a, b) => a < b ? a : b) : 0;
-
-    // Group scores by range
-    final scoreRanges = {
-      '80-100': scores.where((s) => s >= 80).length,
-      '60-79': scores.where((s) => s >= 60 && s < 80).length,
-      '40-59': scores.where((s) => s >= 40 && s < 60).length,
-      '0-39': scores.where((s) => s < 40).length,
-    };
-
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'สัญแสดงคะแนน',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildScoreStat('เฉลี่ย', avgScore.toStringAsFixed(1), Colors.blue),
-                _buildScoreStat('สูงสุด', maxScore.toString(), Colors.green),
-                _buildScoreStat('ต่ำสุด', minScore.toString(), Colors.red),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // Score range chart
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: scoreRanges.entries.map((entry) {
-                final (range, count) = (entry.key, entry.value);
-                final height = submittedAssignments.isNotEmpty
-                    ? (count / submittedAssignments.length) * 80
-                    : 0.0;
-
-                final barColor = range == '80-100'
-                    ? Colors.green
-                    : range == '60-79'
-                        ? Colors.blue
-                        : range == '40-59'
-                            ? Colors.orange
-                            : Colors.red;
-
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          height: height + 10,
-                          decoration: BoxDecoration(
-                            color: barColor,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(6),
-                              topRight: Radius.circular(6),
-                            ),
-                          ),
-                          child: Center(
-                            child: height > 20
-                                ? Text(
-                                    count.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  )
-                                : const SizedBox(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          range,
-                          style: const TextStyle(fontSize: 11),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScoreStat(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: Colors.grey),
-        ),
-      ],
-    );
+    return const Center(child: Text('ไลฟ์'));
   }
 }
+
 

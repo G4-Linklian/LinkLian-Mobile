@@ -131,7 +131,9 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Overview Stats - use overview from response
-                    _OverviewStats(assets: _mapOverviewToAssets(dashboard.overview)),
+                    _OverviewStats(
+                      assets: _mapOverviewToAssets(dashboard.overview),
+                    ),
                     const SizedBox(height: 24),
 
                     // Popular Posts - use popularPosts from overview
@@ -211,7 +213,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.title ?? 'ไม่มีหัวข้อ',
+                          post.title,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -236,11 +238,11 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
               const SizedBox(height: 12),
 
               // Section tags
-              if (post.sections?.isNotEmpty ?? false)
+              if (post.sections.isNotEmpty)
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: (post.sections ?? []).map((section) {
+                  children: post.sections.map((section) {
                     final subjectName =
                         section['subject_name'] ??
                         section['subject'] ??

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../auth/controller/auth_controller.dart';
-import '../../../../config/app_routes.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/linklian-icon.dart';
 import '../../data/models/dashboard_model.dart';
@@ -18,6 +17,8 @@ class SectionDetailCard extends StatefulWidget {
 }
 
 class _SectionDetailCardState extends State<SectionDetailCard> {
+  bool _isNavigating = false;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -101,6 +102,8 @@ class _SectionDetailCardState extends State<SectionDetailCard> {
   }
 
   Future<void> _openSectionSheet({int initialTab = 0}) async {
+    if (_isNavigating) return;
+    
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -113,24 +116,36 @@ class _SectionDetailCardState extends State<SectionDetailCard> {
       return;
     }
 
-    if (result['action'] == 'assignment') {
-      final authController = Get.find<AuthController>();
+    if (_isNavigating) return;
+    _isNavigating = true;
 
-      if (mounted) {
-        Navigator.of(context).pop();
+    try {
+      if (result['action'] == 'assignment') {
+        final authController = Get.find<AuthController>();
+        final navController = Get.find<NavigationController>();
+
+        navController.showClassAssignment({
+          'sectionId': widget.section.sectionId,
+          'className': widget.section.sectionName,
+          'subjectName': widget.section.subjectName,
+          'role': authController.roleName.value,
+        });
+        if (mounted) {
+          Navigator.of(context).maybePop();
+        }
+      } else if (result['action'] == 'class_detail') {
+        final navController = Get.find<NavigationController>();
+        navController.showClassDetailFromRedirect({
+          'sectionId': widget.section.sectionId,
+          'className': widget.section.sectionName,
+          'subjectName': widget.section.subjectName,
+        });
+        if (mounted) {
+          Navigator.of(context).maybePop();
+        }
       }
-
-      Future.microtask(() {
-        Get.toNamed(
-          AppRoutes.classAssignment,
-          arguments: {
-            'sectionId': widget.section.sectionId,
-            'className': widget.section.sectionName,
-            'subjectName': widget.section.subjectName,
-            'role': authController.roleName.value,
-          },
-        );
-      });
+    } finally {
+      _isNavigating = false;
     }
   }
 }
@@ -373,26 +388,10 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
                     onPressed: () {
                       if (_selectedTabIndex == 0) {
                         // Tab 0: Assignment - Go to Class Assignment page
-
                         Navigator.pop(context, {'action': 'assignment'});
-
-                        Get.back();
-
-                        if (Get.isRegistered<NavigationController>()) {
-                          final navController =
-                              Get.find<NavigationController>();
-
-                          navController.classDetailArgs.value = {
-                            'sectionId': widget.section.sectionId,
-                            'sectionName': widget.section.sectionName,
-                          };
-
-                          navController.isShowingClassDetail.value = true;
-
-                          navController.changeTab(1);
-                        }
-
-                        Get.back();
+                      } else if (_selectedTabIndex == 1) {
+                        // Tab 1: Lives - Go to Class Detail page
+                        Navigator.pop(context, {'action': 'class_detail'});
                       }
                     },
                     icon: Icon(

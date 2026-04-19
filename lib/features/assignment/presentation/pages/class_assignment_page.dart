@@ -8,13 +8,10 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/linklian-bg.dart';
 import '../../../../core/constants/linklian-icon.dart';
 import '../../../../core/constants/sizes.dart';
-import '../../../../core/constants/strings.dart';
 import '../../../classes/presentation/controllers/create_post_controller.dart';
 import '../../../classes/presentation/widgets/class_info_popup.dart';
 import '../../../classes/presentation/pages/class_detail_page.dart' show BlurIconButton;
-import '../../../auth/controller/auth_controller.dart';
 import '../../../layout/controllers/navigation_controller.dart';
-import '../../../layout/widgets/activeIcon.dart';
 import '../controllers/class_assignment_controller.dart';
 import '../widgets/assignment_card.dart';
 import '../widgets/assignment_filter_dropdown.dart';
@@ -85,67 +82,6 @@ class _ClassAssignmentPageState extends State<ClassAssignmentPage> {
     super.dispose();
   }
 
-
-  bool get _isStudent {
-    final auth = Get.find<AuthController>();
-    final role = auth.roleName.value;
-    return role == 'high school student' || role == 'uni student';
-  }
-
-  List<BottomNavigationBarItem> get _navItems {
-    if (_isStudent) {
-      return const [
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.homework),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
-          label: AppStrings.homework,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.classroom),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
-          label: AppStrings.classroom,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.community),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.community),
-          label: AppStrings.community,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.profile),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
-          label: AppStrings.profile,
-        ),
-      ];
-    } else {
-      return const [
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.homework),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
-          label: AppStrings.homework,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.classroom),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
-          label: AppStrings.classroom,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(LinkLianIcon.profile),
-          activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
-          label: AppStrings.profile,
-        ),
-      ];
-    }
-  }
-
-  void _onNavTap(int index) {
-    if (index == 0) {
-      _navController.hideClassAssignment();
-      return;
-    }
-
-    _navController.changeTab(index);
-  }
-
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
@@ -159,20 +95,6 @@ class _ClassAssignmentPageState extends State<ClassAssignmentPage> {
     return Scaffold(
       backgroundColor: AppColors.white,
       extendBody: true,
-      // Bottom Navigation Bar
-      bottomNavigationBar: Obx(
-        () => BottomNavigationBar(
-          currentIndex: 0,
-          onTap: _onNavTap,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primaryPalette[900],
-          unselectedItemColor: AppColors.primaryPalette[800],
-          backgroundColor: AppColors.primaryPalette[200],
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
-          items: _navItems,
-        ),
-      ),
       body: RefreshIndicator(
         color: AppColors.primaryPalette[500],
         onRefresh: controller.refreshAssignments,
@@ -207,7 +129,13 @@ class _ClassAssignmentPageState extends State<ClassAssignmentPage> {
                     isTeacher: isTeacher,
                     isCollapsed: isCollapsed,
                     shrinkRatio: shrinkRatio,
-                    onBack: () => _navController.hideClassAssignment(),
+                    onBack: () {
+                      if (_navController.isShowingClassAssignment.value) {
+                        _navController.hideClassAssignment();
+                      } else {
+                        Get.back();
+                      }
+                    },
                   );
                 },
               ),
