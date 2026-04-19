@@ -8,8 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:LinkLian/features/chat/presentation/controllers/chat.controller.dart';
 import 'package:LinkLian/features/chat/presentation/pages/chat.message.page.dart';
 import 'package:LinkLian/features/chat/data/models/chat.model.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:LinkLian/features/layout/controllers/navigation_controller.dart';
+import 'package:get/get.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
@@ -44,6 +44,21 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
+  void _openPendingChatIfNeeded(List<ChatModel> chats) {
+    final nav = Get.find<NavigationController>();
+    final chatId = nav.pendingChatId.value;
+    if (chatId == null) return;
+    nav.clearPendingChat();
+
+    final chat = chats.where((c) => c.chatId == chatId).firstOrNull;
+    if (chat != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ChatMessagePage(chat: chat)),
+      );
+    }
+  }
+
   Future<void> _loadChats() async {
     try {
       final chats = await _chatController.getChat();
@@ -61,6 +76,7 @@ class _ChatPageState extends State<ChatPage> {
         _chats = chats;
         _isLoading = false;
       });
+      _openPendingChatIfNeeded(chats);
     } catch (e) {
       setState(() {
         _isLoading = false;

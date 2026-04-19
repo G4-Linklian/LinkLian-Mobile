@@ -49,6 +49,39 @@ class ClassDetailController extends GetxController {
   Timer? _activeLivePollingTimer;
   int? _joinedSectionId;
 
+  // ── Highlight / scroll-to-post (มาจาก notification) ──────────────────────
+  int? _highlightPostId;
+  final Map<int, GlobalKey> _postKeys = {};
+
+  int? get highlightPostId => _highlightPostId;
+
+  GlobalKey getOrCreatePostKey(int postContentId) =>
+      _postKeys.putIfAbsent(postContentId, () => GlobalKey());
+
+  void clearHighlight() {
+    _highlightPostId = null;
+    _postKeys.clear();
+  }
+
+  void scrollToHighlightedPost() {
+    final postId = _highlightPostId;
+    if (postId == null) return;
+
+    final key = _postKeys[postId];
+    if (key?.currentContext == null) {
+      clearHighlight();
+      return;
+    }
+
+    Scrollable.ensureVisible(
+      key!.currentContext!,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+      alignment: 0.1,
+    );
+    clearHighlight();
+  }
+
   DateTime? _lastFetchTime;
   static const _refreshThresholdSeconds = 30;
   List<int> get effectiveSectionIds {
@@ -134,6 +167,12 @@ class ClassDetailController extends GetxController {
       return;
     }
 
+    // รับ highlightPostId จาก notification redirect
+    final newHighlightId = args['highlightPostId'] as int?;
+    if (newHighlightId != null) {
+      _highlightPostId = newHighlightId;
+    }
+
     final isNewSection = sectionId.value != newSectionId;
 
     if (isNewSection) {
@@ -156,9 +195,20 @@ class ClassDetailController extends GetxController {
     unawaited(fetchHasLiveHistory());
 
     if (isNewSection) {
+      // fetchPosts จะ trigger scroll หลัง load เสร็จ
       fetchPosts();
     } else {
       refreshIfNeeded();
+      // โพสต์โหลดแล้ว — force rebuild เพื่อให้ GlobalKey ถูก assign แล้วค่อย scroll
+      if (_highlightPostId != null) {
+        posts.refresh();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Future.delayed(
+            const Duration(milliseconds: 250),
+            scrollToHighlightedPost,
+          );
+        });
+      }
     }
     fetchActiveLive();
     unawaited(_connectSectionLiveSocket());
@@ -493,6 +543,15 @@ class ClassDetailController extends GetxController {
         );
       } else {
         posts.assignAll(result);
+        // หลัง list render แล้ว ให้ scroll ไปหาโพสต์ที่มาจาก notification
+        if (_highlightPostId != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Future.delayed(
+              const Duration(milliseconds: 250),
+              scrollToHighlightedPost,
+            );
+          });
+        }
         if (result.isEmpty) {
           appLog.error(
             'Posts',

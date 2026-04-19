@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- สีที่ใช้เป็นพื้นหลัง notification icon ใน Android system tray -->
+    <color name="notification_color">#4A90D9</color>
+</resources>

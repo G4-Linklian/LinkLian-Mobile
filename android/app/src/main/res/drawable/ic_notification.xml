@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    TODO: แทนที่ไฟล์นี้ด้วย icon จริงของ LinkLian
+    ข้อกำหนด:
+      - ต้องเป็น vector drawable (.xml) หรือ PNG ที่มีพื้นหลังโปร่งใส (transparent)
+      - สีของ icon ต้องเป็นสีขาว (#FFFFFF) เท่านั้น
+      - ขนาดแนะนำ: 24x24dp (viewportWidth/Height = 24)
+      - ห้ามมีพื้นหลังสี — Android จะใช้ alpha channel เพื่อ render
+    วิธีสร้าง:
+      - เปิด Adobe Illustrator / Figma → export เป็น SVG แบบ monochrome ขาวล้วน
+      - แปลง SVG → Android Vector Drawable ด้วย Android Studio (File > New > Vector Asset)
+      - วางไฟล์ที่ได้มาแทนที่ไฟล์นี้
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Placeholder: ตัว L แบบ rounded ไว้ใช้ชั่วคราว -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M7,4 L7,20 L17,20 L17,17 L10,17 L10,4 Z" />
+
+</vector>

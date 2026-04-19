@@ -4,6 +4,7 @@ import '../../../data/repository/auth_repository.dart';
 import '../../../core/services/local_storage.dart';
 import 'package:flutter/foundation.dart';
 import '../../layout/controllers/navigation_controller.dart';
+import '../../../core/services/notification/notification_service.dart';
 
 enum AuthStatus { checking, unauthenticated, authenticated }
 
@@ -70,6 +71,7 @@ class AuthController extends GetxController {
     this.instId.value = instId;
 
     status.value = AuthStatus.authenticated;
+    NotificationService().init(userId: userId);
   }
 
   Future<void> _tryAutoLogin() async {
@@ -99,6 +101,7 @@ class AuthController extends GetxController {
       instId.value = int.tryParse(res['data']['inst_id'].toString());
 
       status.value = AuthStatus.authenticated;
+      NotificationService().init(userId: tokenUserId);
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       if (statusCode == 401 || statusCode == 403) {
@@ -122,6 +125,9 @@ class AuthController extends GetxController {
 
   /// ===== Logout / hot reload =====
   Future<void> logout() async {
+    if (userId.value != null) {
+      await NotificationService().dispose(userId: userId.value!);
+    }
     await LocalStorage.clearAuthSession();
 
     if (Get.isRegistered<NavigationController>()) {

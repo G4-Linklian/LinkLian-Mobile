@@ -28,13 +28,14 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
   late ClassDetailController controller;
   late bool isTeacher;
   String? controllerTag;
+  Worker? _argsWorker;
 
   @override
   void initState() {
     super.initState();
     _initController();
 
-    ever(Get.find<NavigationController>().classDetailArgs, (args) {
+    _argsWorker = ever(Get.find<NavigationController>().classDetailArgs, (args) {
       if (args == null || !mounted) return;
       controller.initializeWithArgs(args);
     });
@@ -74,6 +75,7 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
 
   @override
   void dispose() {
+    _argsWorker?.dispose();
     controller.scrollController.removeListener(_onScroll);
     super.dispose();
   }
@@ -183,8 +185,12 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                       }
 
                       final post = controller.posts[index];
-                      //
+                      final isHighlight =
+                          post.postContentId == controller.highlightPostId;
                       return CardPost(
+                        key: isHighlight
+                            ? controller.getOrCreatePostKey(post.postContentId)
+                            : null,
                         post: post,
                         classDetailController: controller,
                         onSelectForAI: isTeacher

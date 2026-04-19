@@ -22,7 +22,9 @@ import '../../../core/constants/strings.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/constants/logo.dart';
 import '../widgets/activeIcon.dart';
-import '../../notification/pages/notification_page.dart';
+import '../../notification/presentation/pages/notification_page.dart';
+import '../../notification/presentation/bindings/notification_binding.dart';
+import '../../../../core/services/notification/notification_service.dart';
 import '../../chat/presentation/pages/chat.page.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
@@ -250,14 +252,52 @@ class _MainPageState extends State<MainPage> {
                         ),
                       ),
                     if (!_hideAddIcon) const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => _goTo(const NotificationPage()),
-                      child: Icon(
-                        LinkLianIcon.notification,
-                        color: AppColors.warningPalette[500],
-                        size: 32,
-                      ),
-                    ),
+                    Obx(() {
+                      final count = NotificationService().unreadCount.value;
+                      return GestureDetector(
+                        onTap: () => Get.to(
+                          () => const NotificationPage(),
+                          binding: NotificationBinding(),
+                        ),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Icon(
+                              LinkLianIcon.notification,
+                              color: AppColors.warningPalette[500],
+                              size: 32,
+                            ),
+                            if (count > 0)
+                              Positioned(
+                                top: -4,
+                                right: -6,
+                                child: Container(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white, width: 1.5),
+                                  ),
+                                  child: Text(
+                                    count > 99 ? '99+' : count.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.4,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
                     const SizedBox(width: 12),
                     GestureDetector(
                       onTap: () => _goTo(const ChatPage()),

@@ -43,6 +43,8 @@ import '../features/assignment/presentation/controllers/search_assignment_contro
 import '../features/assignment/data/repositories/assignment_repository.dart';
 import '../features/assignment/presentation/pages/student_assignment_detail_page.dart';
 import '../features/assignment/presentation/bindings/teacher_submission_binding.dart';
+import '../features/notification/presentation/pages/notification_page.dart';
+import '../features/notification/presentation/bindings/notification_binding.dart';
 
 class AppRouter {
   static final routes = [
@@ -179,6 +181,12 @@ class AppRouter {
       name: AppRoutes.studentAssignmentDetail,
       page: () => const StudentAssignmentDetailPage(),
       binding: TeacherSubmissionBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.notification,
+      page: () => const NotificationPage(),
+      binding: NotificationBinding(),
       transition: Transition.rightToLeft,
     ),
   ];
