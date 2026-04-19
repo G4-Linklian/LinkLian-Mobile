@@ -673,6 +673,13 @@ class _ChatPanelWidgetState extends State<ChatPanelWidget> {
                                               ),
                                               child: Row(
                                                 children: [
+                                                  Icon(
+                                                    Icons.filter_alt_outlined,
+                                                    size: 18,
+                                                    color: AppColors
+                                                        .primaryPalette[600],
+                                                  ),
+                                                  const SizedBox(width: 6),
                                                   Expanded(
                                                     child: Text(
                                                       selectedLabel,
@@ -687,13 +694,6 @@ class _ChatPanelWidgetState extends State<ChatPanelWidget> {
                                                             .primaryPalette[800],
                                                       ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Icon(
-                                                    Icons.filter_alt_outlined,
-                                                    size: 18,
-                                                    color: AppColors
-                                                        .primaryPalette[600],
                                                   ),
                                                 ],
                                               ),
