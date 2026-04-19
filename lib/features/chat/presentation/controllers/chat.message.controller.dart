@@ -30,6 +30,12 @@ class ChatMessageController {
   final Set<String> _socketFallbackKeys = <String>{};
 
   Future<void> init(int chatId) async {
+    // BUG FIX #2: Validate chatId
+    if (chatId <= 0) {
+      appLog.error('Invalid chatId: $chatId');
+      return;
+    }
+    
     _currentChatId = chatId;
     _currentUserId = await LocalStorage.getLastLoginUserId();
 
@@ -158,7 +164,16 @@ class ChatMessageController {
   }
 
   Future<void> sendMessage(String content) async {
-    if (_currentUserId == null || _currentChatId == null) return;
+    // BUG FIX #3 & #7: Validate content and notify user of failure
+    if (content.trim().isEmpty) {
+      appLog.error('Cannot send empty message');
+      return;
+    }
+    
+    if (_currentUserId == null || _currentChatId == null) {
+      appLog.error('Cannot send message: userId or chatId is null');
+      return;
+    }
 
     try {
       final newMessage = await _chatRepository.createMessage(
@@ -191,52 +206,89 @@ class ChatMessageController {
   }
 
   void dispose() {
+    // BUG FIX #4: Clear all state on dispose
     _updateTimer?.cancel();
     _socketSubscription?.cancel();
     _socketService.disconnect();
+    _messages.clear();
+    _currentUserId = null;
+    _currentChatId = null;
+    replyingMessage = null;
+    _socketFallbackKeys.clear();
     _messagesController.close();
   }
 
   Future<void> pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source);
+    // Validate state
+    if (_currentUserId == null || _currentChatId == null) {
+      appLog.error('Cannot pick image: userId or chatId is null');
+      return;
+    }
 
-    if (picked == null) return;
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source);
 
-    final file = File(picked.path);
+      if (picked == null) return;
 
-    final newMessage = await _chatRepository.createMessage(
-      chatId: _currentChatId!,
-      senderId: _currentUserId!,
-      content: "[image]",
-      file: file,
-    );
+      final file = File(picked.path);
 
-    _messages.add(newMessage);
-    // _messagesController.add(List.unmodifiable(_messages));
-    _scheduleUIUpdate();
+      final newMessage = await _chatRepository.createMessage(
+        chatId: _currentChatId!,
+        senderId: _currentUserId!,
+        content: "[image]",
+        file: [file],
+      );
+
+      _messages.add(newMessage);
+      // _messagesController.add(List.unmodifiable(_messages));
+      _scheduleUIUpdate();
+    } catch (e) {
+      appLog.error('Failed to pick image: $e');
+    }
   }
 
   Future<void> pickFile() async {
-    final result = await FilePicker.platform.pickFiles();
+    // Validate state
+    if (_currentUserId == null || _currentChatId == null) {
+      appLog.error('Cannot pick file: userId or chatId is null');
+      return;
+    }
 
-    if (result == null) return;
+    try {
+      final result = await FilePicker.platform.pickFiles();
 
-    final file = File(result.files.single.path!);
+      if (result == null) return;
 
-    final newMessage = await _chatRepository.createMessage(
-      chatId: _currentChatId!,
-      senderId: _currentUserId!,
-      content: "[file]",
-      file: file,
-    );
+      final file = File(result.files.single.path!);
 
-    _messages.add(newMessage);
-    // _messagesController.add(List.unmodifiable(_messages));
-    _scheduleUIUpdate();
+      final newMessage = await _chatRepository.createMessage(
+        chatId: _currentChatId!,
+        senderId: _currentUserId!,
+        content: "[file]",
+        file: [file],
+      );
+
+      _messages.add(newMessage);
+      // _messagesController.add(List.unmodifiable(_messages));
+      _scheduleUIUpdate();
+    } catch (e) {
+      appLog.error('Failed to pick file: $e');
+    }
   }
 
   Future<void> sendLink(String url) async {
+    // Validate URL and state
+    if (url.trim().isEmpty) {
+      appLog.error('Cannot send empty URL');
+      return;
+    }
+
+    if (_currentUserId == null || _currentChatId == null) {
+      appLog.error('Cannot send link: userId or chatId is null');
+      return;
+    }
+
     try {
       final newMessage = await _chatRepository.createMessage(
         chatId: _currentChatId!,

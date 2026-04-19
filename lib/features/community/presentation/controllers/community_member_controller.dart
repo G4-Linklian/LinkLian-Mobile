@@ -20,12 +20,16 @@ class CommunityMemberController extends GetxController {
   }
 
   Future<void> loadMembers() async {
-    isLoading.value = true;
+    try {
+      isLoading.value = true;
 
-    final result = await _repo.getMembers(communityId);
+      final result = await _repo.getMembers(communityId);
 
-    members.assignAll(result);
-
-    isLoading.value = false;
+      members.assignAll(result);
+    } catch (e) {
+      // Error loading members - will show empty list
+    } finally {
+      isLoading.value = false;
+    }
   }
 }

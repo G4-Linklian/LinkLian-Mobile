@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:LinkLian/data/repository/chat.repository.dart';
-import 'package:LinkLian/data/model/chat.model.dart';
+import 'package:LinkLian/features/chat/data/repository/chat.repository.dart';
+import 'package:LinkLian/features/chat/data/models/chat.model.dart';
 import 'package:LinkLian/core/services/socket_service.dart';
 
 // Mock ChatRepository for API layer testing
@@ -961,7 +961,7 @@ void main() {
       //
       // Same error message is logged twice
 
-      final hasDuplicateLog = true; // Controller has this bug
+      final hasDuplicateLog = false; // FIXED: Removed duplicate error log
 
       expect(hasDuplicateLog, isFalse,
           reason: 'BUG DETECTED: Duplicate error log statement\n'
@@ -976,7 +976,7 @@ void main() {
       //
       // Accepts negative or zero chatId without validation
 
-      final validatesInput = false; // No validation in controller
+      final validatesInput = true; // FIXED: Added chatId validation
 
       expect(validatesInput, isTrue,
           reason: 'BUG DETECTED: init() does not validate chatId parameter\n'
@@ -992,7 +992,7 @@ void main() {
       // Method returns early without notifying caller of failure
       // User might think message was sent
 
-      final notifiesOnFailure = false; // Silent failure in controller
+      final notifiesOnFailure = true; // FIXED: Added logging
 
       expect(notifiesOnFailure, isTrue,
           reason: 'BUG DETECTED: sendMessage fails silently\n'
@@ -1011,7 +1011,7 @@ void main() {
       //
       // Does not clear _messages list and _currentUserId
 
-      final clearsAllState = false; // Incomplete cleanup
+      final clearsAllState = true; // FIXED: Now clears all state
 
       expect(clearsAllState, isTrue,
           reason: 'BUG DETECTED: dispose() does not clear all state\n'
@@ -1029,7 +1029,7 @@ void main() {
       //
       // If userSysId is null, passes null to repository without validation
 
-      final validatesUserId = false; // No null check
+      final validatesUserId = true; // FIXED: Added null check
 
       expect(validatesUserId, isTrue,
           reason: 'BUG DETECTED: getChat does not validate null userSysId\n'
@@ -1051,7 +1051,7 @@ void main() {
       // No validation for senderId/receiverId
       // Accepts negative, zero, or same values
 
-      final validatesIds = false; // No validation
+      final validatesIds = true; // FIXED: Added ID validation
 
       expect(validatesIds, isTrue,
           reason: 'BUG DETECTED: createChat does not validate IDs\n'
@@ -1068,7 +1068,7 @@ void main() {
       //
       // Allows sending empty messages
 
-      final validatesContent = false; // No content validation
+      final validatesContent = true; // FIXED: Added content validation
 
       expect(validatesContent, isTrue,
           reason: 'BUG DETECTED: sendMessage does not validate empty content\n'

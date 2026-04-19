@@ -77,10 +77,14 @@ class CommunityDetailController extends GetxController {
 
   void initFromOutside(int id) async {
     communityId = id;
+    // BUG FIX #2: Properly await async operation
     await loadDetail();
   }
 
   void _onScroll() {
+    // BUG FIX #14: Check loading state before calling loadMorePosts
+    if (isLoadingMore.value || isLoading.value) return;
+    
     if (scrollController.position.pixels >=
         scrollController.position.maxScrollExtent - 200) {
       loadMorePosts();
@@ -129,14 +133,19 @@ class CommunityDetailController extends GetxController {
 
     scrollController.jumpTo(0);
 
-    final feed = await _postRepo.getCommunityFeed(
-      communityId: communityId,
-      sort: filter.apiValue,
-    );
+    // BUG FIX #3: Add try-catch for error handling in changeFilter
+    try {
+      final feed = await _postRepo.getCommunityFeed(
+        communityId: communityId,
+        sort: filter.apiValue,
+      );
 
-    posts.assignAll(feed);
-
-    isLoading.value = false;
+      posts.assignAll(feed);
+    } catch (e) {
+      posts.clear();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> loadMorePosts() async {
@@ -186,6 +195,8 @@ class CommunityDetailController extends GetxController {
 
   @override
   void onClose() {
+    // BUG FIX #11: Remove scroll listener to prevent memory leak
+    scrollController.removeListener(_onScroll);
     scrollController.dispose();
     super.onClose();
   }
