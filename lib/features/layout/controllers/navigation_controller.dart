@@ -141,9 +141,7 @@ class NavigationController extends GetxController {
   void hideClassAssignment() {
     isShowingClassAssignment.value = false;
     classAssignmentArgs.value = null;
-
-    // Dispose the controller to free memory
-    _safeDelete<ClassAssignmentController>(force: true);
+    // _safeDelete<ClassAssignmentController>(force: true); // Prevent dispose to keep state
   }
 
   void resetForRoleChange(bool isStudent) {
