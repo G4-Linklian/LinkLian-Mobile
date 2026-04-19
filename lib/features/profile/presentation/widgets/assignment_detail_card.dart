@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../../../core/constants/colors.dart';
@@ -578,7 +579,7 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
                                     formatSecondsToHourMinute(
                                       live.duration * 60,
                                     );
-                                debugPrint(
+                                appLog.debug(
                                   '[AssignmentDetailCard] Live: ${live.title} | duration in model: ${live.duration} minutes | formatted: $displayDuration',
                                 );
                                 return Text(

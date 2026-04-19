@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
 import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/features/assignment/data/repositories/assignment_repository.dart';
@@ -64,7 +65,7 @@ class NavigationController extends GetxController {
 
     // Close assignment page when switching tabs
     if (isShowingClassAssignment.value) {
-      debugPrint('[Navigation] Closing ClassAssignmentPage...');
+      appLog.debug('[Navigation] Closing ClassAssignmentPage...');
       hideClassAssignment();
     }
 

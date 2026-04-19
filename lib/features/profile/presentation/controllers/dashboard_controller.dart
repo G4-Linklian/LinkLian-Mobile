@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -91,18 +92,18 @@ class DashboardController extends GetxController {
         (failure) {
           errorMessage.value = failure.message;
           dashboard.value = null;
-          debugPrint('[DashboardController] Error: ${failure.message}');
+          appLog.debug('[DashboardController] Error: ${failure.message}');
         },
         (dashboardData) {
           dashboard.value = dashboardData;
           errorMessage.value = '';
-          debugPrint('[DashboardController] Dashboard loaded successfully');
+          appLog.debug('[DashboardController] Dashboard loaded successfully');
         },
       );
     } catch (e) {
       errorMessage.value = 'Exception: $e';
       dashboard.value = null;
-      debugPrint('[DashboardController] Exception: $e');
+      appLog.debug('[DashboardController] Exception: $e');
     } finally {
       isLoading.value = false;
     }

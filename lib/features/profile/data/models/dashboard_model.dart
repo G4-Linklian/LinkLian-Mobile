@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 
 // Helper function to format seconds to "X ชม. Y นาที" (matching web formatSecondsToHourMinute)
@@ -212,16 +213,16 @@ class PopularPost {
       sectionName = firstSection?['section_name'] ?? '';
 
       // Debug: show what's in first section_instance
-      debugPrint(
+      appLog.debug(
         '[PopularPost] First section_instance keys: ${firstSection?.keys.toList()}',
       );
       if (firstSection != null) {
-        debugPrint('[PopularPost]   post_id: ${firstSection['post_id']}');
-        debugPrint('[PopularPost]   section_id: ${firstSection['section_id']}');
-        debugPrint(
+        appLog.debug('[PopularPost]   post_id: ${firstSection['post_id']}');
+        appLog.debug('[PopularPost]   section_id: ${firstSection['section_id']}');
+        appLog.debug(
           '[PopularPost]   section_name: ${firstSection['section_name']}',
         );
-        debugPrint(
+        appLog.debug(
           '[PopularPost]   subject_name: ${firstSection['subject_name']}',
         );
       }
@@ -372,14 +373,14 @@ class LiveData {
     final minutes = _convertDurationToMinutes(durationValue);
 
     // DEBUG: Print received duration values
-    debugPrint(
+    appLog.debug(
       '[LiveData] Raw duration_second: ${json['duration_second']} (type: ${json['duration_second'].runtimeType})',
     );
-    debugPrint(
+    appLog.debug(
       '[LiveData] duration fallback: ${json['duration']} (type: ${json['duration'].runtimeType})',
     );
-    debugPrint('[LiveData] Converted to minutes: $minutes');
-    debugPrint('[LiveData] Title: ${json['title']} | Duration: ${minutes}m');
+    appLog.debug('[LiveData] Converted to minutes: $minutes');
+    appLog.debug('[LiveData] Title: ${json['title']} | Duration: ${minutes}m');
 
     return LiveData(
       liveId:
@@ -400,20 +401,20 @@ class LiveData {
 
   static int _convertDurationToMinutes(dynamic duration) {
     if (duration == null) {
-      debugPrint('[_convertDurationToMinutes] Duration is null');
+      appLog.debug('[_convertDurationToMinutes] Duration is null');
       return 0;
     }
     if (duration is int) {
       // If duration_second, convert to minutes
       final minutes = (duration ~/ 60);
-      debugPrint(
+      appLog.debug(
         '[_convertDurationToMinutes] Int value: $duration seconds → $minutes minutes',
       );
       return minutes;
     }
     if (duration is double) {
       final minutes = (duration ~/ 60).toInt();
-      debugPrint(
+      appLog.debug(
         '[_convertDurationToMinutes] Double value: $duration seconds → $minutes minutes',
       );
       return minutes;
@@ -421,12 +422,12 @@ class LiveData {
     if (duration is String) {
       final parsed = int.tryParse(duration) ?? 0;
       final minutes = (parsed ~/ 60);
-      debugPrint(
+      appLog.debug(
         '[_convertDurationToMinutes] String value: $duration → parsed $parsed seconds → $minutes minutes',
       );
       return minutes;
     }
-    debugPrint(
+    appLog.debug(
       '[_convertDurationToMinutes] Unknown type: ${duration.runtimeType}',
     );
     return 0;

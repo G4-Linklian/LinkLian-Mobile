@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import '../models/dashboard_model.dart';
 
@@ -22,50 +23,50 @@ class DashboardRemoteDataSource {
       },
     );
 
-    debugPrint('[DashboardRemoteDS] Response status: ${response.statusCode}');
-    debugPrint(
+    appLog.debug('[DashboardRemoteDS] Response status: ${response.statusCode}');
+    appLog.debug(
       '[DashboardRemoteDS] Response success: ${response.data['success']}',
     );
 
     if (response.statusCode == 200 && response.data['success'] == true) {
       final dashboardData = response.data['data'] as List?;
-      debugPrint(
+      appLog.debug(
         '[DashboardRemoteDS] Dashboard data length: ${dashboardData?.length}',
       );
 
       if (dashboardData != null && dashboardData.isNotEmpty) {
         final payload = dashboardData[0]['payload'] as Map<String, dynamic>?;
-        debugPrint(
+        appLog.debug(
           '[DashboardRemoteDS] Payload keys: ${payload?.keys.toList()}',
         );
 
         if (payload != null) {
           final overview = payload['overview'] as Map<String, dynamic>?;
-          debugPrint(
+          appLog.debug(
             '[DashboardRemoteDS] Overview keys: ${overview?.keys.toList()}',
           );
-          debugPrint(
+          appLog.debug(
             '[DashboardRemoteDS] bookmarks_added value: ${overview?['bookmarks_added']}',
           );
 
           _cleanPayload(payload);
 
           final sections = payload['section'] as List?;
-          debugPrint(
+          appLog.debug(
             '[DashboardRemoteDS] After clean - section count: ${sections?.length}',
           );
           if (sections != null && sections.isNotEmpty) {
-            debugPrint('[DashboardRemoteDS] First section: ${sections[0]}');
+            appLog.debug('[DashboardRemoteDS] First section: ${sections[0]}');
           }
 
           return DashboardResponse.fromJson(payload);
         }
       }
     } else {
-      debugPrint(
+      appLog.debug(
         '[DashboardRemoteDS] ERROR: Status code ${response.statusCode} or success false',
       );
-      debugPrint('[DashboardRemoteDS] Full response: ${response.data}');
+      appLog.debug('[DashboardRemoteDS] Full response: ${response.data}');
     }
 
     return DashboardResponse(

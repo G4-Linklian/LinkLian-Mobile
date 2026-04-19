@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/profile/data/models/teacher_dashboard_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -86,7 +87,7 @@ class TeacherDashboardController extends GetxController {
       final userId = authController.userId.value;
       return userId?.toString();
     } catch (_) {
-      debugPrint(
+      appLog.debug(
         '[TeacherDashboardController] Error occurred while fetching user ID',
       );
       return null;

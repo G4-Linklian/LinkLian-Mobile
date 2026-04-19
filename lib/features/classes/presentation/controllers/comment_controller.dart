@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/data/repository/post_repository.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
@@ -53,13 +54,13 @@ class CommentController extends GetxController {
 
     final args = Get.arguments;
     postId = args['postId'] ?? 0;
-    debugPrint('[CommentController] _init: postId from args = $postId');
+    appLog.debug('[CommentController] _init: postId from args = $postId');
 
     if (args['post'] != null) {
       post = args['post'] as PostModel;
-      debugPrint('[CommentController] Post from args (cached)');
+      appLog.debug('[CommentController] Post from args (cached)');
     } else {
-      debugPrint('[CommentController] Fetching post from server...');
+      appLog.debug('[CommentController] Fetching post from server...');
       await _loadPostFromServer(postId);
     }
 
@@ -126,23 +127,23 @@ class CommentController extends GetxController {
     try {
       final args = Get.arguments;
       final sectionId = args['sectionId'] ?? 'unknown';
-      debugPrint('[CommentController] === FETCHING POST START ===');
-      debugPrint('[CommentController] postId=$id, sectionId=$sectionId');
+      appLog.debug('[CommentController] === FETCHING POST START ===');
+      appLog.debug('[CommentController] postId=$id, sectionId=$sectionId');
 
       final repo = PostRepository();
       final result = await repo.getPostDetail(id);
 
       post = result;
-      debugPrint('[CommentController] ✓ POST LOADED');
-      debugPrint('[CommentController] Title: ${result.title}');
+      appLog.debug('[CommentController] ✓ POST LOADED');
+      appLog.debug('[CommentController] Title: ${result.title}');
       final contentPreview = result.content.length > 100
           ? result.content.substring(0, 100)
           : result.content;
-      debugPrint('[CommentController] Content: $contentPreview...');
-      debugPrint('[CommentController] Post type: ${result.postType}');
+      appLog.debug('[CommentController] Content: $contentPreview...');
+      appLog.debug('[CommentController] Post type: ${result.postType}');
     } catch (e, stack) {
-      debugPrint('[CommentController] ✗ FETCH FAILED: $e');
-      debugPrintStack(stackTrace: stack);
+      appLog.debug('[CommentController] ✗ FETCH FAILED: $e');
+      appLog.debugStack(stackTrace: stack);
       DialogHelper.showErrorDialog(description: 'โหลดโพสต์ล้มเหลว: $e');
     }
   }
@@ -276,7 +277,7 @@ class CommentController extends GetxController {
 
       _rebuildFlatList();
     } catch (e) {
-      debugPrint('Refresh comments error: $e');
+      appLog.debug('Refresh comments error: $e');
     }
   }
 

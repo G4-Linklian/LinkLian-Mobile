@@ -70,14 +70,14 @@ class PostRepository {
       if (groups != null && groups.isNotEmpty) data['groups'] = groups;
     }
 
-    debugPrint('📤 Creating post with data: $data');
+    appLog.debug('📤 Creating post with data: $data');
 
     final response = await _apiClient.post<dynamic>(
       '/social-feed/post',
       data: data,
     );
 
-    debugPrint('📥 Create post response: ${response.data}');
+    appLog.debug('📥 Create post response: ${response.data}');
 
     // Handle response - it may be Map or nested
     if (response.data is Map<String, dynamic>) {
@@ -160,7 +160,7 @@ class PostRepository {
       if (isGroup != null) 'is_group': isGroup,
     };
 
-    debugPrint('📤 Update post body: $requestBody');
+    appLog.debug('📤 Update post body: $requestBody');
 
     // If postId is provided, use PUT /social-feed/post/:postId
     if (postId != null && postId > 0) {
@@ -256,7 +256,7 @@ class PostRepository {
 
   Future<PostModel> getPostDetail(int postId) async {
     try {
-      debugPrint(
+      appLog.debug(
         '[PostRepository] === getPostDetail START: postId=$postId ===',
       );
 
@@ -265,7 +265,7 @@ class PostRepository {
       );
 
       final raw = response.data;
-      debugPrint(
+      appLog.debug(
         '[PostRepository] Direct fetch response: ${raw?.keys.toList()}',
       );
 
@@ -275,18 +275,18 @@ class PostRepository {
 
       if (raw.containsKey('data')) {
         final post = PostModel.fromJson(raw['data']);
-        debugPrint('[PostRepository] ✓ Direct fetch SUCCESS: ${post.title}');
+        appLog.debug('[PostRepository] ✓ Direct fetch SUCCESS: ${post.title}');
         return post;
       }
 
       final post = PostModel.fromJson(raw);
-      debugPrint(
+      appLog.debug(
         '[PostRepository] ✓ Direct fetch SUCCESS (no data wrapper): ${post.title}',
       );
       return post;
     } catch (e) {
      
-      debugPrint(
+      appLog.debug(
         '[PostRepository] ✗ Direct fetch FAILED, trying post_content_id=$postId via search-master',
       );
       try {
@@ -296,7 +296,7 @@ class PostRepository {
         );
 
         final raw = response.data;
-        debugPrint(
+        appLog.debug(
           '[PostRepository] search-master response keys: ${raw?.keys.toList()}',
         );
 
@@ -308,7 +308,7 @@ class PostRepository {
             ? (raw['data'] as List? ?? [])
             : [];
 
-        debugPrint(
+        appLog.debug(
           '[PostRepository] search-master found ${dataList.length} results',
         );
 
@@ -316,13 +316,13 @@ class PostRepository {
          
           final firstItem = dataList[0] as Map<String, dynamic>;
           final post = PostModel.fromJson(firstItem);
-          debugPrint('[PostRepository] ✓ search-master SUCCESS: ${post.title}');
+          appLog.debug('[PostRepository] ✓ search-master SUCCESS: ${post.title}');
           return post;
         }
 
         throw Exception('Post not found in search-master results');
       } catch (searchError) {
-        debugPrint('[PostRepository] ✗ search-master FAILED: $searchError');
+        appLog.debug('[PostRepository] ✗ search-master FAILED: $searchError');
         rethrow;
       }
     }
