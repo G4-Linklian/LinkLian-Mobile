@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../core/services/local_storage.dart';
 import '../../../core/services/socket_service.dart';
+import '../../../core/utils/online_presence_utils.dart';
 import 'package:flutter/foundation.dart';
 import '../../layout/controllers/navigation_controller.dart';
 
@@ -55,6 +56,7 @@ class AuthController extends GetxController {
         _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
         _onlineJoinedUserId = null;
       }
+      OnlinePresenceUtils.clearPresenceState();
       _socketService.disconnectOnline();
     });
   }
@@ -191,6 +193,7 @@ class AuthController extends GetxController {
       _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
       _onlineJoinedUserId = null;
     }
+    OnlinePresenceUtils.clearPresenceState();
     _socketService.disconnectOnline();
 
     await LocalStorage.clearAuthSession();
@@ -218,6 +221,7 @@ class AuthController extends GetxController {
       _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
       _onlineJoinedUserId = null;
     }
+    OnlinePresenceUtils.clearPresenceState();
     _socketService.disconnectOnline();
 
     await LocalStorage.clearAuthSession();

@@ -8,6 +8,7 @@ class OnlinePresenceUtils {
   static final ValueNotifier<Map<int, bool>> onlineStatuses =
       ValueNotifier<Map<int, bool>>(<int, bool>{});
   static StreamSubscription<dynamic>? _onlineStreamSubscription;
+  static final Set<int> _subscribedUserIds = <int>{};
 
   static Set<int> toUniqueUserIdSet(Iterable<int?> ids) {
     return ids.whereType<int>().where((id) => id > 0).toSet();
@@ -29,12 +30,23 @@ class OnlinePresenceUtils {
     ensureOnlineStreamBinding(socketService: socketService);
 
     final ids = toUniqueUserIdSet(userSysIds);
-    appLog.info('Subscribing to online status for user_sys_ids: $ids');
     if (ids.isEmpty) {
       return false;
     }
 
-    return socketService.subscribeOnlineStatus(userSysIds: ids);
+    // Keep a global union of user ids so opening another page does not
+    // replace the existing server-side subscription set.
+    _subscribedUserIds.addAll(ids);
+    appLog.info(
+      'Subscribing to online status for merged user_sys_ids: $_subscribedUserIds',
+    );
+
+    return socketService.subscribeOnlineStatus(userSysIds: _subscribedUserIds);
+  }
+
+  static void clearPresenceState() {
+    _subscribedUserIds.clear();
+    onlineStatuses.value = <int, bool>{};
   }
 
   static bool isOnline(int? userSysId) {
