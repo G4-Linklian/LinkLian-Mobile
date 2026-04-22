@@ -14,6 +14,7 @@ import '../../../shared/repositories/post_repository.dart';
 import '../../../shared/repositories/class_feed_repository.dart';
 import 'class_feed_controller.dart';
 import '../../../shared/models/post_model.dart';
+import '../../../../core/utils/online_presence_utils.dart';
 import 'package:flutter/material.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 
@@ -507,6 +508,13 @@ class ClassDetailController extends GetxController {
           );
         }
       }
+
+      final allUserIds = posts.map((post) => post.userSysId);
+      OnlinePresenceUtils.subscribeOnlineStatus(
+        socketService: _socket,
+        userSysIds: allUserIds,
+      );
+
       _offset += result.length;
     } catch (e) {
       appLog.error('fetchPosts failed: $e', actionPage: 'ClassDetailScreen');
