@@ -89,6 +89,9 @@ class LinkLianIcon {
   static const IconData add = TablerIcons.square_rounded_plus_filled;
   static const IconData bulbFilled = TablerIcons.bulb_filled;
   static const IconData fileTextSpark = TablerIcons.file_text_spark;
+  static const IconData fileDescription = TablerIcons.file_description;
+  static const IconData broadcast = TablerIcons.broadcast;
+  static const IconData alignCenter = TablerIcons.align_center;
 
   //auth
   static const IconData info = TablerIcons.info_circle;
@@ -152,8 +155,8 @@ class LinkLianIcon {
   static const IconData circleDot = TablerIcons.circle_dot;
   static const IconData users = TablerIcons.users;
 
-  static const IconData useroff = TablerIcons.user_off;
-  static const IconData user = TablerIcons.user;
+  static const IconData useroff = Icons.person_off;
+  static const IconData user = Icons.person;
   static const IconData live = TablerIcons.broadcast;
 
   static double? get fontSubheading => null;

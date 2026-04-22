@@ -352,9 +352,6 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget? _buildBottomNav(int currentTab) {
-    if (_navController.isShowingClassAssignment.value && currentTab == 0) {
-      return null;
-    }
     final maxIndex = isStudent ? 3 : 2;
     final safeIndex = currentTab > maxIndex ? 1 : currentTab;
 

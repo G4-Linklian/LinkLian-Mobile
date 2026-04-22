@@ -20,6 +20,11 @@ class ProfileBinding extends Bindings {
       fenix: true,
     );
 
+    Get.lazyPut<TeachingScheduleRepository>(
+      () => TeachingScheduleRepository(Get.find<ApiClient>()),
+      fenix: true,
+    );
+
     Get.lazyPut(
       () => ProfileController(
         Get.find<ProfileRepository>(),

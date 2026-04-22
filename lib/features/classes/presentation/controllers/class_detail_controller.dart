@@ -32,6 +32,7 @@ class ClassDetailController extends GetxController {
 
   final Rxn<dynamic> activeLive = Rxn<dynamic>();
   final hasLiveHistory = false.obs;
+  final liveHistoryCount = 0.obs;
 
   static const int maxAISelectCount = 1;
 
@@ -150,7 +151,8 @@ class ClassDetailController extends GetxController {
 
     sectionId.value = newSectionId;
     subjectNameTh.value = args['subjectName'] as String? ?? '';
-    effectiveClassName.value = args['className'] as String? ?? '';
+    effectiveClassName.value =
+      (args['className'] as String?) ?? (args['sectionName'] as String?) ?? '';
 
     fetchClassDetailFromFeed();
     unawaited(fetchHasLiveHistory());
@@ -624,6 +626,7 @@ class ClassDetailController extends GetxController {
     try {
       if (sectionId.value == null) {
         hasLiveHistory.value = false;
+        liveHistoryCount.value = 0;
         return;
       }
 
@@ -631,8 +634,10 @@ class ClassDetailController extends GetxController {
         sectionId: sectionId.value!,
       );
       hasLiveHistory.value = history.isNotEmpty;
+      liveHistoryCount.value = history.length;
     } catch (e) {
       hasLiveHistory.value = false;
+      liveHistoryCount.value = 0;
     }
   }
 

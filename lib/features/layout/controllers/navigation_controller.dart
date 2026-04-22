@@ -61,6 +61,7 @@ class NavigationController extends GetxController {
     final previousIndex = selectedIndex.value;
     selectedIndex.value = index;
 
+
     if (previousIndex == 2 && index != 2) {
       if (Get.isRegistered<CommunityController>()) {
         Get.find<CommunityController>().resetSearch();
@@ -113,6 +114,9 @@ class NavigationController extends GetxController {
   // Class Assignment (Tab 0 sub-page)
 
   void showClassAssignment(Map<String, dynamic> args) {
+    // 0) Switch to Assignment tab first
+    changeTab(0);
+
     // 1) Ensure repositories exist
     _ensureAssignmentDependencies();
 
@@ -137,9 +141,7 @@ class NavigationController extends GetxController {
   void hideClassAssignment() {
     isShowingClassAssignment.value = false;
     classAssignmentArgs.value = null;
-
-    // Dispose the controller to free memory
-    _safeDelete<ClassAssignmentController>(force: true);
+    // _safeDelete<ClassAssignmentController>(force: true); // Prevent dispose to keep state
   }
 
   void resetForRoleChange(bool isStudent) {

@@ -70,14 +70,14 @@ class PostRepository {
       if (groups != null && groups.isNotEmpty) data['groups'] = groups;
     }
 
-    debugPrint('📤 Creating post with data: $data');
+    appLog.debug('📤 Creating post with data: $data');
 
     final response = await _apiClient.post<dynamic>(
       '/social-feed/post',
       data: data,
     );
 
-    debugPrint('📥 Create post response: ${response.data}');
+    appLog.debug('📥 Create post response: ${response.data}');
 
     // Handle response - it may be Map or nested
     if (response.data is Map<String, dynamic>) {
@@ -134,19 +134,20 @@ class PostRepository {
     if (maxScore != null) body['max_score'] = maxScore;
     if (isGroup != null) body['is_group'] = isGroup;
 
-    // Build attachments array - always send (even if empty) to allow clearing
-    final List<Map<String, String>>? attachmentsList = attachments?.map((a) {
-                final map = {
-                  'file_url': a['file_url']?.toString() ?? '',
-                  'file_type': a['file_type']?.toString() ?? '',
-                };
-                if (a['original_name'] != null) {
-                  map['original_name'] = a['original_name']?.toString() ?? '';
-                }
-                return map;
-              })
-              .where((a) => a['file_url']!.isNotEmpty)
-              .toList();
+
+    final List<Map<String, String>>? attachmentsList = attachments
+        ?.map((a) {
+          final map = {
+            'file_url': a['file_url']?.toString() ?? '',
+            'file_type': a['file_type']?.toString() ?? '',
+          };
+          if (a['original_name'] != null) {
+            map['original_name'] = a['original_name']?.toString() ?? '';
+          }
+          return map;
+        })
+        .where((a) => a['file_url']!.isNotEmpty)
+        .toList();
 
     // Build the full request body
     final requestBody = <String, dynamic>{
@@ -159,7 +160,7 @@ class PostRepository {
       if (isGroup != null) 'is_group': isGroup,
     };
 
-    debugPrint('📤 Update post body: $requestBody');
+    appLog.debug('📤 Update post body: $requestBody');
 
     // If postId is provided, use PUT /social-feed/post/:postId
     if (postId != null && postId > 0) {
@@ -254,20 +255,76 @@ class PostRepository {
   }
 
   Future<PostModel> getPostDetail(int postId) async {
-    final response = await _apiClient.get<Map<String, dynamic>>(
-      '/social-feed/post/$postId',
-    );
+    try {
+      appLog.debug(
+        '[PostRepository] === getPostDetail START: postId=$postId ===',
+      );
 
-    final raw = response.data;
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/social-feed/post/$postId',
+      );
 
-    if (raw == null) {
-      throw Exception('No data');
+      final raw = response.data;
+      appLog.debug(
+        '[PostRepository] Direct fetch response: ${raw?.keys.toList()}',
+      );
+
+      if (raw == null) {
+        throw Exception('No data');
+      }
+
+      if (raw.containsKey('data')) {
+        final post = PostModel.fromJson(raw['data']);
+        appLog.debug('[PostRepository] ✓ Direct fetch SUCCESS: ${post.title}');
+        return post;
+      }
+
+      final post = PostModel.fromJson(raw);
+      appLog.debug(
+        '[PostRepository] ✓ Direct fetch SUCCESS (no data wrapper): ${post.title}',
+      );
+      return post;
+    } catch (e) {
+     
+      appLog.debug(
+        '[PostRepository] ✗ Direct fetch FAILED, trying post_content_id=$postId via search-master',
+      );
+      try {
+        final response = await _apiClient.get<Map<String, dynamic>>(
+          '/social-feed/post/search-master',
+          queryParameters: {'post_content_id': postId.toString()},
+        );
+
+        final raw = response.data;
+        appLog.debug(
+          '[PostRepository] search-master response keys: ${raw?.keys.toList()}',
+        );
+
+        if (raw == null) {
+          throw Exception('No data from search-master');
+        }
+
+        final dataList = raw.containsKey('data')
+            ? (raw['data'] as List? ?? [])
+            : [];
+
+        appLog.debug(
+          '[PostRepository] search-master found ${dataList.length} results',
+        );
+
+        if (dataList.isNotEmpty) {
+         
+          final firstItem = dataList[0] as Map<String, dynamic>;
+          final post = PostModel.fromJson(firstItem);
+          appLog.debug('[PostRepository] ✓ search-master SUCCESS: ${post.title}');
+          return post;
+        }
+
+        throw Exception('Post not found in search-master results');
+      } catch (searchError) {
+        appLog.debug('[PostRepository] ✗ search-master FAILED: $searchError');
+        rethrow;
+      }
     }
-
-    if (raw.containsKey('data')) {
-      return PostModel.fromJson(raw['data']);
-    }
-
-    return PostModel.fromJson(raw);
   }
 }

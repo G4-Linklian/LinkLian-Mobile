@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:LinkLian/features/profile/presentation/pages/dashboard_page.dart';
+import 'package:LinkLian/features/profile/presentation/bindings/dashboard_binding.dart';
 import 'package:LinkLian/features/profile/presentation/widgets/dashboard_card.dart';
 import 'package:LinkLian/features/profile/presentation/widgets/teaching_schedule_section.dart';
 import '../controllers/profile_controller.dart';
@@ -15,7 +16,11 @@ class TeacherProfileView extends GetView<ProfileController> {
       children: [
         DashboardCard(
           onTap: () {
-            Get.to(() => const DashboardPage());
+            Get.to(
+              () => const DashboardPage(),
+              binding: DashboardBinding(),
+              transition: Transition.rightToLeft,
+            );
           },
         ),
 
