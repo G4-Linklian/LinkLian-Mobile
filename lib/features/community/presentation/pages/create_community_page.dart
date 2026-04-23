@@ -220,7 +220,7 @@ class CreateCommunityPage extends StatelessWidget {
 
                     Text.rich(
                       TextSpan(
-                        text: "รูปปกชมชน ",
+                        text: "รูปปกชุมชน ",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -391,7 +391,7 @@ class CreateCommunityPage extends StatelessWidget {
 
                     Text.rich(
                       TextSpan(
-                        text: "ประเภทชุชน ",
+                        text: "ประเภทชุมชน ",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
