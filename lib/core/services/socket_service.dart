@@ -9,12 +9,19 @@ class SocketService {
   SocketService._internal();
 
   WebSocketChannel? _channel;
+  WebSocketChannel? _onlineChannel;
   final StreamController<dynamic> _socketResponseController =
       StreamController<dynamic>.broadcast();
+    final StreamController<dynamic> _onlineStreamController =
+      StreamController<dynamic>.broadcast();
   Stream<dynamic> get socketResponseStream => _socketResponseController.stream;
+    Stream<dynamic> get onlineStream => _onlineStreamController.stream;
 
   bool _isConnected = false;
   bool get isConnected => _isConnected;
+
+  bool _isOnlineConnected = false;
+  bool get isOnlineConnected => _isOnlineConnected;
 
   Future<void> connect(String url) async {
     if (_isConnected) {
@@ -46,6 +53,101 @@ class SocketService {
       appLog.error('WS Connection Exception: $e');
       _isConnected = false;
     }
+  }
+
+  Future<void> connectOnline(String url) async {
+    if (_isOnlineConnected && _onlineChannel != null) {
+      appLog.info('Online socket is already connected.');
+      return;
+    }
+
+    try {
+      appLog.info('Connecting to online WebSocket: $url');
+      _onlineChannel = WebSocketChannel.connect(Uri.parse(url));
+      _isOnlineConnected = true;
+
+      _onlineChannel!.stream.listen(
+        (message) {
+          appLog.info('ONLINE WS Received: $message');
+          _parseOnlineMessage(message);
+        },
+        onError: (error) {
+          appLog.error('ONLINE WS Error: $error');
+          _isOnlineConnected = false;
+        },
+        onDone: () {
+          appLog.info('ONLINE WS Disconnected');
+          _isOnlineConnected = false;
+        },
+      );
+    } catch (e) {
+      appLog.error('ONLINE WS Connection Exception: $e');
+      _isOnlineConnected = false;
+    }
+  }
+
+  void joinOnline({required int userSysId}) {
+    if (!_isOnlineConnected || _onlineChannel == null) {
+      appLog.warning('Online socket not connected. Cannot join online.');
+      return;
+    }
+
+    final message = {
+      'type': 'JOIN_ONLINE',
+      'payload': {'user_sys_id': userSysId.toString()},
+    };
+
+    final jsonMessage = jsonEncode(message);
+    appLog.info('ONLINE WS Sending: $jsonMessage');
+    _onlineChannel!.sink.add(jsonMessage);
+  }
+
+  void leaveOnline({required int userSysId}) {
+    if (!_isOnlineConnected || _onlineChannel == null) {
+      return;
+    }
+
+    final message = {
+      'type': 'LEAVE_ONLINE',
+      'payload': {'user_sys_id': userSysId.toString()},
+    };
+
+    final jsonMessage = jsonEncode(message);
+    appLog.info('ONLINE WS Sending: $jsonMessage');
+    _onlineChannel!.sink.add(jsonMessage);
+  }
+
+  bool subscribeOnlineStatus({required Iterable<int> userSysIds}) {
+    if (!_isOnlineConnected || _onlineChannel == null) {
+      appLog.warning(
+        'Online socket not connected. Cannot subscribe online status.',
+      );
+      return false;
+    }
+
+    final ids =
+        userSysIds
+            .where((id) => id > 0)
+            .map((id) => id.toString())
+            .toSet()
+            .toList();
+            
+    appLog.info('ONLINE WS Subscribing to user_sys_ids: $ids');
+
+    if (ids.isEmpty) {
+      appLog.info('Skip ONLINE_SUBSCRIBE because user list is empty.');
+      return false;
+    }
+
+    final message = {
+      'type': 'ONLINE_SUBSCRIBE',
+      'payload': {'user_sys_ids': ids},
+    };
+
+    final jsonMessage = jsonEncode(message);
+    appLog.info('ONLINE WS Sending: $jsonMessage');
+    _onlineChannel!.sink.add(jsonMessage);
+    return true;
   }
 
   void joinRoom({required int userId, required int chatId}) {
@@ -359,11 +461,38 @@ class SocketService {
     }
   }
 
+  void _parseOnlineMessage(dynamic message) {
+    try {
+      dynamic decoded = message;
+      if (message is String) {
+        decoded = jsonDecode(message);
+      }
+
+      if (!_onlineStreamController.isClosed) {
+        _onlineStreamController.add(decoded);
+      }
+    } catch (e) {
+      appLog.error('Error decoding ONLINE WS message: $e');
+      if (!_onlineStreamController.isClosed) {
+        _onlineStreamController.add(message);
+      }
+    }
+  }
+
   void disconnect() {
     if (_isConnected) {
       _channel?.sink.close();
       _isConnected = false;
       appLog.info('Socket manual disconnect');
+    }
+  }
+
+  void disconnectOnline() {
+    if (_isOnlineConnected) {
+      _onlineChannel?.sink.close();
+      _onlineChannel = null;
+      _isOnlineConnected = false;
+      appLog.info('Online socket manual disconnect');
     }
   }
 
@@ -381,8 +510,10 @@ class SocketService {
 
   void dispose() {
     disconnect();
+    disconnectOnline();
     disconnectQa();
     _socketResponseController.close();
+    _onlineStreamController.close();
     _qaStreamController.close();
   }
 }

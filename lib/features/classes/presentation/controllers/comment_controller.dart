@@ -8,9 +8,12 @@ import '../../data/models/comment_model.dart';
 import '../../../shared/models/post_model.dart';
 import '../../data/repositories/comment_repository.dart';
 import '../../../../core/utils/dialog_helper.dart';
+import '../../../../core/services/socket_service.dart';
+import '../../../../core/utils/online_presence_utils.dart';
 
 class CommentController extends GetxController {
   final CommentRepository _repo = CommentRepository();
+  final SocketService _socketService = SocketService();
 
   // ===== post / user =====
   late final int postId;
@@ -98,6 +101,7 @@ class CommentController extends GetxController {
       }
 
       _rebuildFlatList();
+      _subscribeOnlineFromComments(res.comments);
 
       offset += res.comments.length;
       hasMore = res.hasMore;
@@ -276,8 +280,30 @@ class CommentController extends GetxController {
       }
 
       _rebuildFlatList();
+      _subscribeOnlineFromComments(res.comments);
     } catch (e) {
       appLog.debug('Refresh comments error: $e');
+    }
+  }
+
+  void _subscribeOnlineFromComments(List<CommentModel> comments) {
+    final ids = <int?>[];
+    for (final comment in comments) {
+      _collectCommentUserIds(comment, ids);
+    }
+
+    OnlinePresenceUtils.subscribeOnlineStatus(
+      socketService: _socketService,
+      userSysIds: ids,
+    );
+  }
+
+  void _collectCommentUserIds(CommentModel comment, List<int?> output) {
+    if (!comment.isAnonymous) {
+      output.add(comment.userSysId);
+    }
+    for (final child in comment.children) {
+      _collectCommentUserIds(child, output);
     }
   }
 

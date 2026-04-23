@@ -1,6 +1,8 @@
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/services/local_storage.dart';
+import 'package:LinkLian/core/services/socket_service.dart';
+import 'package:LinkLian/core/utils/online_presence_utils.dart';
 import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/auth/controller/auth_controller.dart';
 import 'package:LinkLian/features/chat/presentation/pages/ai_chat_list.page.dart';
@@ -23,10 +25,13 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final ChatController _chatController = ChatController();
+  final SocketService _socketService = SocketService();
   List<ChatModel> _chats = [];
   bool _isLoading = true;
+  final Map<int, bool> _onlineStatuses = <int, bool>{};
 
   Timer? _debounce;
+  StreamSubscription? _onlineSubscription;
 
   List<ChatModel> _searchUsers = [];
   bool _isSearching = false;
@@ -38,6 +43,9 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    _onlineSubscription = _socketService.onlineStream.listen(
+      _handleOnlineSocketEvent,
+    );
     _loadChats();
     _searchController.addListener(() {
       setState(() {});
@@ -61,6 +69,8 @@ class _ChatPageState extends State<ChatPage> {
         _chats = chats;
         _isLoading = false;
       });
+
+      _subscribeOnlineStatusFromChats(chats);
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -86,6 +96,49 @@ class _ChatPageState extends State<ChatPage> {
       return '${difference.inDays} วันที่แล้ว';
     } else {
       return DateFormat('dd/MM/yy').format(dateTime);
+    }
+  }
+
+  void _subscribeOnlineStatusFromChats(List<ChatModel> chats) {
+    final subscribed = OnlinePresenceUtils.subscribeOnlineStatus(
+      socketService: _socketService,
+      userSysIds: chats.map((chat) => chat.userSysId),
+    );
+
+    if (!subscribed) {
+      appLog.info(
+        'Skip ONLINE_SUBSCRIBE from chat list (socket not ready or ids empty).',
+      );
+    }
+  }
+
+  void _handleOnlineSocketEvent(dynamic event) {
+    if (!mounted || event is! Map) {
+      return;
+    }
+
+    final eventType = event['type']?.toString();
+    final payload = event['payload'];
+
+    if (eventType == 'ONLINE_SUBSCRIPTION_RESULT' ||
+        eventType == 'ONLINE_STATUS_RESULT') {
+      final statuses = OnlinePresenceUtils.parseStatuses(payload?['statuses']);
+      if (statuses.isEmpty) return;
+
+      setState(() {
+        _onlineStatuses.addAll(statuses);
+      });
+      return;
+    }
+
+    if (eventType == 'ONLINE_PRESENCE_CHANGED') {
+      final userId = OnlinePresenceUtils.parseUserSysId(payload?['user_sys_id']);
+      if (userId == null) return;
+
+      final isOnline = OnlinePresenceUtils.parseOnlineFlag(payload?['is_online']);
+      setState(() {
+        _onlineStatuses[userId] = isOnline;
+      });
     }
   }
 
@@ -300,6 +353,8 @@ class _ChatPageState extends State<ChatPage> {
     final displayName = isDeletedUser
         ? "ไม่มีบัญชีผู้ใช้งาน"
         : '${chat.firstName ?? ''} ${chat.lastName ?? ''}'.trim();
+    final isOnline =
+      chat.userSysId != null && (_onlineStatuses[chat.userSysId!] ?? false);
     return InkWell(
       onTap: () async {
         final navigator = Navigator.of(context);
@@ -396,19 +451,20 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
                 // Online indicator (optional - ถ้ามีข้อมูล online status)
-                // Positioned(
-                //   bottom: 2,
-                //   right: 2,
-                //   child: Container(
-                //     width: 14,
-                //     height: 14,
-                //     decoration: BoxDecoration(
-                //       color: Colors.green,
-                //       shape: BoxShape.circle,
-                //       border: Border.all(color: Colors.white, width: 2),
-                //     ),
-                //   ),
-                // ),
+                if (isOnline)
+                  Positioned(
+                    bottom: 2,
+                    right: 2,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
               ],
             ),
 
@@ -493,6 +549,8 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildSearchUserItem(ChatModel user) {
+    final isOnline =
+        user.userSysId != null && (_onlineStatuses[user.userSysId!] ?? false);
     return InkWell(
       onTap: () async {
         final navigator = Navigator.of(context);
@@ -537,22 +595,40 @@ class _ChatPageState extends State<ChatPage> {
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundImage:
-                  user.profileImage != null && user.profileImage!.isNotEmpty
-                  ? NetworkImage(user.profileImage!)
-                  : null,
-              backgroundColor: _getAvatarColor(user.firstName ?? ''),
-              child: user.profileImage == null || user.profileImage!.isEmpty
-                  ? Text(
-                      _getInitials(user.firstName, user.lastName),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 22,
+                  backgroundImage:
+                      user.profileImage != null && user.profileImage!.isNotEmpty
+                      ? NetworkImage(user.profileImage!)
+                      : null,
+                  backgroundColor: _getAvatarColor(user.firstName ?? ''),
+                  child: user.profileImage == null || user.profileImage!.isEmpty
+                      ? Text(
+                          _getInitials(user.firstName, user.lastName),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+                if (isOnline)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
-                    )
-                  : null,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -658,6 +734,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _onlineSubscription?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();

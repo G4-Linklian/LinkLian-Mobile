@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/utils/online_presence_utils.dart';
 import '../../data/models/comment_model.dart';
 
 class CardComment extends StatelessWidget {
@@ -108,7 +109,7 @@ class CardComment extends StatelessWidget {
       );
     }
 
-    return CircleAvatar(
+    final baseAvatar = CircleAvatar(
       radius: 20,
       backgroundColor: AppColors.primaryPalette[200],
       foregroundImage:
@@ -123,6 +124,39 @@ class CardComment extends StatelessWidget {
               comment.profilePic!.isEmpty)
           ? Icon(Icons.person, color: AppColors.primaryPalette[600])
           : null,
+    );
+
+    return ValueListenableBuilder<Map<int, bool>>(
+      valueListenable: OnlinePresenceUtils.onlineStatuses,
+      builder: (_, statuses, __) {
+        final userId = comment.userSysId;
+        final isOnline =
+            !comment.isAnonymous && userId != null && (statuses[userId] ?? false);
+
+        if (!isOnline) {
+          return baseAvatar;
+        }
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            baseAvatar,
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/core/constants/linklian-icon.dart';
+import 'package:LinkLian/core/utils/online_presence_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:LinkLian/features/chat/data/models/chat.model.dart';
 import 'package:LinkLian/features/chat/presentation/controllers/chat.message.controller.dart';
@@ -253,46 +254,82 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
         ),
         title: Row(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE0E0E0), width: 1.5),
-              ),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: isDeletedUser
-                    ? Colors.grey[300]
-                    : (widget.chat.profileImage == null ||
-                          widget.chat.profileImage!.isEmpty)
-                    ? _getAvatarColor(widget.chat.firstName ?? '')
-                    : Colors.transparent,
-                backgroundImage:
-                    !isDeletedUser &&
-                        widget.chat.profileImage != null &&
-                        widget.chat.profileImage!.isNotEmpty
-                    ? NetworkImage(widget.chat.profileImage!)
-                    : null,
-                child: isDeletedUser
-                    ? Icon(
-                        LinkLianIcon.useroff,
-                        color: Colors.grey[600],
-                        size: 20,
-                      )
-                    : (widget.chat.profileImage == null ||
-                              widget.chat.profileImage!.isEmpty
-                          ? Text(
-                              _getInitials(
-                                widget.chat.firstName,
-                                widget.chat.lastName,
-                              ),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            )
-                          : null),
-              ),
+            ValueListenableBuilder<Map<int, bool>>(
+              valueListenable: OnlinePresenceUtils.onlineStatuses,
+              builder: (_, statuses, __) {
+                final userId = widget.chat.userSysId;
+                final isOnline =
+                    !isDeletedUser && userId != null && (statuses[userId] ?? false);
+
+                final baseAvatar = Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFE0E0E0),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: isDeletedUser
+                        ? Colors.grey[300]
+                        : (widget.chat.profileImage == null ||
+                              widget.chat.profileImage!.isEmpty)
+                        ? _getAvatarColor(widget.chat.firstName ?? '')
+                        : Colors.transparent,
+                    backgroundImage:
+                        !isDeletedUser &&
+                            widget.chat.profileImage != null &&
+                            widget.chat.profileImage!.isNotEmpty
+                        ? NetworkImage(widget.chat.profileImage!)
+                        : null,
+                    child: isDeletedUser
+                        ? Icon(
+                            LinkLianIcon.useroff,
+                            color: Colors.grey[600],
+                            size: 20,
+                          )
+                        : (widget.chat.profileImage == null ||
+                                  widget.chat.profileImage!.isEmpty
+                              ? Text(
+                                  _getInitials(
+                                    widget.chat.firstName,
+                                    widget.chat.lastName,
+                                  ),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                )
+                              : null),
+                  ),
+                );
+
+                if (!isOnline) {
+                  return baseAvatar;
+                }
+
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    baseAvatar,
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(width: 12),
