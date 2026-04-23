@@ -836,19 +836,11 @@ class _SectionDetailSheet extends StatefulWidget {
 }
 
 class _SectionDetailSheetState extends State<_SectionDetailSheet> {
-  late int _selectedTabIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedTabIndex = widget.initialTab;
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final bottomSheetHeight = screenHeight * 0.75;
-    
+
     return SizedBox(
       height: bottomSheetHeight,
       child: Container(
@@ -883,14 +875,6 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      // Text(
-                      //   widget.section.sectionName,
-                      //   style: TextStyle(
-                      //     fontSize: 24,
-                      //     fontWeight: FontWeight.w700,
-                      //     color: AppColors.primaryPalette[700],
-                      //   ),
-                      // ),
                       const SizedBox(height: 6),
                       Text(
                         widget.section.subjectName,
@@ -912,98 +896,31 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
                 padding: const EdgeInsets.only(left: 16),
                 child: const Divider(height: 20),
               ),
-              // Tabs
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedTabIndex = 0),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  LinkLianIcon.fileDescription,
-                                  size: 16,
-                                  color: AppColors.primaryPalette[700],
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'การส่งงาน',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primaryPalette[700],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              height: 2,
-                              color: _selectedTabIndex == 0
-                                  ? AppColors.primaryPalette[400]
-                                  : Colors.transparent,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedTabIndex = 1),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  LinkLianIcon.broadcast,
-                                  size: 16,
-                                  color: AppColors.primaryPalette[700],
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'ไลฟ์และคำถาม',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primaryPalette[700],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              height: 2,
-                              color: _selectedTabIndex == 1
-                                  ? AppColors.primaryPalette[400]
-                                  : Colors.transparent,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
               // Content
+              const SizedBox(height: 16),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(left: 16),
                   child: SingleChildScrollView(
-                    child: _selectedTabIndex == 0
-                        ? _buildAssignmentList()
-                        : _buildLiveList(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'การส่งงาน',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        _buildAssignmentList(),
+                      ],
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              // Footer Button - changes based on tab
+              // Footer Button - only assignment
               Padding(
                 padding: const EdgeInsets.only(left: 16),
                 child: SizedBox(
@@ -1011,25 +928,13 @@ class _SectionDetailSheetState extends State<_SectionDetailSheet> {
                   height: 40,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      if (_selectedTabIndex == 0) {
-                        // Tab 0: Assignment - Go to Class Assignment page
-                        Navigator.pop(context, {'action': 'assignment'});
-                      } else if (_selectedTabIndex == 1) {
-                        // Tab 1: Lives - Go to Class Detail page
-                        Navigator.pop(context, {'action': 'class_detail'});
-                      }
+                      Navigator.pop(context, {'action': 'assignment'});
                     },
                     icon: Icon(
-                      _selectedTabIndex == 0
-                          ? LinkLianIcon.homework
-                          : LinkLianIcon.classroom,
+                      LinkLianIcon.homework,
                       size: 16,
                     ),
-                    label: Text(
-                      _selectedTabIndex == 0
-                          ? 'ไปที่การบ้าน'
-                          : 'ไปที่ห้องเรียน',
-                    ),
+                    label: const Text('ไปที่การบ้าน'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryPalette[500],
                       foregroundColor: Colors.white,

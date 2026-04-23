@@ -107,7 +107,7 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
                         elevation: 0,
                       ),
                       child: const Text(
-                        "ยกเลิกการโพสต์",
+                        "ยกเลิกโพสต์",
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,

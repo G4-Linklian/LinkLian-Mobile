@@ -47,10 +47,10 @@ class ClassFeedController extends GetxController {
     // Listen to instId changes (when user changes)
     ever<int?>(auth.instId, (instId) {
       if (instId != null) {
-        _clearClassData();
+        clearClassData();
         loadInitialData();
       } else {
-        _clearClassData();
+        clearClassData();
       }
     });
 
@@ -61,7 +61,7 @@ class ClassFeedController extends GetxController {
   }
 
   /// Clear all class data
-  void _clearClassData() {
+  void clearClassData() {
     classList.clear();
     semesters.clear();
     selectedSemesterId.value = null;
@@ -192,7 +192,7 @@ class ClassFeedController extends GetxController {
 
   @override
   void onClose() {
-    _clearClassData();
+    clearClassData();
     super.onClose();
   }
 }
