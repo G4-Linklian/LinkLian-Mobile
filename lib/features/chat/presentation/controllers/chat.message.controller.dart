@@ -155,7 +155,7 @@ class ChatMessageController {
   void _scheduleUIUpdate() {
     _hasUpdates = true;
     _updateTimer?.cancel();
-    _updateTimer = Timer(const Duration(milliseconds: 50), () {
+    _updateTimer = Timer(const Duration(milliseconds: 120), () {
       if (_hasUpdates && !_messagesController.isClosed) {
         _messagesController.add(List.unmodifiable(_messages));
         _hasUpdates = false;

@@ -31,6 +31,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
   bool _initialScrollDone = false;
   DateTime? _jumpBackReadyTime;
   int _lastRenderedMessageCount = 0;
+  bool _isScrolling = false;
 
   @override
   void initState() {
@@ -93,15 +94,6 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     }
   }
 
-  // void _handleSend() async {
-  //   final text = _textController.text.trim();
-  //   if (text.isNotEmpty) {
-  //     _textController.clear();
-  //     await _controller.sendMessage(text);
-  //     setState(() {});
-  //     _scrollToBottom();
-  //   }
-  // }
   void _handleSend() async {
     final text = _textController.text.trim();
 
@@ -119,26 +111,50 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
 
     if (text.isNotEmpty) {
       _textController.clear();
+      // await _controller.sendMessage(text);
+      // setState(() {});
+      // _scrollToBottom();
       await _controller.sendMessage(text);
       setState(() {});
-      _scrollToBottom();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
     }
   }
 
+  // void _scrollToBottom() {
+  //   Future.delayed(const Duration(milliseconds: 300), () {
+  //     if (_itemScrollController.isAttached && _controller.messages.isNotEmpty) {
+  //       _itemScrollController.scrollTo(
+  //         index: _controller.messages.length - 1,
+  //         duration: const Duration(milliseconds: 400),
+  //         curve: Curves.easeOutCubic,
+  //       );
+  //       if (_showScrollToLatestButton) {
+  //         setState(() {
+  //           _showScrollToLatestButton = false;
+  //         });
+  //       }
+  //     }
+  //   });
+  // }
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 150), () {
+    if (_isScrolling) return;
+
+    _isScrolling = true;
+
+    Future.delayed(const Duration(milliseconds: 300), () {
       if (_itemScrollController.isAttached && _controller.messages.isNotEmpty) {
         _itemScrollController.scrollTo(
           index: _controller.messages.length - 1,
-          duration: const Duration(milliseconds: 520),
+          duration: const Duration(milliseconds: 400),
           curve: Curves.easeOutCubic,
         );
-        if (_showScrollToLatestButton) {
-          setState(() {
-            _showScrollToLatestButton = false;
-          });
-        }
       }
+
+      Future.delayed(const Duration(milliseconds: 400), () {
+        _isScrolling = false;
+      });
     });
   }
 
@@ -259,7 +275,9 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
               builder: (_, statuses, __) {
                 final userId = widget.chat.userSysId;
                 final isOnline =
-                    !isDeletedUser && userId != null && (statuses[userId] ?? false);
+                    !isDeletedUser &&
+                    userId != null &&
+                    (statuses[userId] ?? false);
 
                 final baseAvatar = Container(
                   decoration: BoxDecoration(
@@ -396,13 +414,18 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
 
                     // Auto scroll to bottom only on first load
                     if (messages.isNotEmpty && !_initialScrollDone) {
-                      _initialScrollDone = true;
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToBottom();
+                        if (_itemScrollController.isAttached) {
+                          _itemScrollController.jumpTo(
+                            index: messages.length - 1,
+                          );
+                        }
+
+                        _initialScrollDone = true;
+
                         Future.delayed(const Duration(milliseconds: 450), () {
-                          if (!mounted || !_suppressScrollToLatestButton) {
+                          if (!mounted || !_suppressScrollToLatestButton)
                             return;
-                          }
                           setState(() {
                             _suppressScrollToLatestButton = false;
                           });
@@ -418,14 +441,15 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
 
                     _lastRenderedMessageCount = messages.length;
 
-                    // Debounce auto scroll to prevent excessive scrolling
                     return ScrollablePositionedList.builder(
                       itemScrollController: _itemScrollController,
                       itemPositionsListener: _itemPositionsListener,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 20,
-                      ),
+
+                      initialScrollIndex: messages.isNotEmpty
+                          ? messages.length - 1
+                          : 0,
+                      initialAlignment: 0.995,
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final message = messages[index];
@@ -508,6 +532,7 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                     );
                   },
                 ),
+
                 if (_jumpBackIndex != null || _showScrollToLatestButton)
                   Positioned(
                     bottom: 16,
@@ -533,10 +558,8 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                                 ),
                               ),
                             ),
-                          ),
-                        if (_jumpBackIndex != null && _showScrollToLatestButton)
-                          const SizedBox(height: 10),
-                        if (_showScrollToLatestButton)
+                          )
+                        else if (_showScrollToLatestButton) // 🔥 ใช้ else if
                           Material(
                             elevation: 4,
                             color: AppColors.primaryPalette[500],
