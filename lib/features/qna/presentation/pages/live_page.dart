@@ -39,11 +39,6 @@ class _LivePageState extends State<LivePage> {
 
     _chatSheetFraction = 0.75;
     controller.isChatOpen.value = false;
-    // New controller already runs enter flow in onInit.
-    // Manually re-enter only when reusing an existing controller instance.
-    if (hasRegisteredController) {
-      controller.enterLiveSessionFromArgs();
-    }
 
     // Debug logging
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -70,6 +65,8 @@ class _LivePageState extends State<LivePage> {
 
   void _onHeaderDragUpdate(double primaryDelta, double screenHeight) {
     if (screenHeight <= 0) return;
+
+    if (primaryDelta < 0) return;
 
     final next = (_chatSheetFraction - (primaryDelta / screenHeight)).clamp(
       _chatSheetMinFraction,
