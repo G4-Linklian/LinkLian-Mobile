@@ -193,7 +193,7 @@ class ChatMessageBubble extends StatelessWidget {
                                       ? "คุณ"
                                       : isReplyDeletedUser
                                       ? "ไม่มีบัญชีผู้ใช้งาน"
-                                      : replyMessage!.firstName ?? '',
+                                      : "${replyMessage!.firstName ?? ''} ${replyMessage!.lastName ?? ''}",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.primaryPalette[700]!,

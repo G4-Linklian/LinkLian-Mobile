@@ -1,5 +1,6 @@
 import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/features/chat/presentation/controllers/chat.controller.dart';
 import 'package:LinkLian/features/community/data/repositories/community_member_repository.dart';
 import 'package:LinkLian/features/community/data/repositories/community_post_repository.dart';
 import 'package:LinkLian/features/community/data/repositories/community_repository.dart';
@@ -24,6 +25,7 @@ import '../../../core/constants/logo.dart';
 import '../widgets/activeIcon.dart';
 import '../../notification/pages/notification_page.dart';
 import '../../chat/presentation/pages/chat.page.dart';
+import '../../chat/services/chat_badge_service.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
 import '../../classes/presentation/controllers/class_feed_controller.dart';
@@ -61,8 +63,16 @@ class _MainPageState extends State<MainPage> {
       _selectedIndex = 1;
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _navController.selectedIndex.value = _selectedIndex;
+      final chats = await ChatController().getChat();
+      int total = 0;
+      for (final chat in chats) {
+        if (chat.unreadCount != null) {
+          total += chat.unreadCount!;
+        }
+      }
+      ChatBadgeService().set(total);
     });
 
     _registerDependencies();
@@ -259,14 +269,51 @@ class _MainPageState extends State<MainPage> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => _goTo(const ChatPage()),
-                      child: Icon(
-                        LinkLianIcon.message,
-                        color: AppColors.successPalette[500],
-                        size: 30,
-                      ),
-                    ),
+                    Obx(() => Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            _goTo(const ChatPage());
+                            final chats = await ChatController().getChat();
+                            int total = 0;
+                            for (final chat in chats) {
+                              if (chat.unreadCount != null) {
+                                total += chat.unreadCount!;
+                              }
+                            }
+                            ChatBadgeService().set(total);
+                          },
+                          child: Icon(
+                            LinkLianIcon.message,
+                            color: AppColors.successPalette[500],
+                            size: 30,
+                          ),
+                        ),
+                        if (ChatBadgeService().observe().value > 0)
+                          Positioned(
+                            right: 1,
+                            top: 1,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${ChatBadgeService().observe().value}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    )),
                   ],
                 ),
               ),

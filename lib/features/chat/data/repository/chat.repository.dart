@@ -129,6 +129,8 @@ class ChatRepository {
     String? sortOrder,
     int? limit,
     int? offset,
+    bool? fromReadChat,
+    int? viewerId,
   }) async {
     final Map<String, dynamic> body = {};
 
@@ -142,6 +144,8 @@ class ChatRepository {
     if (sortOrder != null) body['sort_order'] = sortOrder;
     if (limit != null) body['limit'] = limit;
     if (offset != null) body['offset'] = offset;
+    if (fromReadChat != null) body['from_read_chat'] = fromReadChat;
+    if (viewerId != null) body['viewer_id'] = viewerId;
 
     final response = await _apiClient.get(
       '/chat/messages',
