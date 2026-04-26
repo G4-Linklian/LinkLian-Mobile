@@ -23,6 +23,16 @@ class SocketService {
   bool _isOnlineConnected = false;
   bool get isOnlineConnected => _isOnlineConnected;
 
+  Timer? _onlineReconnectTimer;
+  String? _onlineUrl;
+  int _onlineReconnectAttempts = 0;
+  bool _isOnlineConnecting = false;
+  bool _onlineShouldReconnect = false;
+  int? _onlineJoinedUserId;
+  final Set<int> _onlineSubscribedUserIds = <int>{};
+  static const Duration _onlineBaseReconnectDelay = Duration(seconds: 2);
+  static const Duration _onlineMaxReconnectDelay = Duration(seconds: 30);
+
   Future<void> connect(String url) async {
     if (_isConnected) {
       appLog.info('Socket is already connected.');
@@ -56,15 +66,33 @@ class SocketService {
   }
 
   Future<void> connectOnline(String url) async {
+    _onlineUrl = url;
+    _onlineShouldReconnect = true;
+
     if (_isOnlineConnected && _onlineChannel != null) {
       appLog.info('Online socket is already connected.');
       return;
     }
 
+    if (_isOnlineConnecting) {
+      appLog.info('Online socket is connecting.');
+      return;
+    }
+
+    _onlineReconnectTimer?.cancel();
+    await _doConnectOnline(url);
+  }
+
+  Future<void> _doConnectOnline(String url) async {
+    if (_isOnlineConnecting) return;
+    _isOnlineConnecting = true;
+
     try {
       appLog.info('Connecting to online WebSocket: $url');
       _onlineChannel = WebSocketChannel.connect(Uri.parse(url));
       _isOnlineConnected = true;
+      _onlineReconnectAttempts = 0;
+      _restoreOnlineSession();
 
       _onlineChannel!.stream.listen(
         (message) {
@@ -74,19 +102,90 @@ class SocketService {
         onError: (error) {
           appLog.error('ONLINE WS Error: $error');
           _isOnlineConnected = false;
+          _onlineChannel = null;
+          _scheduleOnlineReconnect();
         },
         onDone: () {
           appLog.info('ONLINE WS Disconnected');
           _isOnlineConnected = false;
+          _onlineChannel = null;
+          _scheduleOnlineReconnect();
         },
       );
     } catch (e) {
       appLog.error('ONLINE WS Connection Exception: $e');
       _isOnlineConnected = false;
+      _onlineChannel = null;
+      _scheduleOnlineReconnect();
+    } finally {
+      _isOnlineConnecting = false;
     }
   }
 
+  void _restoreOnlineSession() {
+    if (!_isOnlineConnected || _onlineChannel == null) {
+      return;
+    }
+
+    if (_onlineJoinedUserId != null) {
+      final message = {
+        'type': 'JOIN_ONLINE',
+        'payload': {'user_sys_id': _onlineJoinedUserId.toString()},
+      };
+      final jsonMessage = jsonEncode(message);
+      appLog.info('ONLINE WS Restoring JOIN_ONLINE: $jsonMessage');
+      _onlineChannel!.sink.add(jsonMessage);
+    }
+
+    if (_onlineSubscribedUserIds.isNotEmpty) {
+      final ids =
+          _onlineSubscribedUserIds
+              .where((id) => id > 0)
+              .map((id) => id.toString())
+              .toList();
+
+      final message = {
+        'type': 'ONLINE_SUBSCRIBE',
+        'payload': {'user_sys_ids': ids},
+      };
+
+      final jsonMessage = jsonEncode(message);
+      appLog.info('ONLINE WS Restoring ONLINE_SUBSCRIBE: $jsonMessage');
+      _onlineChannel!.sink.add(jsonMessage);
+    }
+  }
+
+  void _scheduleOnlineReconnect() {
+    if (!_onlineShouldReconnect || _onlineUrl == null) {
+      return;
+    }
+
+    _onlineReconnectTimer?.cancel();
+    _onlineReconnectAttempts++;
+
+    final backoffSeconds =
+        _onlineBaseReconnectDelay.inSeconds *
+        (1 << (_onlineReconnectAttempts - 1).clamp(0, 4));
+    final delaySeconds =
+        backoffSeconds > _onlineMaxReconnectDelay.inSeconds
+            ? _onlineMaxReconnectDelay.inSeconds
+            : backoffSeconds;
+    final delay = Duration(seconds: delaySeconds);
+
+    appLog.info(
+      'ONLINE WS Reconnect attempt $_onlineReconnectAttempts scheduled in ${delay.inSeconds}s',
+    );
+
+    _onlineReconnectTimer = Timer(delay, () {
+      if (_onlineShouldReconnect && !_isOnlineConnected && _onlineUrl != null) {
+        unawaited(_doConnectOnline(_onlineUrl!));
+      }
+    });
+  }
+
   void joinOnline({required int userSysId}) {
+    _onlineJoinedUserId = userSysId;
+
     if (!_isOnlineConnected || _onlineChannel == null) {
       appLog.warning('Online socket not connected. Cannot join online.');
       return;
@@ -103,6 +202,10 @@ class SocketService {
   }
 
   void leaveOnline({required int userSysId}) {
+    if (_onlineJoinedUserId == userSysId) {
+      _onlineJoinedUserId = null;
+    }
+
     if (!_isOnlineConnected || _onlineChannel == null) {
       return;
     }
@@ -118,6 +221,9 @@ class SocketService {
   }
 
   bool subscribeOnlineStatus({required Iterable<int> userSysIds}) {
+    final idsSet = userSysIds.where((id) => id > 0).toSet();
+    _onlineSubscribedUserIds.addAll(idsSet);
+
     if (!_isOnlineConnected || _onlineChannel == null) {
       appLog.warning(
         'Online socket not connected. Cannot subscribe online status.',
@@ -126,7 +232,7 @@ class SocketService {
     }
 
     final ids =
-        userSysIds
+        _onlineSubscribedUserIds
             .where((id) => id > 0)
             .map((id) => id.toString())
             .toSet()
@@ -488,6 +594,14 @@ class SocketService {
   }
 
   void disconnectOnline() {
+    _onlineShouldReconnect = false;
+    _onlineReconnectTimer?.cancel();
+    _onlineReconnectAttempts = 0;
+    _isOnlineConnecting = false;
+    _onlineUrl = null;
+    _onlineJoinedUserId = null;
+    _onlineSubscribedUserIds.clear();
+
     if (_isOnlineConnected) {
       _onlineChannel?.sink.close();
       _onlineChannel = null;
