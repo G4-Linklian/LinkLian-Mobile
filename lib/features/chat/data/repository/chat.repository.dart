@@ -1,6 +1,5 @@
 import 'package:LinkLian/core/utils/api_response_parser.dart';
 import 'package:dio/dio.dart';
-import 'dart:io';
 import 'package:LinkLian/core/utils/logger.dart';
 
 import '../../../../core/services/api_client.dart';
@@ -38,7 +37,7 @@ class ChatRepository {
       appLog.info('Response data: ${response.data!['data']}');
 
       appLog.info('Fetched chats count: ${list.length}');
-      
+
       return ApiResponseParser.parseList<ChatModel>(
         response.data,
         ChatModel.fromJson,
@@ -130,6 +129,8 @@ class ChatRepository {
     String? sortOrder,
     int? limit,
     int? offset,
+    bool? fromReadChat,
+    int? viewerId,
   }) async {
     final Map<String, dynamic> body = {};
 
@@ -143,6 +144,8 @@ class ChatRepository {
     if (sortOrder != null) body['sort_order'] = sortOrder;
     if (limit != null) body['limit'] = limit;
     if (offset != null) body['offset'] = offset;
+    if (fromReadChat != null) body['from_read_chat'] = fromReadChat;
+    if (viewerId != null) body['viewer_id'] = viewerId;
 
     final response = await _apiClient.get(
       '/chat/messages',
@@ -166,14 +169,25 @@ class ChatRepository {
     int? replyId,
     List<dynamic>? file,
   }) async {
-    final formData = FormData.fromMap({
+    final Map<String, dynamic> map = {
       'chat_id': chatId,
       'sender_id': senderId,
       'content': content,
       if (replyId != null) 'reply_id': replyId,
-      if (file != null && file.isNotEmpty)
-        'files': file,
-    });
+    };
+
+    if (file != null && file.isNotEmpty) {
+      map['files'] = await Future.wait(
+        file.map(
+          (f) async => await MultipartFile.fromFile(
+            f.path,
+            filename: f.path.split('/').last,
+          ),
+        ),
+      );
+    }
+
+    final formData = FormData.fromMap(map);
 
     final response = await _apiClient.post(
       '/chat/messages',

@@ -35,7 +35,7 @@ class ChatMessageController {
       appLog.error('Invalid chatId: $chatId');
       return;
     }
-    
+
     _currentChatId = chatId;
     _currentUserId = await LocalStorage.getLastLoginUserId();
 
@@ -71,6 +71,8 @@ class ChatMessageController {
         chatId: _currentChatId,
         sortBy: 'created_at',
         sortOrder: 'asc',
+        fromReadChat: true,
+        viewerId: _currentUserId,
       );
 
       _messages = messages;
@@ -155,7 +157,7 @@ class ChatMessageController {
   void _scheduleUIUpdate() {
     _hasUpdates = true;
     _updateTimer?.cancel();
-    _updateTimer = Timer(const Duration(milliseconds: 50), () {
+    _updateTimer = Timer(const Duration(milliseconds: 120), () {
       if (_hasUpdates && !_messagesController.isClosed) {
         _messagesController.add(List.unmodifiable(_messages));
         _hasUpdates = false;
@@ -169,7 +171,7 @@ class ChatMessageController {
       appLog.error('Cannot send empty message');
       return;
     }
-    
+
     if (_currentUserId == null || _currentChatId == null) {
       appLog.error('Cannot send message: userId or chatId is null');
       return;

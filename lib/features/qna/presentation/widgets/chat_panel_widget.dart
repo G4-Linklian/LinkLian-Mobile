@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/features/qna/data/models/qa_question_model.dart';
 import 'package:LinkLian/features/qna/presentation/controllers/live_controller.dart';
 import 'package:LinkLian/features/qna/presentation/widgets/anonymous_toggle_widget.dart';
 import 'package:LinkLian/features/qna/presentation/widgets/question_item_widget.dart';
 import 'package:LinkLian/features/qna/presentation/widgets/send_question_button_widget.dart';
+import 'package:LinkLian/core/services/socket_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -40,6 +42,47 @@ class ChatPanelWidget extends StatefulWidget {
 }
 
 class _ChatPanelWidgetState extends State<ChatPanelWidget> {
+  StreamSubscription? _qaStreamSub;
+  @override
+  void initState() {
+    super.initState();
+    // Listen for QA_QUESTION_UPDATED event for realtime status update
+    _qaStreamSub = SocketService().qaStream.listen((event) {
+      if (event['type'] == 'QA_QUESTION_UPDATED') {
+        final updatedId = event['payload']['qa_question_id'];
+        final newStatus = event['payload']['status'];
+        // อัปเดต status ใน list
+        final idx = widget.controller.questions.indexWhere(
+          (q) =>
+              (q is Map && q['qa_question_id'] == updatedId) ||
+              (q is dynamic && q.qaQuestionId == updatedId),
+        );
+        if (idx != -1) {
+          final q = widget.controller.questions[idx];
+          if (q is Map) {
+            widget.controller.questions[idx] = QaQuestion.fromJson(
+              <String, dynamic>{
+                ...(q as Map<String, dynamic>),
+                'status': newStatus,
+              },
+            );
+          } else {
+            try {
+              widget.controller.questions[idx] = q.copyWith(status: newStatus);
+            } catch (_) {}
+          }
+          widget.controller.questions.refresh();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _qaStreamSub?.cancel();
+    super.dispose();
+  }
+
   final Set<String> _optimisticUpvotedQuestionKeys = <String>{};
   bool _showAllLogQuestions = false;
 
@@ -806,6 +849,7 @@ class _ChatPanelWidgetState extends State<ChatPanelWidget> {
                             readOnly: widget.readOnly,
                             onUpvote: () => _handleQuestionUpvote(q),
                             onReply: (_) => _handleQuestionReply(q),
+                            isHistoryMode: _isHistoryMode,
                           );
                         },
                       ),

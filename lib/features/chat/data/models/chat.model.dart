@@ -62,6 +62,19 @@ class ChatModel {
   @JsonKey(name: 'profile_pic')
   final String? profileImage;
 
+  @JsonKey(name: 'unread_count', fromJson: _intFromJsonNullable)
+  final int? unreadCount;
+
+  @JsonKey(name: 'is_read', fromJson: _boolFromJson)
+  final bool? isRead;
+  static bool? _boolFromJson(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is String) return value.toLowerCase() == 'true';
+    if (value is int) return value != 0;
+    return null;
+  }
+
   const ChatModel({
     this.chatId,
     this.userSysId,
@@ -84,6 +97,8 @@ class ChatModel {
     this.firstName,
     this.lastName,
     this.profileImage,
+    this.unreadCount,
+    this.isRead,
   });
 
   // static int _intFromJson(dynamic value) {

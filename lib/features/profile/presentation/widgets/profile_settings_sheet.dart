@@ -104,7 +104,7 @@ class SettingsBottomSheet extends StatelessWidget {
 
           _SettingItem(
             icon: LinkLianIcon.security,
-            title: 'พาสเวิร์ดและความปลอดภัย',
+            title: 'รหัสผ่านและความปลอดภัย',
             onTap: () {},
           ),
 
