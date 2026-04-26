@@ -6,6 +6,7 @@ import 'package:LinkLian/features/chat/presentation/widgets/ai_link_preview_card
 import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:LinkLian/core/utils/dialog_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:LinkLian/features/chat/presentation/widgets/ai_quiz_popup.widget.dart';
@@ -13,6 +14,7 @@ import 'package:LinkLian/features/chat/presentation/widgets/chat_attachment_widg
 import 'package:LinkLian/features/chat/presentation/widgets/ai_chat_input_bar.widget.dart';
 import 'package:LinkLian/features/chat/presentation/services/ai_summary_notification_service.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class AIChatDetailPage extends StatefulWidget {
   final String title;
@@ -117,7 +119,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
 
     // Show summary immediately without waiting for API
     if (widget.summary.trim().isNotEmpty) {
-      messages.add({"isMe": false, "text": widget.summary.trim()});
+      messages.add(_buildAiSummaryMessage(widget.summary.trim()));
     }
 
     _loadMessages();
@@ -178,7 +180,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
       setState(() {
         final trimmed = widget.summary.trim();
         if (trimmed.isNotEmpty) {
-          messages.add({"isMe": false, "text": trimmed});
+          messages.add(_buildAiSummaryMessage(trimmed));
         }
       });
 
@@ -273,6 +275,10 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
     return -(seed.hashCode.abs() + 1);
   }
 
+  Map<String, dynamic> _buildAiSummaryMessage(String summary) {
+    return {"isMe": false, "text": summary, "renderAsMarkdown": true};
+  }
+
   void _openQuizDirect(Map<String, dynamic> quiz) {
     Navigator.push(
       context,
@@ -350,7 +356,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
               "text": "ยังไม่สามารถสร้างสรุปได้ ลองอีกครั้ง",
             });
           } else {
-            messages.add({"isMe": false, "text": newSummary});
+            messages.add(_buildAiSummaryMessage(newSummary));
           }
         }
 
@@ -803,6 +809,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
     }
     final isMe = message["isMe"];
     final text = (message["text"] ?? '').toString();
+    final renderAsMarkdown = message["renderAsMarkdown"] == true;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -847,18 +854,76 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
                   ),
                 ],
               ),
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: isMe ? AppColors.black : const Color(0xFF1A1A1A),
-                  fontSize: 15,
-                  height: 1.4,
-                ),
+              child: _buildMessageContent(
+                isMe: isMe,
+                renderAsMarkdown: renderAsMarkdown,
+                text: text,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMessageContent({
+    required bool isMe,
+    required bool renderAsMarkdown,
+    required String text,
+  }) {
+    final textColor = isMe ? AppColors.black : const Color(0xFF1A1A1A);
+    if (!isMe && renderAsMarkdown) {
+      return MarkdownBody(
+        data: text,
+        selectable: true,
+        onTapLink: (displayText, href, title) async {
+          if (href == null || href.isEmpty) return;
+          await launchUrlString(href, mode: LaunchMode.externalApplication);
+        },
+        styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+          p: TextStyle(color: textColor, fontSize: 15, height: 1.4),
+          listBullet: TextStyle(color: textColor, fontSize: 15, height: 1.4),
+          h1: TextStyle(
+            color: textColor,
+            fontSize: 21,
+            height: 1.3,
+            fontWeight: FontWeight.w700,
+          ),
+          h2: TextStyle(
+            color: textColor,
+            fontSize: 19,
+            height: 1.3,
+            fontWeight: FontWeight.w700,
+          ),
+          h3: TextStyle(
+            color: textColor,
+            fontSize: 17,
+            height: 1.3,
+            fontWeight: FontWeight.w700,
+          ),
+          blockquote: TextStyle(color: textColor.withValues(alpha: 0.85)),
+          code: TextStyle(
+            color: textColor,
+            fontSize: 13,
+            fontFamily: 'monospace',
+          ),
+          codeblockDecoration: BoxDecoration(
+            color: AppColors.primaryPalette[50],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          a: TextStyle(
+            color: AppColors.primaryPalette[700],
+            fontSize: 15,
+            height: 1.4,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      );
+    }
+
+    return Text(
+      text,
+      style: TextStyle(color: textColor, fontSize: 15, height: 1.4),
     );
   }
 
@@ -1349,7 +1414,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
             result.isNotEmpty && result.first['role'] != 'user';
 
         if (!firstMsgIsAi && effectiveSummary.isNotEmpty) {
-          messages.add({"isMe": false, "text": effectiveSummary});
+          messages.add(_buildAiSummaryMessage(effectiveSummary));
         }
 
         final List<Map<String, dynamic>> combined = [];
@@ -1482,7 +1547,7 @@ class _AIChatDetailPageState extends State<AIChatDetailPage> {
       });
     } catch (_) {}
   }
- 
+
   @override
   void dispose() {
     AISummaryNotificationService.setAIChatDetailVisible(false);
