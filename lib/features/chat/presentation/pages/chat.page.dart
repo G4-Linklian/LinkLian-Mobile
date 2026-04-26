@@ -1,4 +1,4 @@
-//import 'package:LinkLian/features/chat/services/chat_badge_service.dart';
+import 'package:LinkLian/features/chat/services/chat_badge_service.dart';
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/services/local_storage.dart';

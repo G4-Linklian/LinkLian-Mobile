@@ -28,7 +28,7 @@ ChatModel _$ChatModelFromJson(Map<String, dynamic> json) => ChatModel(
       firstName: json['first_name'] as String?,
       lastName: json['last_name'] as String?,
       profileImage: json['profile_pic'] as String?,
-      unreadCount: json['unread_count'] as int?,
+      unreadCount: ChatModel._intFromJsonNullable(json['unread_count']),
       isRead: ChatModel._boolFromJson(json['is_read']),
     );
 

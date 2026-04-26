@@ -62,7 +62,7 @@ class ChatModel {
   @JsonKey(name: 'profile_pic')
   final String? profileImage;
 
-  @JsonKey(name: 'unread_count')
+  @JsonKey(name: 'unread_count', fromJson: _intFromJsonNullable)
   final int? unreadCount;
 
   @JsonKey(name: 'is_read', fromJson: _boolFromJson)
