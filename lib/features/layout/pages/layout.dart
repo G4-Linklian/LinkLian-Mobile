@@ -302,14 +302,16 @@ class _MainPageState extends State<MainPage> {
                               ),
                               alignment: Alignment.center,
                               child: Text(
-                                '${ChatBadgeService().observe().value}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+                                          ChatBadgeService().observe().value > 99
+                                              ? '99+'
+                                              : '${ChatBadgeService().observe().value}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
                             ),
                           ),
                       ],
