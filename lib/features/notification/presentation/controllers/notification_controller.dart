@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:LinkLian/core/services/notification/notification_service.dart';
+import 'package:LinkLian/core/services/badge_service.dart';
 import 'package:LinkLian/core/utils/notification_navigation_helper.dart';
 import 'package:LinkLian/core/services/notification/notification_payload.dart';
 import '../../data/models/notification_model.dart';
@@ -32,7 +33,7 @@ class NotificationController extends GetxController {
     // เพราะ onInit() ถูกเรียกระหว่าง build phase ของ GetView
     // การเซต Rx value ตอนนั้นทำให้ Obx ใน widget อื่น rebuild ทับกัน
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      NotificationService().unreadCount.value = 0;
+      BadgeService().clear(BadgeFeature.general);
     });
 
     _loadThenMarkAllRead();
@@ -63,9 +64,10 @@ class NotificationController extends GetxController {
 
     try {
       final result = await _repo.getNotifications(offset: 0, limit: _pageSize);
+      final filtered = result.notifications.where((n) => n.feature != 'chat').toList();
       _offset = result.notifications.length;
       _hasMore = result.notifications.length < result.total;
-      notifications.assignAll(result.notifications);
+      notifications.assignAll(filtered);
     } catch (e) {
       Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดการแจ้งเตือนได้',
           snackPosition: SnackPosition.BOTTOM);
@@ -82,7 +84,7 @@ class NotificationController extends GetxController {
       final result = await _repo.getNotifications(offset: _offset, limit: _pageSize);
       _offset += result.notifications.length;
       _hasMore = _offset < result.total;
-      notifications.addAll(result.notifications);
+      notifications.addAll(result.notifications.where((n) => n.feature != 'chat'));
     } catch (_) {
     } finally {
       isLoadingMore.value = false;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/constants/colors.dart';
 import '../../data/models/notification_model.dart';
@@ -120,12 +119,11 @@ class NotificationCard extends StatelessWidget {
   // ── Title ──────────────────────────────────────────────────────────────────
 
   String _getTitle(NotificationModel n) {
-    if (n.feature == 'chat') return n.notiData.actorName;
     return n.notiData.title.isNotEmpty ? n.notiData.title : n.notiData.actorName;
   }
 
   String _getPostTitle(NotificationModel n) {
-    if (n.feature == 'chat' || n.feature == 'assignment') return '';
+    if (n.feature == 'assignment') return '';
     return n.notiData.postTitle ?? '';
   }
 
@@ -137,8 +135,6 @@ class NotificationCard extends StatelessWidget {
     final data = n.notiData;
 
     switch (feature) {
-      case 'chat':
-        return data.body;
       case 'assignment':
         return data.body;
       case 'social-feed':
@@ -187,11 +183,12 @@ class NotificationCard extends StatelessWidget {
 
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes} นาที';
-    if (diff.inHours < 24) return '${diff.inHours} ชั่วโมง';
-    if (diff.inDays < 7) return '${diff.inDays} วัน';
-    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()} สัปดาห์';
-    return '${(diff.inDays / 30).floor()} เดือน';
+    if (diff.inMinutes < 1) return 'เมื่อสักครู่';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} นาทีที่แล้ว';
+    if (diff.inHours < 24) return '${diff.inHours} ชั่วโมงที่แล้ว';
+    if (diff.inDays < 7) return '${diff.inDays} วันที่แล้ว';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()} สัปดาห์ที่แล้ว';
+    return '${dt.day}/${dt.month}/${dt.year}';
   }
 }
 
@@ -283,12 +280,6 @@ class _FeatureIcon extends StatelessWidget {
 
   Widget _buildMainIcon() {
     switch (feature) {
-      case 'chat':
-        return HugeIcon(
-          icon: HugeIcons.strokeRoundedMessage01,
-          size: 22,
-          color: AppColors.primaryPalette[900]!,
-        );
       case 'social-feed':
       case 'community':
       case 'assignment':
@@ -346,8 +337,6 @@ class _FeatureIcon extends StatelessWidget {
 
   Color _mainBgColor() {
     switch (feature) {
-      case 'chat':
-        return AppColors.successPalette[500]!;
       case 'qna':
         return AppColors.buttonPalette[500]!;
       default:
@@ -372,7 +361,6 @@ class _FeatureIcon extends StatelessWidget {
     if (pt == 'assignment' || t.contains('assignment')) {
       return LinkLianIcon.notifActionAssignment;
     }
-    if (feature == 'chat') return LinkLianIcon.notifChat;
     // create post
     return TablerIcons.pencil_plus;
   }
@@ -387,8 +375,6 @@ Color _featureColor(String feature) {
     case 'social-feed':
     case 'community':
       return AppColors.primaryPalette[500]!;
-    case 'chat':
-      return AppColors.successPalette[500]!;
     case 'assignment':
       return AppColors.dangerPalette[500]!;
     case 'qna':

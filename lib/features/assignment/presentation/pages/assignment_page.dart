@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../../../../core/constants/sizes.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../classes/presentation/controllers/class_feed_controller.dart';
-import '../../../classes/presentation/widgets/class_card.dart';
+import '../widgets/assignment_class_card.dart';
 import '../../../classes/presentation/widgets/semester_selector.dart';
 import '../../../layout/controllers/navigation_controller.dart';
 
@@ -70,7 +70,6 @@ class _AssignmentFeedBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
       body: Obx(() {
         if (classFeedController.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -121,7 +120,7 @@ class _AssignmentFeedBody extends StatelessWidget {
                             }
                             final c = classFeedController.classList[index];
                             final roleName = classFeedController.roleName;
-                            return ClassCard(
+                            return AssignmentClassCard(
                               data: c,
                               roleName: roleName,
                               showStudentCount: false,
@@ -143,7 +142,7 @@ class _AssignmentFeedBody extends StatelessWidget {
             ),
           ),
         );
-      }),
+        }),
     );
   }
 }

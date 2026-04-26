@@ -103,8 +103,9 @@ class _CardPostState extends State<CardPost> {
   bool get _shouldShowTitle => widget.post.title.trim().isNotEmpty;
 
   bool get _canSelectForAI {
-    final postType = widget.post.postType.toLowerCase();
-    return postType == 'announcement';
+    if (widget.post.postType.toLowerCase() != 'announcement') return false;
+    final attachments = widget.post.attachments;
+    return attachments != null && attachments.isNotEmpty;
   }
 
   @override

@@ -242,9 +242,7 @@ class _ClassCardState extends State<ClassCard> {
                         isTeacher
                             ? widget.data.effectiveClassName
                             : widget.data.subjectNameTh,
-                        style: AppTextStyles.titleBold.copyWith(
-                          color: _textColor,
-                        ),
+                        style: AppTextStyles.titleBold.copyWith(color: _textColor),
                       ),
 
                       const SizedBox(height: AppSizes.xs),
@@ -253,33 +251,9 @@ class _ClassCardState extends State<ClassCard> {
                         isTeacher
                             ? widget.data.subjectNameTh
                             : widget.data.effectiveClassName,
-                        style: AppTextStyles.descriptionRegular.copyWith(
+                        style: AppTextStyles.paragraphBold.copyWith(
                           color: _textColor.withValues(alpha: 0.7),
                         ),
-                      ),
-
-                      const SizedBox(height: AppSizes.sm),
-
-                      // ==================== SEMESTER CHIP ====================
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSizes.sm,
-                              vertical: AppSizes.xs,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusLg,
-                              ),
-                            ),
-                            child: Text(
-                              'ภาคเรียน ${widget.data.semester}',
-                              style: AppTextStyles.descriptionMedium,
-                            ),
-                          ),
-                        ],
                       ),
 
                       const SizedBox(height: AppSizes.md),
@@ -298,12 +272,12 @@ class _ClassCardState extends State<ClassCard> {
                     ),
                   ),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // ========== LEFT: CHEVRON + DAY + TIME ==========
                       Expanded(
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             GestureDetector(
                               onTap: canExpand

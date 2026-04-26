@@ -24,7 +24,7 @@ import '../../../core/constants/logo.dart';
 import '../widgets/activeIcon.dart';
 import '../../notification/presentation/pages/notification_page.dart';
 import '../../notification/presentation/bindings/notification_binding.dart';
-import '../../../../core/services/notification/notification_service.dart';
+import '../../../../core/services/badge_service.dart';
 import '../../chat/presentation/pages/chat.page.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
@@ -253,7 +253,7 @@ class _MainPageState extends State<MainPage> {
                       ),
                     if (!_hideAddIcon) const SizedBox(width: 12),
                     Obx(() {
-                      final count = NotificationService().unreadCount.value;
+                      final count = BadgeService().observe(BadgeFeature.general).value;
                       return GestureDetector(
                         onTap: () => Get.to(
                           () => const NotificationPage(),
@@ -307,6 +307,34 @@ class _MainPageState extends State<MainPage> {
                         size: 30,
                       ),
                     ),
+                    // TODO(chat-team): badge จำนวนแชทที่ยังไม่อ่าน
+                    // Obx(() {
+                    //   final count = BadgeService().observe(BadgeFeature.chat).value;
+                    //   if (count == 0) return const SizedBox.shrink();
+                    //   return Positioned(
+                    //     top: -4,
+                    //     right: -6,
+                    //     child: Container(
+                    //       constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    //       padding: const EdgeInsets.symmetric(horizontal: 4),
+                    //       decoration: BoxDecoration(
+                    //         color: Colors.red,
+                    //         borderRadius: BorderRadius.circular(10),
+                    //         border: Border.all(color: Colors.white, width: 1.5),
+                    //       ),
+                    //       child: Text(
+                    //         count > 99 ? '99+' : count.toString(),
+                    //         style: const TextStyle(
+                    //           color: Colors.white,
+                    //           fontSize: 9,
+                    //           fontWeight: FontWeight.w700,
+                    //           height: 1.4,
+                    //         ),
+                    //         textAlign: TextAlign.center,
+                    //       ),
+                    //     ),
+                    //   );
+                    // }),
                   ],
                 ),
               ),

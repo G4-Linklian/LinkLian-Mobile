@@ -175,13 +175,17 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                 vertical: AppSizes.sm,
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ClassSelector(
-                    controller: controller,
-                    classFeedController: classFeedController,
+                  Flexible(
+                    child: ClassSelector(
+                      controller: controller,
+                      classFeedController: classFeedController,
+                    ),
                   ),
-                  const Spacer(),
-                  Obx(() {
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Obx(() {
                     final isEditMode =
                         controller.mode.value == CreatePostMode.edit;
                     final isPostTypeLocked = controller.isPostTypeLocked.value;
@@ -243,7 +247,8 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                         ),
                       ],
                     );
-                  }),
+                    }),
+                  ),
                 ],
               ),
             ),
