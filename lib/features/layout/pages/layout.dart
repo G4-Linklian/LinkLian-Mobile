@@ -270,6 +270,7 @@ class _MainPageState extends State<MainPage> {
                     ),
                     const SizedBox(width: 12),
                     Obx(() => Stack(
+                      clipBehavior: Clip.none,
                       children: [
                         GestureDetector(
                           onTap: () async {
@@ -291,27 +292,31 @@ class _MainPageState extends State<MainPage> {
                         ),
                         if (ChatBadgeService().observe().value > 0)
                           Positioned(
-                            right: 1,
-                            top: 1,
+                            top: -4,
+                            right: -6,
                             child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
                               ),
-                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white, width: 1.5),
+                              ),
                               child: Text(
-                                          ChatBadgeService().observe().value > 99
-                                              ? '99+'
-                                              : '${ChatBadgeService().observe().value}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
+                                ChatBadgeService().observe().value > 99
+                                    ? '99+'
+                                    : ChatBadgeService().observe().value.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                           ),
                       ],
