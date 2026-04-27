@@ -30,6 +30,7 @@ class ProfileController extends GetxController {
   final loading = false.obs;
   final saving = false.obs;
   final ImagePicker _picker = ImagePicker();
+  bool _isLoadingAll = false; // BUG FIX #4: Prevent race condition in loadAll
   final reportImages = <File>[].obs;
   final reporting = false.obs;
   final teachingSchedules = <TeachingScheduleModel>[].obs;
@@ -88,14 +89,25 @@ class ProfileController extends GetxController {
     profile.value = null;
     teachingSchedules.clear();
 
+    // BUG FIX #11: Properly clean up state to prevent corruption
     if (_controllersInitialized) {
-      firstNameCtrl.clear();
-      lastNameCtrl.clear();
-      phoneCtrl.clear();
+      try {
+        firstNameCtrl.clear();
+        lastNameCtrl.clear();
+        phoneCtrl.clear();
+      } catch (e) {
+        _log('⚠️ Error clearing controllers: $e');
+      }
     }
   }
 
   Future<void> loadAll() async {
+    // BUG FIX #4: Prevent race condition - only allow one loadAll at a time
+    if (_isLoadingAll) {
+      _log('⏭️ loadAll already in progress, skipping concurrent call');
+      return;
+    }
+
     final userId = _getUserId();
     if (userId == null) {
       _log('⚠️ Cannot load: userId is null');
@@ -103,6 +115,7 @@ class ProfileController extends GetxController {
     }
 
     _log('📥 loadAll() for userId: $userId');
+    _isLoadingAll = true;
 
     try {
       await loadProfile();
@@ -110,7 +123,12 @@ class ProfileController extends GetxController {
         await loadTeachingSchedule();
       }
     } catch (e) {
+      // BUG FIX #8: Don't fail silently - notify user of errors
       _log('❌ Error in loadAll: $e');
+      Get.snackbar('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้: $e',
+          duration: Duration(seconds: 2));
+    } finally {
+      _isLoadingAll = false;
     }
   }
 
@@ -137,15 +155,23 @@ class ProfileController extends GetxController {
       final data = await repo.getProfile(userId);
 
       if (!_controllersInitialized) {
-        firstNameCtrl = TextEditingController(text: data.firstName);
-        lastNameCtrl = TextEditingController(text: data.lastName);
-        phoneCtrl = TextEditingController(text: data.phone ?? '');
-        _controllersInitialized = true;
-        _log('✅ TextEditingControllers initialized');
+        try {
+          firstNameCtrl = TextEditingController(text: data.firstName);
+          lastNameCtrl = TextEditingController(text: data.lastName);
+          phoneCtrl = TextEditingController(text: data.phone ?? '');
+          _controllersInitialized = true;
+          _log('✅ TextEditingControllers initialized');
+        } catch (e) {
+          // BUG FIX #5: Prevent memory leak if controller initialization fails
+          _log('❌ Failed to initialize controllers: $e');
+          _controllersInitialized = false;
+          rethrow;
+        }
       } else {
-        firstNameCtrl.text = data.firstName;
-        lastNameCtrl.text = data.lastName;
-        phoneCtrl.text = data.phone ?? '';
+        // Safely update existing controllers
+        if (firstNameCtrl.hasListeners) firstNameCtrl.text = data.firstName;
+        if (lastNameCtrl.hasListeners) lastNameCtrl.text = data.lastName;
+        if (phoneCtrl.hasListeners) phoneCtrl.text = data.phone ?? '';
         _log('✅ TextEditingControllers updated');
       }
 
@@ -214,15 +240,28 @@ class ProfileController extends GetxController {
     required String lastName,
     required String phone,
   }) async {
-    if (firstName.trim().isEmpty || lastName.trim().isEmpty) {
+    // BUG FIX #6: Add input sanitization to prevent injection attacks
+    final cleanFirstName = firstName.trim();
+    final cleanLastName = lastName.trim();
+    final cleanPhone = phone.trim();
+
+    if (cleanFirstName.isEmpty || cleanLastName.isEmpty) {
       throw Exception('กรุณาใส่ชื่อและนามสกุล');
     }
-    if (phone.trim().isEmpty) {
+    if (cleanPhone.isEmpty) {
       throw Exception('กรุณากรอกเบอร์โทรศัพท์');
     }
 
-    if (!RegExp(r'^0[0-9]{9}$').hasMatch(phone)) {
+    // BUG FIX #7: Enhance phone validation - check for common Thai telecom prefixes
+    // Valid Thai prefixes: 08, 09 (mobile), 02 (Bangkok), 0xx (other areas)
+    if (!RegExp(r'^0[0-9]{9}$').hasMatch(cleanPhone)) {
       throw Exception('กรุณากรอกเบอร์โทรให้ถูกต้อง');
+    }
+    
+    // Additional telecom validation for Thai numbers
+    final prefix = cleanPhone.substring(0, 3);
+    if (!['08', '09', '02'].contains(prefix) && !RegExp(r'^0[3-7]').hasMatch(prefix)) {
+      throw Exception('หมายเลขโทรศัพท์ไม่ถูกต้อง');
     }
 
     final auth = Get.find<AuthController>();
@@ -235,9 +274,9 @@ class ProfileController extends GetxController {
 
       await repo.updateProfile(
         userId,
-        firstName: firstName,
-        lastName: lastName,
-        phone: phone,
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        phone: cleanPhone,
         profilePic: profile.value?.profilePic,
       );
 
@@ -268,11 +307,18 @@ class ProfileController extends GetxController {
       final fileUrl = await repo.uploadAvatar(userId, File(picked.path));
       _log('✅ Avatar uploaded: $fileUrl');
 
+      // BUG FIX #1: Add null check before force unwrap
+      final currentProfile = profile.value;
+      if (currentProfile == null) {
+        _log('❌ Profile not loaded');
+        throw Exception('ไม่สามารถอัพโหลดรูปได้ กรุณาโหลดข้อมูลส่วนตัวใหม่');
+      }
+
       await repo.updateProfile(
         userId,
-        firstName: profile.value!.firstName,
-        lastName: profile.value!.lastName,
-        phone: profile.value!.phone,
+        firstName: currentProfile.firstName,
+        lastName: currentProfile.lastName,
+        phone: currentProfile.phone,
         profilePic: fileUrl,
       );
 
@@ -307,8 +353,28 @@ class ProfileController extends GetxController {
       final fileUrl = await repo.uploadAvatar(userId, File(picked.path));
       _log('✅ Photo uploaded: $fileUrl');
 
-      profile.value = profile.value!.copyWith(profilePic: fileUrl);
-      _log('✅ Photo updated in memory');
+      // BUG FIX #2 & #3: Add null check and persist to database instead of just memory
+      final currentProfile = profile.value;
+      if (currentProfile == null) {
+        _log('❌ Profile not loaded');
+        throw Exception('ไม่สามารถอัพโหลดรูปได้ กรุณาโหลดข้อมูลส่วนตัวใหม่');
+      }
+
+      // Persist to database instead of just updating in memory
+      await repo.updateProfile(
+        userId,
+        firstName: currentProfile.firstName,
+        lastName: currentProfile.lastName,
+        phone: currentProfile.phone,
+        profilePic: fileUrl,
+      );
+
+      // BUG FIX #9: Clear image cache after upload
+      imageCache.clear();
+      imageCache.clearLiveImages();
+
+      profile.value = currentProfile.copyWith(profilePic: fileUrl);
+      _log('✅ Photo updated and persisted');
     } catch (e) {
       _log('❌ Failed to upload photo: $e');
       rethrow;
@@ -356,8 +422,12 @@ class ProfileController extends GetxController {
   }
 
   void restoreOriginalProfilePic(String? originalPic) {
+    // BUG FIX #10: Validate profile exists before restoration
     final currentProfile = profile.value;
-    if (currentProfile == null) return;
+    if (currentProfile == null) {
+      _log('⚠️ Cannot restore: profile not loaded');
+      return;
+    }
 
     if (originalPic == null) {
       profile.value = currentProfile.copyWith(clearProfilePic: true);

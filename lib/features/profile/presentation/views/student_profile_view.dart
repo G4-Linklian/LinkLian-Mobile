@@ -1,11 +1,10 @@
 import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/features/shared/repositories/bookmark_repository.dart';
 import 'package:LinkLian/features/shared/presentations/bookmark_controller.dart';
-import 'package:LinkLian/features/profile/presentation/pages/dashboard_page.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
+import 'package:get/get.dart';
+import 'package:LinkLian/features/profile/presentation/pages/dashboard_page.dart';
+import 'package:LinkLian/features/profile/presentation/bindings/dashboard_binding.dart';
 import '../../../shared/models/profile_model.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/dashboard_card.dart';
@@ -26,7 +25,11 @@ class StudentProfileView extends StatelessWidget {
         // Dashboard
         DashboardCard(
           onTap: () {
-            Get.to(() => const DashboardPage());
+            Get.to(
+              () => const DashboardPage(),
+              binding: DashboardBinding(),
+              transition: Transition.rightToLeft,
+            );
           },
         ),
         const Divider(indent: 16, endIndent: 16),
@@ -50,7 +53,15 @@ class StudentProfileSection extends StatelessWidget {
 
     return Column(
       children: [
-        DashboardCard(onTap: () => Get.to(() => const DashboardPage())),
+        DashboardCard(
+          onTap: () {
+            Get.to(
+              () => const DashboardPage(),
+              binding: DashboardBinding(),
+              transition: Transition.rightToLeft,
+            );
+          },
+        ),
         const SizedBox(height: 16),
 
         // BookmarkSwitcher แสดงบุ๊กมาร์ก

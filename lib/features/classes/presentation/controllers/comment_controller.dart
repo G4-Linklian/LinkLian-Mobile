@@ -1,3 +1,4 @@
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/data/repository/post_repository.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,12 @@ import '../../data/models/comment_model.dart';
 import '../../../shared/models/post_model.dart';
 import '../../data/repositories/comment_repository.dart';
 import '../../../../core/utils/dialog_helper.dart';
+import '../../../../core/services/socket_service.dart';
+import '../../../../core/utils/online_presence_utils.dart';
 
 class CommentController extends GetxController {
   final CommentRepository _repo = CommentRepository();
+  final SocketService _socketService = SocketService();
 
   // ===== post / user =====
   late final int postId;
@@ -52,11 +56,14 @@ class CommentController extends GetxController {
     userSysId = auth.userId.value!;
 
     final args = Get.arguments;
-    postId = args['postId'];
+    postId = args['postId'] ?? 0;
+    appLog.debug('[CommentController] _init: postId from args = $postId');
 
     if (args['post'] != null) {
       post = args['post'] as PostModel;
+      appLog.debug('[CommentController] Post from args (cached)');
     } else {
+      appLog.debug('[CommentController] Fetching post from server...');
       await _loadPostFromServer(postId);
     }
 
@@ -94,6 +101,7 @@ class CommentController extends GetxController {
       }
 
       _rebuildFlatList();
+      _subscribeOnlineFromComments(res.comments);
 
       offset += res.comments.length;
       hasMore = res.hasMore;
@@ -121,15 +129,26 @@ class CommentController extends GetxController {
 
   Future<void> _loadPostFromServer(int id) async {
     try {
+      final args = Get.arguments;
+      final sectionId = args['sectionId'] ?? 'unknown';
+      appLog.debug('[CommentController] === FETCHING POST START ===');
+      appLog.debug('[CommentController] postId=$id, sectionId=$sectionId');
+
       final repo = PostRepository();
       final result = await repo.getPostDetail(id);
 
       post = result;
+      appLog.debug('[CommentController] ✓ POST LOADED');
+      appLog.debug('[CommentController] Title: ${result.title}');
+      final contentPreview = result.content.length > 100
+          ? result.content.substring(0, 100)
+          : result.content;
+      appLog.debug('[CommentController] Content: $contentPreview...');
+      appLog.debug('[CommentController] Post type: ${result.postType}');
     } catch (e, stack) {
-      debugPrint('POST DETAIL ERROR: $e');
-      debugPrintStack(stackTrace: stack);
-
-      DialogHelper.showErrorDialog(description: 'โหลดโพสต์ล้มเหลว');
+      appLog.debug('[CommentController] ✗ FETCH FAILED: $e');
+      appLog.debug('[CommentController] Stack trace: $stack');
+      DialogHelper.showErrorDialog(description: 'โหลดโพสต์ล้มเหลว: $e');
     }
   }
 
@@ -261,8 +280,30 @@ class CommentController extends GetxController {
       }
 
       _rebuildFlatList();
+      _subscribeOnlineFromComments(res.comments);
     } catch (e) {
-      debugPrint('Refresh comments error: $e');
+      appLog.debug('Refresh comments error: $e');
+    }
+  }
+
+  void _subscribeOnlineFromComments(List<CommentModel> comments) {
+    final ids = <int?>[];
+    for (final comment in comments) {
+      _collectCommentUserIds(comment, ids);
+    }
+
+    OnlinePresenceUtils.subscribeOnlineStatus(
+      socketService: _socketService,
+      userSysIds: ids,
+    );
+  }
+
+  void _collectCommentUserIds(CommentModel comment, List<int?> output) {
+    if (!comment.isAnonymous) {
+      output.add(comment.userSysId);
+    }
+    for (final child in comment.children) {
+      _collectCommentUserIds(child, output);
     }
   }
 

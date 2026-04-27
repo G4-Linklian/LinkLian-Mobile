@@ -125,7 +125,7 @@ class ChatMessageBubble extends StatelessWidget {
 
               Flexible(
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 120),
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.7,
                   ),
@@ -193,7 +193,7 @@ class ChatMessageBubble extends StatelessWidget {
                                       ? "คุณ"
                                       : isReplyDeletedUser
                                       ? "ไม่มีบัญชีผู้ใช้งาน"
-                                      : replyMessage!.firstName ?? '',
+                                      : "${replyMessage!.firstName ?? ''} ${replyMessage!.lastName ?? ''}",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.primaryPalette[700]!,

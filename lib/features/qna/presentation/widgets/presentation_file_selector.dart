@@ -7,12 +7,14 @@ import 'package:get/get.dart';
 class PresentationFileSelector extends StatelessWidget {
   final LiveController controller;
   final bool showFollow;
+  final bool logOnly;
   final Function(Map<String, dynamic>) onFileSelected;
 
   const PresentationFileSelector({
     super.key,
     required this.controller,
     this.showFollow = true,
+    this.logOnly = false,
     required this.onFileSelected,
   });
 
@@ -74,90 +76,120 @@ class PresentationFileSelector extends StatelessWidget {
     return attachmentId != null ? 'ไฟล์ (#$attachmentId)' : 'ไฟล์';
   }
 
+  Map<String, dynamic> _buildEffectiveAttachment(
+    int attachmentId,
+    Map<String, dynamic> liveFile,
+    Map<String, dynamic> sourceFile,
+  ) {
+    final combined = <String, dynamic>{
+      ...sourceFile,
+      ...liveFile,
+      'attachment_id': attachmentId,
+    };
+
+    if (combined['post_id'] == null && sourceFile['post_id'] != null) {
+      combined['post_id'] = sourceFile['post_id'];
+    }
+    if (combined['file_url'] == null ||
+        combined['file_url'].toString().trim().isEmpty) {
+      final nestedAttachment = sourceFile['attachment'];
+      final nestedUrl = nestedAttachment is Map
+          ? nestedAttachment['file_url']?.toString().trim() ?? ''
+          : '';
+      if (nestedUrl.isNotEmpty) {
+        combined['file_url'] = nestedUrl;
+      }
+    }
+
+    if ((combined['file_type'] == null ||
+            combined['file_type'].toString().trim().isEmpty) &&
+        sourceFile['file_type'] != null) {
+      combined['file_type'] = sourceFile['file_type'];
+    }
+
+    if ((combined['original_name'] == null ||
+            combined['original_name'].toString().trim().isEmpty) &&
+        sourceFile['original_name'] != null) {
+      combined['original_name'] = sourceFile['original_name'];
+    }
+
+    return combined;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final isHistoryMode = controller.isHistoryMode.value;
       final selectedId = _toInt(
         controller.selectedAttachment.value?['attachment_id'],
       );
-      final presentationFiles = controller.liveLogFiles;
+      final selectorById = <int, Map<String, dynamic>>{};
 
       final liveFileById = <int, Map<String, dynamic>>{};
       for (final raw in controller.liveFiles) {
         final map = Map<String, dynamic>.from(raw as Map);
         final id = _toInt(map['attachment_id']);
         if (id == null) continue;
-        liveFileById[id] = map;
+        liveFileById[id] = Map<String, dynamic>.from(map);
       }
 
-      final selectorById = <int, Map<String, dynamic>>{};
-      for (final raw in presentationFiles) {
-        final map = Map<String, dynamic>.from(raw as Map);
-        final id = _toInt(map['attachment_id']);
-        if (id == null) continue;
-        selectorById[id] = map;
-      }
-
-      if (selectorById.isEmpty) {
-        final selected = controller.selectedAttachment.value;
-        final selectedAttachmentId = _toInt(selected?['attachment_id']);
-        if (selected != null && selectedAttachmentId != null) {
-          selectorById[selectedAttachmentId] = Map<String, dynamic>.from(
-            selected,
-          );
+      if (!isHistoryMode && !logOnly) {
+        for (final entry in liveFileById.entries) {
+          selectorById[entry.key] = Map<String, dynamic>.from(entry.value);
         }
       }
 
-      final selectorEntries = <Map<String, dynamic>>[];
-      for (final entry in selectorById.entries) {
-        final id = entry.key;
-        final logItem = entry.value;
+      for (final raw in controller.liveLogFiles) {
+        final logItem = Map<String, dynamic>.from(raw as Map);
+        final id = _toInt(logItem['attachment_id']);
+        if (id == null) continue;
 
-        final fromLog = <String, dynamic>{'attachment_id': id};
         final nestedAttachment = logItem['attachment'];
+        final fromLog = <String, dynamic>{'attachment_id': id};
         if (nestedAttachment is Map) {
           fromLog.addAll(Map<String, dynamic>.from(nestedAttachment));
         }
         if (fromLog['post_id'] == null && logItem['post_id'] != null) {
           fromLog['post_id'] = logItem['post_id'];
         }
-
-        final fromLive = liveFileById[id] ?? <String, dynamic>{};
-        final effectiveAttachment = <String, dynamic>{
-          ...fromLog,
-          ...fromLive,
-          'attachment_id': id,
-        };
-
-        if ((effectiveAttachment['file_url'] == null ||
-                effectiveAttachment['file_url'].toString().trim().isEmpty) &&
-            logItem['file_url'] != null) {
-          effectiveAttachment['file_url'] = logItem['file_url'];
+        if (fromLog['file_url'] == null && logItem['file_url'] != null) {
+          fromLog['file_url'] = logItem['file_url'];
         }
-        if ((effectiveAttachment['file_type'] == null ||
-                effectiveAttachment['file_type'].toString().trim().isEmpty) &&
-            logItem['file_type'] != null) {
-          effectiveAttachment['file_type'] = logItem['file_type'];
+        if (fromLog['file_type'] == null && logItem['file_type'] != null) {
+          fromLog['file_type'] = logItem['file_type'];
         }
-        if ((effectiveAttachment['original_name'] == null ||
-                effectiveAttachment['original_name']
-                    .toString()
-                    .trim()
-                    .isEmpty) &&
+        if (fromLog['original_name'] == null &&
             logItem['original_name'] != null) {
-          effectiveAttachment['original_name'] = logItem['original_name'];
+          fromLog['original_name'] = logItem['original_name'];
         }
+
+        final existing = (isHistoryMode || logOnly)
+            ? (liveFileById[id] ?? <String, dynamic>{})
+            : (selectorById[id] ?? <String, dynamic>{});
+        selectorById[id] = _buildEffectiveAttachment(id, existing, fromLog);
+      }
+
+      final selected = controller.selectedAttachment.value;
+      final selectedAttachmentId = _toInt(selected?['attachment_id']);
+      if (selectorById.isEmpty &&
+          selected != null &&
+          selectedAttachmentId != null) {
+        selectorById[selectedAttachmentId] = Map<String, dynamic>.from(
+          selected,
+        );
+      }
+
+      final selectorEntries = <Map<String, dynamic>>[];
+      for (final entry in selectorById.entries) {
+        final id = entry.key;
+        final effectiveAttachment = Map<String, dynamic>.from(entry.value);
 
         if (effectiveAttachment['file_url'] == null ||
             effectiveAttachment['file_url'].toString().trim().isEmpty) {
           continue;
         }
 
-        selectorEntries.add({
-          'id': id,
-          'log': logItem,
-          'attachment': effectiveAttachment,
-        });
+        selectorEntries.add({'id': id, 'attachment': effectiveAttachment});
       }
 
       final showFileDropdown = selectorEntries.isNotEmpty;

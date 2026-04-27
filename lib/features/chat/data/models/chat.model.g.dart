@@ -28,6 +28,8 @@ ChatModel _$ChatModelFromJson(Map<String, dynamic> json) => ChatModel(
       firstName: json['first_name'] as String?,
       lastName: json['last_name'] as String?,
       profileImage: json['profile_pic'] as String?,
+      unreadCount: ChatModel._intFromJsonNullable(json['unread_count']),
+      isRead: ChatModel._boolFromJson(json['is_read']),
     );
 
 Map<String, dynamic> _$ChatModelToJson(ChatModel instance) => <String, dynamic>{
@@ -52,4 +54,6 @@ Map<String, dynamic> _$ChatModelToJson(ChatModel instance) => <String, dynamic>{
       'first_name': instance.firstName,
       'last_name': instance.lastName,
       'profile_pic': instance.profileImage,
+      'unread_count': instance.unreadCount,
+      'is_read': instance.isRead,
     };

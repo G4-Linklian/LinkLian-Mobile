@@ -1,4 +1,5 @@
 import 'package:LinkLian/core/constants/colors.dart';
+import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/chat/presentation/pages/ai_chat_detail.page.dart';
 import 'package:LinkLian/features/shared/repositories/ai_chat_repository.dart';
 import 'package:flutter/material.dart';
@@ -149,7 +150,7 @@ class _AIChatListPageState extends State<AIChatListPage> {
 
       _hydrateActivityFromMessages(result);
     } catch (e) {
-      debugPrint(e.toString());
+      appLog.debug(e.toString());
     }
   }
 

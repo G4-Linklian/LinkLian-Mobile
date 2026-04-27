@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/features/qna/data/models/qa_question_model.dart';
 import 'package:LinkLian/features/qna/presentation/controllers/live_controller.dart';
 import 'package:LinkLian/features/qna/presentation/widgets/anonymous_toggle_widget.dart';
 import 'package:LinkLian/features/qna/presentation/widgets/question_item_widget.dart';
 import 'package:LinkLian/features/qna/presentation/widgets/send_question_button_widget.dart';
+import 'package:LinkLian/core/services/socket_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -40,7 +42,51 @@ class ChatPanelWidget extends StatefulWidget {
 }
 
 class _ChatPanelWidgetState extends State<ChatPanelWidget> {
+  StreamSubscription? _qaStreamSub;
+  @override
+  void initState() {
+    super.initState();
+    // Listen for QA_QUESTION_UPDATED event for realtime status update
+    _qaStreamSub = SocketService().qaStream.listen((event) {
+      if (event['type'] == 'QA_QUESTION_UPDATED') {
+        final updatedId = event['payload']['qa_question_id'];
+        final newStatus = event['payload']['status'];
+        // อัปเดต status ใน list
+        final idx = widget.controller.questions.indexWhere(
+          (q) =>
+              (q is Map && q['qa_question_id'] == updatedId) ||
+              (q is dynamic && q.qaQuestionId == updatedId),
+        );
+        if (idx != -1) {
+          final q = widget.controller.questions[idx];
+          if (q is Map) {
+            widget.controller.questions[idx] = QaQuestion.fromJson(
+              <String, dynamic>{
+                ...(q as Map<String, dynamic>),
+                'status': newStatus,
+              },
+            );
+          } else {
+            try {
+              widget.controller.questions[idx] = q.copyWith(status: newStatus);
+            } catch (_) {}
+          }
+          widget.controller.questions.refresh();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _qaStreamSub?.cancel();
+    super.dispose();
+  }
+
   final Set<String> _optimisticUpvotedQuestionKeys = <String>{};
+  bool _showAllLogQuestions = false;
+
+  bool get _isHistoryMode => widget.controller.isHistoryMode.value;
 
   int? _toInt(dynamic value) {
     if (value is int) return value;
@@ -73,6 +119,314 @@ class _ChatPanelWidgetState extends State<ChatPanelWidget> {
 
     final fallbackId = _toInt(question['qa_question_id']);
     return fallbackId?.toString();
+  }
+
+  String _sanitizeLabel(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+    if (text.isEmpty || text.toLowerCase() == 'null' || text == '-') {
+      return '';
+    }
+    return text;
+  }
+
+  String _resolveFileLabel(Map<String, dynamic> file) {
+    final attachmentId = _toInt(file['attachment_id']);
+
+    final directName = _sanitizeLabel(file['original_name']);
+    if (directName.isNotEmpty) {
+      return attachmentId != null ? '$directName (#$attachmentId)' : directName;
+    }
+
+    final nestedAttachment = file['attachment'];
+    if (nestedAttachment is Map) {
+      final attachmentMap = Map<String, dynamic>.from(nestedAttachment);
+      final nestedName = _sanitizeLabel(attachmentMap['original_name']);
+      if (nestedName.isNotEmpty) {
+        return attachmentId != null
+            ? '$nestedName (#$attachmentId)'
+            : nestedName;
+      }
+
+      final nestedFileName = _sanitizeLabel(attachmentMap['file_name']);
+      if (nestedFileName.isNotEmpty) {
+        return attachmentId != null
+            ? '$nestedFileName (#$attachmentId)'
+            : nestedFileName;
+      }
+    }
+
+    final fileName = _sanitizeLabel(file['file_name']);
+    if (fileName.isNotEmpty) {
+      return attachmentId != null ? '$fileName (#$attachmentId)' : fileName;
+    }
+
+    return attachmentId != null ? 'ไฟล์ (#$attachmentId)' : 'ไฟล์';
+  }
+
+  Map<String, dynamic> _buildEffectiveAttachment(
+    int attachmentId,
+    Map<String, dynamic> liveFile,
+    Map<String, dynamic> sourceFile,
+  ) {
+    final combined = <String, dynamic>{
+      ...sourceFile,
+      ...liveFile,
+      'attachment_id': attachmentId,
+    };
+
+    if (combined['post_id'] == null && sourceFile['post_id'] != null) {
+      combined['post_id'] = sourceFile['post_id'];
+    }
+    if ((combined['file_url'] == null ||
+            combined['file_url'].toString().trim().isEmpty) &&
+        sourceFile['file_url'] != null) {
+      combined['file_url'] = sourceFile['file_url'];
+    }
+    if ((combined['file_type'] == null ||
+            combined['file_type'].toString().trim().isEmpty) &&
+        sourceFile['file_type'] != null) {
+      combined['file_type'] = sourceFile['file_type'];
+    }
+    if ((combined['original_name'] == null ||
+            combined['original_name'].toString().trim().isEmpty) &&
+        sourceFile['original_name'] != null) {
+      combined['original_name'] = sourceFile['original_name'];
+    }
+
+    return combined;
+  }
+
+  List<Map<String, dynamic>> _buildSelectableAttachments() {
+    final selectorById = <int, Map<String, dynamic>>{};
+
+    for (final raw in widget.controller.liveLogFiles) {
+      final logItem = Map<String, dynamic>.from(raw as Map);
+      final id = _toInt(logItem['attachment_id']);
+      if (id == null) continue;
+
+      final nestedAttachment = logItem['attachment'];
+      final fromLog = <String, dynamic>{'attachment_id': id};
+      if (nestedAttachment is Map) {
+        fromLog.addAll(Map<String, dynamic>.from(nestedAttachment));
+      }
+      if (fromLog['post_id'] == null && logItem['post_id'] != null) {
+        fromLog['post_id'] = logItem['post_id'];
+      }
+      if (fromLog['file_url'] == null && logItem['file_url'] != null) {
+        fromLog['file_url'] = logItem['file_url'];
+      }
+      if (fromLog['file_type'] == null && logItem['file_type'] != null) {
+        fromLog['file_type'] = logItem['file_type'];
+      }
+      if (fromLog['original_name'] == null &&
+          logItem['original_name'] != null) {
+        fromLog['original_name'] = logItem['original_name'];
+      }
+
+      final existing = selectorById[id] ?? <String, dynamic>{};
+      selectorById[id] = _buildEffectiveAttachment(id, existing, fromLog);
+    }
+
+    final entries = <Map<String, dynamic>>[];
+    for (final entry in selectorById.entries) {
+      final attachment = Map<String, dynamic>.from(entry.value);
+      entries.add({'id': entry.key, 'attachment': attachment});
+    }
+
+    entries.sort((a, b) {
+      final aLabel = _resolveFileLabel(
+        Map<String, dynamic>.from(a['attachment'] as Map),
+      );
+      final bLabel = _resolveFileLabel(
+        Map<String, dynamic>.from(b['attachment'] as Map),
+      );
+      return aLabel.toLowerCase().compareTo(bLabel.toLowerCase());
+    });
+
+    return entries;
+  }
+
+  List<dynamic> _filterQuestionsBySelectedLogAttachment(List<dynamic> items) {
+    if (_showAllLogQuestions) {
+      return items;
+    }
+
+    final selectedAttachmentId = _toInt(
+      widget.controller.selectedAttachment.value?['attachment_id'],
+    );
+    if (selectedAttachmentId == null) {
+      return items;
+    }
+
+    return items.where((question) {
+      final attachmentId = question is Map
+          ? _toInt(question['attachment_id'])
+          : _toInt(question.attachmentId);
+      return attachmentId == selectedAttachmentId;
+    }).toList();
+  }
+
+  Future<void> _openFileFilterMenu(BuildContext context) async {
+    final entries = _buildSelectableAttachments();
+    final buttonBox = context.findRenderObject() as RenderBox?;
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
+    if (buttonBox == null || overlayBox == null) return;
+
+    final buttonTopLeft = buttonBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
+    final buttonRect = Rect.fromLTWH(
+      buttonTopLeft.dx,
+      buttonTopLeft.dy,
+      buttonBox.size.width,
+      buttonBox.size.height,
+    );
+    final overlayRect = Offset.zero & overlayBox.size;
+    final buttonWidth = buttonRect.width;
+    final menuWidth = buttonWidth.clamp(0.0, 360.0);
+
+    final value = await showMenu<Object?>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(buttonRect.left, buttonRect.bottom + 8, menuWidth, 0),
+        overlayRect,
+      ),
+      constraints: BoxConstraints.tightFor(width: menuWidth),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: [
+        PopupMenuItem<Object?>(
+          value: 'all',
+          child: Row(
+            children: [
+              Icon(
+                Icons.select_all,
+                size: 18,
+                color: AppColors.primaryPalette[600],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'ทั้งหมด',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: _showAllLogQuestions
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (entries.isNotEmpty) const PopupMenuDivider(height: 1),
+        ...entries.map(
+          (entry) => PopupMenuItem<Object?>(
+            value: entry['id'],
+            child: Text(
+              _resolveFileLabel(
+                Map<String, dynamic>.from(entry['attachment'] as Map),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight:
+                    entry['id'] ==
+                        _toInt(
+                          widget
+                              .controller
+                              .selectedAttachment
+                              .value?['attachment_id'],
+                        )
+                    ? FontWeight.w700
+                    : FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (value == null) return;
+
+    if (value == 'all') {
+      if (!mounted) return;
+      setState(() {
+        _showAllLogQuestions = true;
+      });
+      return;
+    }
+
+    final pickedId = _toInt(value);
+    if (pickedId == null) return;
+
+    final pickedEntry = entries.firstWhere(
+      (entry) => entry['id'] == pickedId,
+      orElse: () => entries.first,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _showAllLogQuestions = false;
+    });
+
+    await widget.controller.selectPresentationFile(
+      Map<String, dynamic>.from(pickedEntry['attachment'] as Map),
+    );
+  }
+
+  String _selectedFileLabel() {
+    if (_showAllLogQuestions) {
+      return 'ทั้งหมด';
+    }
+
+    final selected = widget.controller.selectedAttachment.value;
+    if (selected != null) {
+      return _resolveFileLabel(selected);
+    }
+
+    return 'ทั้งหมด';
+  }
+
+  List<dynamic> _buildFilteredQuestions(dynamic source) {
+    var items = <dynamic>[];
+
+    // Handle both RxList<QaQuestion> and List<QaQuestion>
+    if (source is RxList) {
+      items = List.from(source);
+    } else if (source is List) {
+      items = List.from(source);
+    } else {
+      return [];
+    }
+
+    if (items.isEmpty) return [];
+
+    items = _filterQuestionsBySelectedLogAttachment(items);
+
+    if (items.isEmpty) return [];
+
+    items.sort((a, b) {
+      final aVote = a is Map ? (_toInt(a['upvote_count']) ?? 0) : a.upvoteCount;
+      final bVote = b is Map ? (_toInt(b['upvote_count']) ?? 0) : b.upvoteCount;
+
+      if (aVote != bVote) {
+        return bVote.compareTo(aVote);
+      }
+
+      // ถ้าโหวตเท่ากัน เรียงตามเวลาส่ง (ส่งก่อนขึ้นบน)
+      final aTime = a is Map
+          ? (DateTime.tryParse(a['created_at']?.toString() ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0))
+          : a.createdAt;
+      final bTime = b is Map
+          ? (DateTime.tryParse(b['created_at']?.toString() ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0))
+          : b.createdAt;
+      return bTime.compareTo(aTime);
+    });
+
+    return items;
   }
 
   Future<void> _handleQuestionUpvote(dynamic question) async {
@@ -186,78 +540,9 @@ class _ChatPanelWidgetState extends State<ChatPanelWidget> {
 
     if (items.isEmpty) return 0;
 
-    // Filter by selected attachment (file)
-    final selectedAttachment = widget.controller.selectedAttachment.value;
-    final selectedAttachmentId = selectedAttachment != null
-        ? _toInt(selectedAttachment['attachment_id'])
-        : null;
-
-    if (selectedAttachmentId != null) {
-      items = items.where((q) {
-        final attachmentId = q is Map
-            ? (_toInt(q['attachment_id']) ?? -1)
-            : (q.attachmentId ?? -1);
-        return attachmentId == selectedAttachmentId;
-      }).toList();
-    }
+    items = _filterQuestionsBySelectedLogAttachment(items);
 
     return items.length;
-  }
-
-  List<dynamic> _buildFilteredQuestions(dynamic source) {
-    var items = <dynamic>[];
-
-    // Handle both RxList<QaQuestion> and List<QaQuestion>
-    if (source is RxList) {
-      items = List.from(source);
-    } else if (source is List) {
-      items = List.from(source);
-    } else {
-      return [];
-    }
-
-    if (items.isEmpty) return [];
-
-    // Filter by selected attachment (file)
-    final selectedAttachment = widget.controller.selectedAttachment.value;
-    final selectedAttachmentId = selectedAttachment != null
-        ? _toInt(selectedAttachment['attachment_id'])
-        : null;
-
-    if (selectedAttachmentId != null) {
-      items = items.where((q) {
-        final attachmentId = q is Map
-            ? (_toInt(q['attachment_id']) ?? -1)
-            : (q.attachmentId ?? -1);
-        return attachmentId == selectedAttachmentId;
-      }).toList();
-    }
-
-    if (items.isEmpty) return [];
-
-    // Sort by topVoted: โหวตเยอะสุดขึ้นบน, ถ้าโหวตเท่ากันให้เรียงตามเวลาส่ง
-    items.sort((a, b) {
-      final aVote = a is Map ? (_toInt(a['upvote_count']) ?? 0) : a.upvoteCount;
-      final bVote = b is Map ? (_toInt(b['upvote_count']) ?? 0) : b.upvoteCount;
-
-      // เอกสารระหว่าง vote count
-      if (aVote != bVote) {
-        return bVote.compareTo(aVote); // โหวตมากขึ้นบน
-      }
-
-      // ถ้าโหวตเท่ากัน เรียงตามเวลาส่ง (ส่งก่อนขึ้นบน)
-      final aTime = a is Map
-          ? (DateTime.tryParse(a['created_at']?.toString() ?? '') ??
-                DateTime.fromMillisecondsSinceEpoch(0))
-          : a.createdAt;
-      final bTime = b is Map
-          ? (DateTime.tryParse(b['created_at']?.toString() ?? '') ??
-                DateTime.fromMillisecondsSinceEpoch(0))
-          : b.createdAt;
-      return bTime.compareTo(aTime); // ส่งหลังขึ้นบน (จากหลังไปหน้า)
-    });
-
-    return items;
   }
 
   bool _isTruthy(dynamic value) {
@@ -268,6 +553,64 @@ class _ChatPanelWidgetState extends State<ChatPanelWidget> {
       return normalized == 'true' || normalized == '1';
     }
     return false;
+  }
+
+  int? _questionSlideNumber(dynamic question) {
+    if (question is Map) {
+      return _toInt(question['slide_number']);
+    }
+    try {
+      return _toInt(question.slideNumber);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  int? _questionAttachmentId(dynamic question) {
+    if (question is Map) {
+      return _toInt(question['attachment_id']);
+    }
+    try {
+      return _toInt(question.attachmentId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _waitForPdfReady({int maxAttempts = 25}) async {
+    for (var i = 0; i < maxAttempts; i++) {
+      if (widget.controller.pdfController.value != null) {
+        return;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+    }
+  }
+
+  Future<void> _handleQuestionReply(dynamic question) async {
+    final slideNumber = _questionSlideNumber(question);
+    if (slideNumber == null) {
+      return;
+    }
+
+    final targetAttachmentId = _questionAttachmentId(question);
+    final currentAttachmentId = _toInt(
+      widget.controller.selectedAttachment.value?['attachment_id'],
+    );
+
+    if (targetAttachmentId != null &&
+        targetAttachmentId != currentAttachmentId) {
+      final resolved = widget.controller.resolveAttachmentById(
+        targetAttachmentId,
+      );
+      if (resolved != null) {
+        await widget.controller.selectPresentationFile(
+          Map<String, dynamic>.from(resolved),
+        );
+        await _waitForPdfReady();
+      }
+    }
+
+    widget.onReply?.call(slideNumber);
   }
 
   @override
@@ -317,7 +660,7 @@ class _ChatPanelWidgetState extends State<ChatPanelWidget> {
                           ),
                         ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+                        padding: const EdgeInsets.fromLTRB(12, 6, 0, 8),
                         child: Row(
                           children: [
                             Icon(
@@ -326,55 +669,121 @@ class _ChatPanelWidgetState extends State<ChatPanelWidget> {
                               color: AppColors.primaryPalette[700],
                             ),
                             const SizedBox(width: 6),
-                            const Text(
-                              'คำถามและความคิดเห็น',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                color: Color(0xFF1F2937),
+                            const Flexible(
+                              child: Text(
+                                'คำถาม',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  color: Color(0xFF1F2937),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Obx(() {
-                              final count = _getFilteredQuestionsCount(
-                                widget.controller.questions,
-                              );
-                              if (count == 0) {
-                                return const SizedBox.shrink();
-                              }
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryPalette[200],
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                                child: Text(
-                                  '$count',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w400,
-                                    color: AppColors.primaryPalette[800],
-                                  ),
-                                ),
-                              );
-                            }),
                             const Spacer(),
-                            if (!widget.readOnly)
-                              IconButton(
-                                onPressed: () {
-                                  widget.controller.isChatOpen.value = false;
-                                  widget.onClose?.call();
-                                },
-                                icon: Icon(
-                                  Icons.close,
-                                  color: AppColors.primaryPalette[700],
-                                  size: 20,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                              ),
+                            if (!_isHistoryMode)
+                              Obx(() {
+                                final count = _getFilteredQuestionsCount(
+                                  widget.controller.questions,
+                                );
+                                final selectedLabel = _selectedFileLabel();
+
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Builder(
+                                      builder: (filterContext) =>
+                                          GestureDetector(
+                                            onTap: () => _openFileFilterMenu(
+                                              filterContext,
+                                            ),
+                                            child: Container(
+                                              height: 34,
+                                              width: 150,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                                border: Border.all(
+                                                  color: AppColors
+                                                      .primaryPalette[200]!,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.filter_alt_outlined,
+                                                    size: 18,
+                                                    color: AppColors
+                                                        .primaryPalette[600],
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Expanded(
+                                                    child: Text(
+                                                      selectedLabel,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: AppColors
+                                                            .primaryPalette[800],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    if (count != 0)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryPalette[200],
+                                          borderRadius: BorderRadius.circular(
+                                            99,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '$count',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w400,
+                                            color:
+                                                AppColors.primaryPalette[800],
+                                          ),
+                                        ),
+                                      ),
+                                    if (!widget.readOnly) ...[
+                                      IconButton(
+                                        onPressed: () {
+                                          widget.controller.isChatOpen.value =
+                                              false;
+                                          widget.onClose?.call();
+                                        },
+                                        icon: Icon(
+                                          Icons.close,
+                                          color: AppColors.primaryPalette[700],
+                                          size: 20,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                      ),
+                                    ],
+                                  ],
+                                );
+                              }),
                           ],
                         ),
                       ),
@@ -439,7 +848,8 @@ class _ChatPanelWidgetState extends State<ChatPanelWidget> {
                             isLocalPending: isLocalPending,
                             readOnly: widget.readOnly,
                             onUpvote: () => _handleQuestionUpvote(q),
-                            onReply: widget.onReply,
+                            onReply: (_) => _handleQuestionReply(q),
+                            isHistoryMode: _isHistoryMode,
                           );
                         },
                       ),

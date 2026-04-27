@@ -1,5 +1,6 @@
 import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/services/api_client.dart';
+import 'package:LinkLian/features/chat/presentation/controllers/chat.controller.dart';
 import 'package:LinkLian/features/community/data/repositories/community_member_repository.dart';
 import 'package:LinkLian/features/community/data/repositories/community_post_repository.dart';
 import 'package:LinkLian/features/community/data/repositories/community_repository.dart';
@@ -26,6 +27,7 @@ import '../../notification/presentation/pages/notification_page.dart';
 import '../../notification/presentation/bindings/notification_binding.dart';
 import '../../../../core/services/badge_service.dart';
 import '../../chat/presentation/pages/chat.page.dart';
+import '../../chat/services/chat_badge_service.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
 import '../../classes/presentation/controllers/class_feed_controller.dart';
@@ -63,8 +65,16 @@ class _MainPageState extends State<MainPage> {
       _selectedIndex = 1;
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _navController.selectedIndex.value = _selectedIndex;
+      final chats = await ChatController().getChat();
+      int total = 0;
+      for (final chat in chats) {
+        if (chat.unreadCount != null) {
+          total += chat.unreadCount!;
+        }
+      }
+      ChatBadgeService().set(total);
     });
 
     _registerDependencies();
@@ -335,6 +345,58 @@ class _MainPageState extends State<MainPage> {
                     //     ),
                     //   );
                     // }),
+                    Obx(() => Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            _goTo(const ChatPage());
+                            final chats = await ChatController().getChat();
+                            int total = 0;
+                            for (final chat in chats) {
+                              if (chat.unreadCount != null) {
+                                total += chat.unreadCount!;
+                              }
+                            }
+                            ChatBadgeService().set(total);
+                          },
+                          child: Icon(
+                            LinkLianIcon.message,
+                            color: AppColors.successPalette[500],
+                            size: 30,
+                          ),
+                        ),
+                        if (ChatBadgeService().observe().value > 0)
+                          Positioned(
+                            top: -4,
+                            right: -6,
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white, width: 1.5),
+                              ),
+                              child: Text(
+                                ChatBadgeService().observe().value > 99
+                                    ? '99+'
+                                    : ChatBadgeService().observe().value.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    )),
                   ],
                 ),
               ),
@@ -420,9 +482,6 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget? _buildBottomNav(int currentTab) {
-    if (_navController.isShowingClassAssignment.value && currentTab == 0) {
-      return null;
-    }
     final maxIndex = isStudent ? 3 : 2;
     final safeIndex = currentTab > maxIndex ? 1 : currentTab;
 

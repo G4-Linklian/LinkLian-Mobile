@@ -211,10 +211,11 @@ class SocketService {
     }
 
     if (_onlineSubscribedUserIds.isNotEmpty) {
-      final ids = _onlineSubscribedUserIds
-          .where((id) => id > 0)
-          .map((id) => id.toString())
-          .toList();
+      final ids =
+          _onlineSubscribedUserIds
+              .where((id) => id > 0)
+              .map((id) => id.toString())
+              .toList();
 
       final message = {
         'type': 'ONLINE_SUBSCRIBE',
@@ -238,9 +239,10 @@ class SocketService {
     final backoffSeconds =
         _onlineBaseReconnectDelay.inSeconds *
         (1 << (_onlineReconnectAttempts - 1).clamp(0, 4));
-    final delaySeconds = backoffSeconds > _onlineMaxReconnectDelay.inSeconds
-        ? _onlineMaxReconnectDelay.inSeconds
-        : backoffSeconds;
+    final delaySeconds =
+        backoffSeconds > _onlineMaxReconnectDelay.inSeconds
+            ? _onlineMaxReconnectDelay.inSeconds
+            : backoffSeconds;
     final delay = Duration(seconds: delaySeconds);
 
     appLog.info(
@@ -302,12 +304,13 @@ class SocketService {
       return false;
     }
 
-    final ids = _onlineSubscribedUserIds
-        .where((id) => id > 0)
-        .map((id) => id.toString())
-        .toSet()
-        .toList();
-
+    final ids =
+        _onlineSubscribedUserIds
+            .where((id) => id > 0)
+            .map((id) => id.toString())
+            .toSet()
+            .toList();
+            
     appLog.info('ONLINE WS Subscribing to user_sys_ids: $ids');
 
     if (ids.isEmpty) {

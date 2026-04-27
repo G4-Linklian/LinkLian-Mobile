@@ -50,6 +50,7 @@ dependencies:
   permission_handler: ^11.3.1
   share_plus: ^10.1.2
   metadata_fetch: ^0.4.2
+  flutter_markdown: ^0.7.7+1
   url_launcher: ^6.1.7
   scrollable_positioned_list: ^0.3.8
 
@@ -58,6 +59,7 @@ dependencies:
   
   # State Management and Storage
   shared_preferences: ^2.2.2
+  dartz: ^0.10.1
   
   # Network and Connectivity
   connectivity_plus: ^7.0.0

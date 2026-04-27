@@ -35,6 +35,14 @@ class _AssignmentPageState extends State<AssignmentPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reset และโหลดข้อมูลใหม่ทุกครั้งที่กลับมาหน้านี้
+    classFeedController.clearClassData();
+    classFeedController.loadInitialData();
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();

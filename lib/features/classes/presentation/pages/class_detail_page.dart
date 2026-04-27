@@ -389,8 +389,15 @@ class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
                       BlurIconButton(
                         icon: LinkLianIcon.back,
                         iconSize: 24,
-                        onTap: () =>
-                            Get.find<NavigationController>().hideClassDetail(),
+                        onTap: () {
+                          final navController =
+                              Get.find<NavigationController>();
+                          if (navController.isShowingClassDetail.value) {
+                            navController.hideClassDetail();
+                          } else {
+                            Get.back();
+                          }
+                        },
                       ),
                       const Spacer(),
                       _PulsingSearchButton(
@@ -646,7 +653,7 @@ class _FilterSection extends StatelessWidget {
           //       ),
           //     );
           //   }),
-          if (!isTeacher) LiveAndAIAction(controller: controller),
+          LiveAndAIAction(controller: controller, isTeacher: isTeacher),
         ],
       ),
     );
@@ -745,14 +752,20 @@ class _FilterSectionDelegate extends SliverPersistentHeaderDelegate {
 
 class LiveAndAIAction extends StatelessWidget {
   final ClassDetailController controller;
+  final bool isTeacher;
 
-  const LiveAndAIAction({super.key, required this.controller});
+  const LiveAndAIAction({
+    super.key,
+    required this.controller,
+    required this.isTeacher,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final live = controller.activeLive.value;
       final selectedCount = controller.selectedPostIdsForAI.length;
+      final liveHistoryCount = controller.liveHistoryCount.value;
 
       if (selectedCount > 0) {
         return TextButton.icon(
@@ -853,46 +866,46 @@ class LiveAndAIAction extends StatelessWidget {
         );
       }
 
-      if (controller.hasLiveHistory.value) {
-        return GestureDetector(
-          onTap: () {
-            Get.toNamed(
-              AppRoutes.liveHistory,
-              arguments: {'sectionId': controller.sectionId.value},
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              border: Border.all(
-                color: AppColors.primaryPalette[700]!,
-                width: 1.5,
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  LinkLianIcon.live,
-                  size: 18,
-                  color: AppColors.primaryPalette[700],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'ประวัติไลฟ์',
-                  style: TextStyle(
-                    color: AppColors.primaryPalette[700],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+      if (isTeacher && liveHistoryCount == 0) {
+        return const SizedBox.shrink();
       }
 
-      return const SizedBox.shrink();
+      return GestureDetector(
+        onTap: () {
+          Get.toNamed(
+            AppRoutes.liveHistory,
+            arguments: {'sectionId': controller.sectionId.value},
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            border: Border.all(
+              color: AppColors.primaryPalette[700]!,
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                LinkLianIcon.live,
+                size: 18,
+                color: AppColors.primaryPalette[700],
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'ประวัติไลฟ์',
+                style: TextStyle(
+                  color: AppColors.primaryPalette[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     });
   }
 

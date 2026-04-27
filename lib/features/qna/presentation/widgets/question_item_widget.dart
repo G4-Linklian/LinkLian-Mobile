@@ -8,6 +8,7 @@ class QuestionItemWidget extends StatelessWidget {
   final int upvoteCount;
   final bool isLocalPending;
   final bool readOnly;
+  final bool isHistoryMode;
   final VoidCallback onUpvote;
   final Function(int?)? onReply;
 
@@ -20,6 +21,7 @@ class QuestionItemWidget extends StatelessWidget {
     required this.readOnly,
     required this.onUpvote,
     this.onReply,
+    this.isHistoryMode = false,
   });
 
   String _sanitizeText(dynamic value) {
@@ -71,6 +73,9 @@ class QuestionItemWidget extends StatelessWidget {
     final askerName = _resolveName(askerMap);
     final askerAvatar = _resolveAvatar(askerMap);
     final createdAt = _formatTime(question['created_at']);
+    final status = question['status']?.toString()?.toUpperCase() ?? '';
+    final isAnswered =
+        status == 'ANSWERED' || status == 'RESOLVED' || status == 'DONE';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -120,13 +125,49 @@ class QuestionItemWidget extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Text(
-                          createdAt,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w400,
-                            fontSize: 12,
-                            color: AppColors.primaryPalette[500],
-                          ),
+                        Row(
+                          children: [
+                            if (isAnswered && !isHistoryMode) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.successPalette[700],
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'ตอบแล้ว',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            const SizedBox(width: 8),
+                            Text(
+                              createdAt,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w400,
+                                fontSize: 12,
+                                color: AppColors.primaryPalette[500],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -228,7 +269,8 @@ class QuestionItemWidget extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: slideNumber != null && slideNumber.toString().isNotEmpty
+                  onPressed:
+                      slideNumber != null && slideNumber.toString().isNotEmpty
                       ? () {
                           onReply?.call(slideNumber);
                         }

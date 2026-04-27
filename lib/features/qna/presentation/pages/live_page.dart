@@ -39,11 +39,6 @@ class _LivePageState extends State<LivePage> {
 
     _chatSheetFraction = 0.75;
     controller.isChatOpen.value = false;
-    // New controller already runs enter flow in onInit.
-    // Manually re-enter only when reusing an existing controller instance.
-    if (hasRegisteredController) {
-      controller.enterLiveSessionFromArgs();
-    }
 
     // Debug logging
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -70,6 +65,8 @@ class _LivePageState extends State<LivePage> {
 
   void _onHeaderDragUpdate(double primaryDelta, double screenHeight) {
     if (screenHeight <= 0) return;
+
+    if (primaryDelta < 0) return;
 
     final next = (_chatSheetFraction - (primaryDelta / screenHeight)).clamp(
       _chatSheetMinFraction,
@@ -202,9 +199,7 @@ class _LivePageState extends State<LivePage> {
                                 SizedBox(
                                   height:
                                       MediaQuery.of(context).size.height *
-                                      (_chatSheetFraction <= 0.5
-                                          ? 0.34
-                                          : 0.44), 
+                                      (_chatSheetFraction <= 0.5 ? 0.34 : 0.44),
                                   width: double.infinity,
                                   child: _buildSlideArea(),
                                 ),
@@ -329,7 +324,7 @@ class _LivePageState extends State<LivePage> {
   Widget _buildHistoryBody(BuildContext context) {
     return Column(
       children: [
-        _buildTopControlBar(showFollow: false),
+        _buildTopControlBar(showFollow: false, logOnly: true),
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.34,
           width: double.infinity,
@@ -402,12 +397,13 @@ class _LivePageState extends State<LivePage> {
     );
   }
 
-  Widget _buildTopControlBar({bool showFollow = true}) {
+  Widget _buildTopControlBar({bool showFollow = true, bool logOnly = false}) {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       child: PresentationFileSelector(
         controller: controller,
         showFollow: showFollow,
+        logOnly: logOnly,
         onFileSelected: (attachment) {
           controller.selectPresentationFile(
             Map<String, dynamic>.from(attachment),

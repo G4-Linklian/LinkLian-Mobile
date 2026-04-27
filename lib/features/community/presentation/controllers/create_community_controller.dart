@@ -90,6 +90,12 @@ class CreateCommunityController extends GetxController {
   }
 
   Future<void> searchTag(String keyword) async {
+    // BUG FIX #13: Validate empty keyword input
+    if (keyword.trim().isEmpty) {
+      tagSearchResult.value = [];
+      return;
+    }
+    
     try {
       isSearchingTags.value = true;
       final result = await _tagRepo.searchTag(keyword: keyword);
@@ -125,6 +131,11 @@ class CreateCommunityController extends GetxController {
       isLoading.value = true;
 
       if (isEditMode.value) {
+        // BUG FIX #8: Add null check before force unwrap
+        if (communityId == null) {
+          Get.snackbar("ผิดพลาด", "ไม่พบ ID ของชุมชน");
+          return;
+        }
         await _repo.updateCommunity(
           communityId: communityId!,
           name: nameController.text.trim(),

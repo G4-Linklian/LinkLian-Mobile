@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../core/services/local_storage.dart';
+import '../../../core/services/socket_service.dart';
+import '../../../core/utils/online_presence_utils.dart';
 import 'package:flutter/foundation.dart';
 import '../../layout/controllers/navigation_controller.dart';
 import '../../../core/services/notification/notification_service.dart';
@@ -15,6 +19,7 @@ String shortToken(String token) {
 
 class AuthController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
+  final SocketService _socketService = SocketService();
 
   final RxnString token = RxnString();
   final RxnString roleName = RxnString();
@@ -22,12 +27,74 @@ class AuthController extends GetxController {
   final RxnInt userId = RxnInt();
 
   final Rx<AuthStatus> status = AuthStatus.checking.obs;
+  Worker? _onlinePresenceWorker;
+  int? _onlineJoinedUserId;
 
   @override
   void onInit() {
     super.onInit();
+    _bindOnlinePresence();
     _tryAutoLogin();
     _loadFromStorage();
+  }
+
+  @override
+  void onClose() {
+    _onlinePresenceWorker?.dispose();
+    super.onClose();
+  }
+
+  void _bindOnlinePresence() {
+    _onlinePresenceWorker?.dispose();
+    _onlinePresenceWorker = everAll([status, userId], (_) {
+      final currentUserId = userId.value;
+      if (status.value == AuthStatus.authenticated && currentUserId != null) {
+        unawaited(_ensureOnlinePresence(currentUserId));
+        return;
+      }
+
+      if (_onlineJoinedUserId != null) {
+        _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
+        _onlineJoinedUserId = null;
+      }
+      OnlinePresenceUtils.clearPresenceState();
+      _socketService.disconnectOnline();
+    });
+  }
+
+  Future<void> _ensureOnlinePresence(int currentUserId) async {
+    if (_onlineJoinedUserId != null && _onlineJoinedUserId != currentUserId) {
+      _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
+    }
+
+    final alreadyJoinedSameUser =
+        _socketService.isOnlineConnected && _onlineJoinedUserId == currentUserId;
+    if (alreadyJoinedSameUser) {
+      return;
+    }
+
+    final onlineUrl = _buildOnlineSocketUrl();
+    await _socketService.connectOnline(onlineUrl);
+
+    if (!_socketService.isOnlineConnected) {
+      return;
+    }
+
+    _socketService.joinOnline(userSysId: currentUserId);
+    _onlineJoinedUserId = currentUserId;
+  }
+
+  String _buildOnlineSocketUrl() {
+    final envSocketUrl = dotenv.env['SOCKET_URL']?.trim();
+    final baseUrl =
+        (envSocketUrl == null || envSocketUrl.isEmpty)
+            ? 'wss://uat-socket.linklian.org/ws'
+            : envSocketUrl;
+
+    if (baseUrl.endsWith('/')) {
+      return '${baseUrl}online';
+    }
+    return '$baseUrl/online';
   }
 
   Future<void> _loadFromStorage() async {
@@ -128,6 +195,13 @@ class AuthController extends GetxController {
     if (userId.value != null) {
       await NotificationService().dispose(userId: userId.value!);
     }
+    if (_onlineJoinedUserId != null) {
+      _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
+      _onlineJoinedUserId = null;
+    }
+    OnlinePresenceUtils.clearPresenceState();
+    _socketService.disconnectOnline();
+
     await LocalStorage.clearAuthSession();
 
     if (Get.isRegistered<NavigationController>()) {
@@ -148,6 +222,14 @@ class AuthController extends GetxController {
 
   void _clearSession() async {
     debugPrint('🚨 _clearSession() called — stack: ${StackTrace.current}');
+
+    if (_onlineJoinedUserId != null) {
+      _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
+      _onlineJoinedUserId = null;
+    }
+    OnlinePresenceUtils.clearPresenceState();
+    _socketService.disconnectOnline();
+
     await LocalStorage.clearAuthSession();
 
     token.value = null;
