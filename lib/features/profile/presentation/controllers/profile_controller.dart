@@ -259,7 +259,7 @@ class ProfileController extends GetxController {
     }
     
     // Additional telecom validation for Thai numbers
-    final prefix = cleanPhone.substring(0, 3);
+    final prefix = cleanPhone.substring(0, 2);
     if (!['08', '09', '02'].contains(prefix) && !RegExp(r'^0[3-7]').hasMatch(prefix)) {
       throw Exception('หมายเลขโทรศัพท์ไม่ถูกต้อง');
     }
