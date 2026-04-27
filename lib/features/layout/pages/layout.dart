@@ -309,14 +309,14 @@ class _MainPageState extends State<MainPage> {
                       );
                     }),
                     const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => _goTo(const ChatPage()),
-                      child: Icon(
-                        LinkLianIcon.message,
-                        color: AppColors.successPalette[500],
-                        size: 30,
-                      ),
-                    ),
+                    // GestureDetector(
+                    //   onTap: () => _goTo(const ChatPage()),
+                    //   child: Icon(
+                    //     LinkLianIcon.message,
+                    //     color: AppColors.successPalette[500],
+                    //     size: 30,
+                    //   ),
+                    // ),
                     // TODO(chat-team): badge จำนวนแชทที่ยังไม่อ่าน
                     // Obx(() {
                     //   final count = BadgeService().observe(BadgeFeature.chat).value;
