@@ -216,13 +216,23 @@ class CreatePostCommunityController extends GetxController {
       return;
     }
 
-    filesPreviews.add({
+    final preview = {
       'file_type': 'link',
       'file_url': url,
       'file_name': url,
       'file_size': 0,
-      'is_uploading': false,
-      'upload_progress': 1.0,
+      'is_uploading': true,
+      'upload_progress': 0.0,
+    };
+    filesPreviews.add(preview);
+
+    Future.delayed(const Duration(seconds: 1), () {
+      final idx = filesPreviews.indexWhere((f) => f['file_url'] == url && f['file_type'] == 'link' && f['is_uploading'] == true);
+      if (idx != -1) {
+        filesPreviews[idx]['is_uploading'] = false;
+        filesPreviews[idx]['upload_progress'] = 1.0;
+        filesPreviews.refresh();
+      }
     });
   }
 

@@ -502,7 +502,6 @@ class _MonthSelector extends StatelessWidget {
     );
   }
 }
-
 class _OverviewStats extends StatelessWidget {
   final DashboardOverview overview;
 
@@ -510,45 +509,38 @@ class _OverviewStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        // Summary Cards Row - 3 main metrics
-        Row(
-          children: [
-            Expanded(
-              child: _CompactStatCard(
-                icon: LinkLianIcon.alignCenter,
-                label: 'งานทั้งหมด',
-                value: overview.totalAssignments.toString(),
-                color: AppColors.primaryPalette[700]!,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _CompactStatCard(
-                icon: LinkLianIcon.fileDescription,
-                label: 'ส่งงานตรงเวลา',
-                value: '${overview.onTimeRate.toStringAsFixed(0)}%',
-                color: AppColors.primaryPalette[700]!,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _CompactStatCard(
-                icon: Icons.bookmark,
-                label: 'บุ๊กมาร์ก',
-                value: overview.bookmarksAdded.toString(),
-                color: AppColors.primaryPalette[700]!,
-              ),
-            ),
-          ],
+        Expanded(
+          child: _CompactStatCard(
+            icon: LinkLianIcon.alignCenter,
+            label: 'งานทั้งหมด',
+            value: overview.totalAssignments.toString(),
+            color: AppColors.primaryPalette[700]!,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _CompactStatCard(
+            icon: LinkLianIcon.fileDescription,
+            label: 'ส่งงานตรงเวลา',
+            value: '${overview.onTimeRate.toStringAsFixed(0)}%',
+            color: AppColors.primaryPalette[700]!,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _CompactStatCard(
+            icon: Icons.bookmark,
+            label: 'บุ๊กมาร์ก',
+            value: overview.bookmarksAdded.toString(),
+            color: AppColors.primaryPalette[700]!,
+          ),
         ),
       ],
     );
   }
 }
-
 class _CompactStatCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -564,39 +556,149 @@ class _CompactStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+    final scale = MediaQuery.of(context).size.width / 375;
+
+    return Container(
+      padding: EdgeInsets.all(10 * scale),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12 * scale),
+        border: Border.all(
+          color: color.withAlpha(40),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 22 * scale),
+          SizedBox(height: 4 * scale),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: (16 * scale).clamp(12, 16),
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          SizedBox(height: 2 * scale),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: (10 * scale).clamp(8, 11),
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+// class _OverviewStats extends StatelessWidget {
+//   final DashboardOverview overview;
+
+//   const _OverviewStats({required this.overview});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         // Summary Cards Row - 3 main metrics
+//         Row(
+//           children: [
+//             Expanded(
+//               child: _CompactStatCard(
+//                 icon: LinkLianIcon.alignCenter,
+//                 label: 'งานทั้งหมด',
+//                 value: overview.totalAssignments.toString(),
+//                 color: AppColors.primaryPalette[700]!,
+//               ),
+//             ),
+//             const SizedBox(width: 8),
+//             Expanded(
+//               child: _CompactStatCard(
+//                 icon: LinkLianIcon.fileDescription,
+//                 label: 'ส่งงานตรงเวลา',
+//                 value: '${overview.onTimeRate.toStringAsFixed(0)}%',
+//                 color: AppColors.primaryPalette[700]!,
+//               ),
+//             ),
+//             const SizedBox(width: 8),
+//             Expanded(
+//               child: _CompactStatCard(
+//                 icon: Icons.bookmark,
+//                 label: 'บุ๊กมาร์ก',
+//                 value: overview.bookmarksAdded.toString(),
+//                 color: AppColors.primaryPalette[700]!,
+//               ),
+//             ),
+//           ],
+//         ),
+//       ],
+//     );
+//   }
+// }
+
+// class _CompactStatCard extends StatelessWidget {
+//   final IconData icon;
+//   final String label;
+//   final String value;
+//   final Color color;
+
+//   const _CompactStatCard({
+//     required this.icon,
+//     required this.label,
+//     required this.value,
+//     required this.color,
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Card(
+//       elevation: 1,
+//       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+//       child: Padding(
+//         padding: const EdgeInsets.all(10),
+//         child: Column(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: [
+//             Icon(icon, color: color, size: 24),
+//             const SizedBox(height: 6),
+//             Text(
+//               value,
+//               style: TextStyle(
+//                 fontSize: 16,
+//                 fontWeight: FontWeight.bold,
+//                 color: color,
+//               ),
+//             ),
+//             const SizedBox(height: 2),
+//             Text(
+//               label,
+//               style: const TextStyle(
+//                 fontSize: 10,
+//                 color: Colors.grey,
+//               ),
+//               textAlign: TextAlign.center,
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 class _StudentSectionCard extends StatefulWidget {
   final SectionDetail section;
@@ -748,9 +850,10 @@ class _StudentSectionCardState extends State<_StudentSectionCard> {
         const Text(
           'ภาพรวมการส่งงาน',
           style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+                        fontSize: 18, 
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
         ),
         const SizedBox(height: 12),
         // Chart bars

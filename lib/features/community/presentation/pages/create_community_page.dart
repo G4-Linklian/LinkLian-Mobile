@@ -628,7 +628,7 @@ class CreateCommunityPage extends StatelessWidget {
                               }
                             },
                             decoration: InputDecoration(
-                              hintText: "พิมพ์กฎแล้วกด Enter เพื่อเพิ่ม...",
+                              hintText: "พิมพ์กฎแล้วกดยืนยันเพื่อเพิ่ม...",
                               hintStyle: TextStyle(
                                 color: Colors.grey.shade400,
                                 fontSize: 14,
@@ -689,7 +689,13 @@ class CreateCommunityPage extends StatelessWidget {
                 child: Row(
                   children: [
                     const Spacer(),
-                    _buildCreateButton(controller: controller),
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: controller.nameController,
+                      builder: (_, value, __) {
+                        return _buildCreateButton(
+                            controller: controller, nameText: value.text);
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -825,79 +831,66 @@ class CreateCommunityPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCreateButton({required CreateCommunityController controller}) {
+  Widget _buildCreateButton({required CreateCommunityController controller, String? nameText}) {
     return Obx(
-      () => GestureDetector(
-        onTap: controller.isLoading.value
-            ? null
-            : () async {
-                final isNameValid = controller.nameController.text
-                    .trim()
-                    .isNotEmpty;
+      () {
+        final isNameValid = (nameText ?? controller.nameController.text).trim().isNotEmpty;
+        final isTagValid = controller.selectedTags.isNotEmpty;
+        final isImageValid = controller.isEditMode.value ? true : controller.selectedImage.value != null;
 
-                final isTagValid = controller.selectedTags.isNotEmpty;
-                final isImageValid = controller.isEditMode.value
-                    ? true
-                    : controller.selectedImage.value != null;
+        final canSubmit = !controller.isLoading.value && isNameValid && isTagValid && isImageValid;
 
-                final isTypeValid = true;
+        return GestureDetector(
+          onTap: canSubmit
+              ? () async {
+                  try {
+                    await controller.submitCommunity();
 
-                if (!isNameValid ||
-                    !isTagValid ||
-                    !isImageValid ||
-                    !isTypeValid) {
-                  await _showIncompleteDialog();
-                  return;
+                    Get.back(result: true);
+
+                    DialogHelper.showNotification(
+                      title: controller.isEditMode.value ? 'แก้ไขชุมชนสำเร็จ' : 'สร้างชุมชนสำเร็จ',
+                      message: controller.isEditMode.value ? 'ชุมชนของคุณถูกอัปเดตแล้ว' : 'ชุมชนของคุณถูกสร้างเรียบร้อยแล้ว',
+                      type: NotificationType.success,
+                    );
+                  } catch (e) {
+                    DialogHelper.showNotification(
+                      title: 'เกิดข้อผิดพลาด',
+                      message: 'ไม่สามารถบันทึกข้อมูลได้',
+                      type: NotificationType.error,
+                    );
+                  }
                 }
+              : null,
 
-                try {
-                  await controller.submitCommunity();
-
-                  Get.back(result: true);
-
-                  DialogHelper.showNotification(
-                    title: controller.isEditMode.value
-                        ? 'แก้ไขชุมชนสำเร็จ'
-                        : 'สร้างชุมชนสำเร็จ',
-                    message: controller.isEditMode.value
-                        ? 'ชุมชนของคุณถูกอัปเดตแล้ว'
-                        : 'ชุมชนของคุณถูกสร้างเรียบร้อยแล้ว',
-                    type: NotificationType.success,
-                  );
-                } catch (e) {
-                  DialogHelper.showNotification(
-                    title: 'เกิดข้อผิดพลาด',
-                    message: 'ไม่สามารถบันทึกข้อมูลได้',
-                    type: NotificationType.error,
-                  );
-                }
-              },
-
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: controller.isLoading.value
-                ? AppColors.primaryPalette[300]
-                : AppColors.primaryPalette[500],
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                controller.isEditMode.value ? "บันทึก" : "สร้าง",
-                style: const TextStyle(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
+          child: Opacity(
+            opacity: canSubmit ? 1.0 : 0.6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: canSubmit ? AppColors.primaryPalette[500] : AppColors.primaryPalette[300],
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(width: 8),
-              const Icon(LinkLianIcon.post, size: 18, color: AppColors.white),
-            ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    controller.isEditMode.value ? "บันทึก" : "สร้าง",
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(LinkLianIcon.post, size: 18, color: AppColors.white),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
+
 }
