@@ -532,36 +532,25 @@ class _ChatPageState extends State<ChatPage> {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          // Unread badge (new UI)
                         ),
                       ),
                       if (chat.unreadCount != null && chat.unreadCount! > 0)
-                        Positioned(
-                          top: -6,
-                          right: -8,
-                          child: Container(
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryPalette[500],
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              chat.unreadCount! > 99
-                                  ? '99+'
-                                  : chat.unreadCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                height: 1.2,
-                              ),
-                              textAlign: TextAlign.center,
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryPalette[500],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${chat.unreadCount}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
