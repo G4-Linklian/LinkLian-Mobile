@@ -1,4 +1,4 @@
-import 'package:LinkLian/features/chat/services/chat_badge_service.dart';
+import 'package:LinkLian/core/services/badge_service.dart';
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/core/constants/linklian-icon.dart';
 import 'package:LinkLian/core/services/local_storage.dart';
@@ -411,7 +411,7 @@ class _ChatPageState extends State<ChatPage> {
               total += c.unreadCount!;
             }
           }
-          ChatBadgeService().set(total);
+          BadgeService().set(BadgeFeature.chat, total);
         } else {
           if (!mounted) return;
           await navigator.push(
@@ -426,7 +426,7 @@ class _ChatPageState extends State<ChatPage> {
               total += c.unreadCount!;
             }
           }
-          ChatBadgeService().set(total);
+          BadgeService().set(BadgeFeature.chat, total);
         }
       },
       child: Container(

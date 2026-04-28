@@ -25,9 +25,9 @@ import '../../../core/constants/logo.dart';
 import '../widgets/activeIcon.dart';
 import '../../notification/presentation/pages/notification_page.dart';
 import '../../notification/presentation/bindings/notification_binding.dart';
-import '../../../../core/services/badge_service.dart';
+// import '../../../../core/services/badge_service.dart';
 import '../../chat/presentation/pages/chat.page.dart';
-import '../../chat/services/chat_badge_service.dart';
+import 'package:LinkLian/core/services/badge_service.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
 import '../../classes/presentation/controllers/class_feed_controller.dart';
@@ -74,7 +74,7 @@ class _MainPageState extends State<MainPage> {
           total += chat.unreadCount!;
         }
       }
-      ChatBadgeService().set(total);
+      BadgeService().set(BadgeFeature.chat, total);
     });
 
     _registerDependencies();
@@ -358,7 +358,7 @@ class _MainPageState extends State<MainPage> {
                                 total += chat.unreadCount!;
                               }
                             }
-                            ChatBadgeService().set(total);
+                            BadgeService().set(BadgeFeature.chat, total);
                           },
                           child: Icon(
                             LinkLianIcon.message,
@@ -366,7 +366,7 @@ class _MainPageState extends State<MainPage> {
                             size: 30,
                           ),
                         ),
-                        if (ChatBadgeService().observe().value > 0)
+                        if (BadgeService().observe(BadgeFeature.chat).value > 0)
                           Positioned(
                             top: -4,
                             right: -6,
@@ -382,9 +382,9 @@ class _MainPageState extends State<MainPage> {
                                 border: Border.all(color: Colors.white, width: 1.5),
                               ),
                               child: Text(
-                                ChatBadgeService().observe().value > 99
+                                BadgeService().observe(BadgeFeature.chat).value > 99
                                     ? '99+'
-                                    : ChatBadgeService().observe().value.toString(),
+                                    : BadgeService().observe(BadgeFeature.chat).value.toString(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 9,
