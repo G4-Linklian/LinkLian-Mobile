@@ -1,0 +1,1077 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:palette_generator/palette_generator.dart';
+import 'dart:ui';
+import '../../../../core/constants/colors.dart';
+import '../../../../core/constants/sizes.dart';
+import '../../../../core/constants/linklian-icon.dart';
+import '../../../../core/constants/linklian-bg.dart';
+import '../controllers/class_detail_controller.dart';
+import '../controllers/class_detail_filter.dart';
+import '../../../../config/app_routes.dart';
+import '../widgets/card_post.dart';
+import '../controllers/create_post_controller.dart';
+import '../../../auth/controller/auth_controller.dart';
+import '../widgets/class_info_popup.dart';
+import '../../../layout/controllers/navigation_controller.dart';
+import '../../../../core/utils/logger.dart';
+
+class ClassDetailPage extends StatefulWidget {
+  const ClassDetailPage({super.key});
+
+  @override
+  State<ClassDetailPage> createState() => _ClassDetailPageState();
+}
+
+class _ClassDetailPageState extends State<ClassDetailPage> {
+  late ClassDetailController controller;
+  late bool isTeacher;
+  String? controllerTag;
+
+  @override
+  void initState() {
+    super.initState();
+    _initController();
+
+    ever(Get.find<NavigationController>().classDetailArgs, (args) {
+      if (args == null || !mounted) return;
+      controller.initializeWithArgs(args);
+    });
+  }
+
+  void _initController() {
+    final auth = Get.find<AuthController>();
+    isTeacher =
+        auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
+
+    final navController = Get.find<NavigationController>();
+    final args = navController.classDetailArgs.value;
+
+    if (args != null && args['sectionId'] != null) {
+      controllerTag = 'class_detail_${args['sectionId']}';
+    }
+
+    if (!Get.isRegistered<ClassDetailController>(tag: controllerTag)) {
+      Get.put(ClassDetailController(), tag: controllerTag, permanent: true);
+    }
+    controller = Get.find<ClassDetailController>(tag: controllerTag);
+
+    if (args != null) {
+      controller.initializeWithArgs(args);
+    }
+
+    controller.scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!controller.scrollController.hasClients) return;
+    if (controller.scrollController.position.pixels >=
+        controller.scrollController.position.maxScrollExtent - 200) {
+      controller.fetchPosts(loadMore: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    controller.scrollController.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.white,
+      extendBodyBehindAppBar: false,
+      body: RefreshIndicator(
+        color: AppColors.primaryPalette[500],
+        onRefresh: () async {
+          appLog.info(
+            '[Class detail page] Pull to refresh',
+            actionPage: 'ClassDetailScreen',
+          );
+          await controller.fetchPosts();
+          await controller.fetchActiveLive();
+        },
+        child: CustomScrollView(
+          controller: controller.scrollController,
+          slivers: [
+            // Collapsible Header
+            SliverAppBar(
+              expandedHeight: 210,
+              collapsedHeight: 120,
+              floating: false,
+              pinned: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              systemOverlayStyle: const SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark,
+                statusBarBrightness: Brightness.light,
+              ),
+              flexibleSpace: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final double maxHeight = 210;
+                  final double minHeight = 120;
+                  final double currentHeight = constraints.maxHeight;
+                  final double shrinkRatio =
+                      ((maxHeight - currentHeight) / (maxHeight - minHeight))
+                          .clamp(0.0, 1.0);
+                  final bool isCollapsed = shrinkRatio > 0.7;
+
+                  return _ClassDetailHeader(
+                    controller: controller,
+                    isTeacher: isTeacher,
+                    isCollapsed: isCollapsed,
+                    shrinkRatio: shrinkRatio,
+                  );
+                },
+              ),
+            ),
+            // Filter Section
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _FilterSectionDelegate(
+                scrollController: controller.scrollController,
+                child: _FilterSection(
+                  controller: controller,
+                  isTeacher: isTeacher,
+                  scrollController: controller.scrollController,
+                ),
+              ),
+            ),
+            // Posts List
+            Obx(() {
+              if (controller.isLoading.value) {
+                return const SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 400,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                );
+              }
+
+              if (controller.posts.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: ListView(
+                    shrinkWrap: true,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 200),
+                      Center(
+                        child: Text(
+                          'ยังไม่มีโพสต์ในห้องนี้',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index >= controller.posts.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+
+                      final post = controller.posts[index];
+                      //
+                      return CardPost(
+                        post: post,
+                        classDetailController: controller,
+                        onSelectForAI: isTeacher
+                            ? null
+                            : (postContentId) {
+                                controller.togglePostSelection(postContentId);
+                              },
+                      );
+                    },
+                    childCount:
+                        controller.posts.length +
+                        (controller.isLoadingMore.value ? 1 : 0),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Header — StatefulWidget เพื่อ hold adaptive text color
+// ─────────────────────────────────────────────
+
+class _ClassDetailHeader extends StatefulWidget {
+  final ClassDetailController controller;
+  final bool isTeacher;
+  final bool isCollapsed;
+  final double shrinkRatio;
+
+  const _ClassDetailHeader({
+    required this.controller,
+    required this.isTeacher,
+    required this.isCollapsed,
+    required this.shrinkRatio,
+  });
+
+  @override
+  State<_ClassDetailHeader> createState() => _ClassDetailHeaderState();
+}
+
+class _ClassDetailHeaderState extends State<_ClassDetailHeader> {
+  Color _textColor = Colors.white;
+  List<Shadow> _textShadow = const [
+    Shadow(blurRadius: 6, color: Colors.black54),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _analyzeImageColor();
+  }
+
+  Future<void> _analyzeImageColor() async {
+    try {
+      final palette = await PaletteGenerator.fromImageProvider(
+        NetworkImage(LinkLianBg.classCardHeader),
+        maximumColorCount: 16,
+      );
+
+      // ดึง dominant color จากภาพพื้นหลัง
+      final bgColor =
+          palette.dominantColor?.color ??
+          palette.vibrantColor?.color ??
+          palette.mutedColor?.color ??
+          const Color(0xFFCCBFA0); // fallback warm neutral
+
+      // ── คำนวณ composite color หลัง gradient overlay ──────────────────
+      // Gradient จริง (topCenter→bottomCenter):
+      //   stop 0%  : white (solid)
+      //   stop 33% : primaryPalette[100] = 0xFFFFF2DD @ 0.75
+      //   stop 67% : primaryPalette[200] = 0xFFFFE3BB @ 0.5
+      //   stop 100%: primaryPalette[700] = 0xFFB7552B @ 0.25
+      // Text อยู่บริเวณ bottom → ได้รับผลหลักจาก stop 67% และ 100%
+
+      Color blended = _blendColor(
+        bgColor,
+        const Color(0xFFFFE3BB), // primaryPalette[200]
+        0.5,
+      );
+      blended = _blendColor(
+        blended,
+        const Color(0xFFB7552B), // primaryPalette[700]
+        0.25,
+      );
+
+      final effectiveLuminance = blended.computeLuminance();
+
+      // threshold 0.4: เอียงฝั่ง dark text เพื่อป้องกัน edge case
+      // > 0.4 → background สว่าง → text ดำ
+      // ≤ 0.4 → background มืด  → text ขาว
+      final useLightText = effectiveLuminance <= 0.4;
+
+      if (mounted) {
+        setState(() {
+          _textColor = useLightText ? Colors.white : Colors.black87;
+          _textShadow = useLightText
+              ? [
+                  Shadow(
+                    blurRadius: 16,
+                    color: const Color.fromARGB(
+                      255,
+                      81,
+                      81,
+                      81,
+                    ).withValues(alpha: 0.75),
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : [
+                  Shadow(
+                    blurRadius: 8,
+                    color: Colors.white.withValues(alpha: 0.25),
+                    offset: const Offset(0, 1),
+                  ),
+                ];
+        });
+      }
+    } catch (_) {
+      // safe default: white text + dark shadow
+    }
+  }
+
+  /// Alpha compositing: dst ทับบน src ด้วย opacity ของ dst
+  Color _blendColor(Color src, Color dst, double dstOpacity) {
+    final srcR = src.r * 255;
+    final srcG = src.g * 255;
+    final srcB = src.b * 255;
+    final dstR = dst.r * 255;
+    final dstG = dst.g * 255;
+    final dstB = dst.b * 255;
+    final r = (srcR * (1 - dstOpacity) + dstR * dstOpacity).round().clamp(
+      0,
+      255,
+    );
+    final g = (srcG * (1 - dstOpacity) + dstG * dstOpacity).round().clamp(
+      0,
+      255,
+    );
+    final b = (srcB * (1 - dstOpacity) + dstB * dstOpacity).round().clamp(
+      0,
+      255,
+    );
+    return Color.fromARGB(255, r, g, b);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final expandRatio = (1.0 - widget.shrinkRatio).clamp(0.0, 1.0);
+
+    final titleFontSize = 18.0 + (6.0 * expandRatio);
+    final sectionFontSize = 14.0 + (2.0 * expandRatio);
+    final teacherFontSize = 14.0 + (2.0 * expandRatio);
+    final iconSize = 24.0 + (4.0 * expandRatio);
+    final addIconSize = 24.0 + (4.0 * expandRatio);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // รูปภาพ — ไม่เปลี่ยน
+        Image.network(LinkLianBg.classCardHeader, fit: BoxFit.cover),
+
+        // Gradient layer — ไม่เปลี่ยน
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.white,
+                AppColors.primaryPalette[100]!.withValues(alpha: 0.75),
+                AppColors.primaryPalette[200]!.withValues(alpha: 0.5),
+                AppColors.primaryPalette[700]!.withValues(alpha: 0.25),
+              ],
+            ),
+          ),
+        ),
+
+        // Content
+        SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + (8 * expandRatio)),
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      BlurIconButton(
+                        icon: LinkLianIcon.back,
+                        iconSize: 24,
+                        onTap: () {
+                          final navController =
+                              Get.find<NavigationController>();
+                          if (navController.isShowingClassDetail.value) {
+                            navController.hideClassDetail();
+                          } else {
+                            Get.back();
+                          }
+                        },
+                      ),
+                      const Spacer(),
+                      _PulsingSearchButton(
+                        child: BlurIconButton(
+                          icon: Icons.search,
+                          iconSize: iconSize,
+                          onTap: () => Get.toNamed(
+                            AppRoutes.searchPost,
+                            arguments: {
+                              'sectionId': controller.sectionId.value,
+                              'subjectName': controller.subjectNameTh.value,
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      BlurIconButton(
+                        icon: LinkLianIcon.add,
+                        iconSize: addIconSize,
+                        onTap: () async {
+                          final result = await Get.toNamed(
+                            AppRoutes.createPost,
+                            arguments: {
+                              'mode': CreatePostMode.create,
+                              'source': CreatePostSource.classDetail,
+                              'sectionId': controller.sectionId.value,
+                              'presetSectionIds': [controller.sectionId.value],
+                              'lockSection': true,
+                            },
+                          );
+                          if (result?['success'] == true) {
+                            controller.fetchPosts();
+                            controller.scrollToTop();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8 + (8 * expandRatio)),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Obx(
+                          () => Text(
+                            controller.subjectNameTh.value,
+                            style: TextStyle(
+                              fontSize: titleFontSize,
+                              fontWeight: FontWeight.w700,
+                              color: _textColor,
+                              shadows: _textShadow,
+                            ),
+                            maxLines: expandRatio > 0.5 ? 2 : 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      BlurIconButton(
+                        icon: Icons.info_outline,
+                        iconSize: 22,
+                        onTap: () => _showClassInfoPopup(context),
+                      ),
+                    ],
+                  ),
+                  if (expandRatio > 0.3) ...[
+                    SizedBox(height: 4 * expandRatio),
+                    Opacity(
+                      opacity: ((expandRatio - 0.3) / 0.7).clamp(0.0, 1.0),
+                      child: Obx(
+                        () => Text(
+                          controller.effectiveClassName.value,
+                          style: TextStyle(
+                            fontSize: sectionFontSize,
+                            fontWeight: FontWeight.w500,
+                            color: _textColor.withValues(alpha: 0.85),
+                            shadows: _textShadow,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 4 * expandRatio),
+                    Opacity(
+                      opacity: ((expandRatio - 0.3) / 0.7).clamp(0.0, 1.0),
+                      child: Obx(
+                        () => Row(
+                          children: [
+                            Text(
+                              'ครูผู้สอน ',
+                              style: TextStyle(
+                                fontSize: teacherFontSize,
+                                color: _textColor.withValues(alpha: 0.75),
+                                shadows: _textShadow,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                controller.teacherName.value,
+                                style: TextStyle(
+                                  fontSize: teacherFontSize,
+                                  fontWeight: FontWeight.w500,
+                                  color: _textColor,
+                                  shadows: _textShadow,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showClassInfoPopup(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          ClassInfoPopup(sectionId: widget.controller.sectionId.value!),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// BlurIconButton — วงกลม blur ของแต่ละปุ่ม
+// public เพื่อ reuse ใน ClassAssignmentPage
+// และ CommunityDetailPage
+// ─────────────────────────────────────────────
+
+class BlurIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final double iconSize;
+  final double buttonSize;
+  final Color iconColor;
+
+  const BlurIconButton({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.iconSize = 32,
+    this.buttonSize = 40,
+    this.iconColor = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipOval(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: buttonSize,
+            height: buttonSize,
+            decoration: BoxDecoration(
+              color: AppColors.primaryPalette[800]!.withValues(alpha: 0.25),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.20),
+                width: 0.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  spreadRadius: 16,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: iconSize, color: iconColor),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Filter section — ไม่เปลี่ยน
+// ─────────────────────────────────────────────
+
+class _FilterSection extends StatelessWidget {
+  final ClassDetailController controller;
+  final bool isTeacher;
+  final ScrollController scrollController;
+
+  const _FilterSection({
+    required this.controller,
+    required this.isTeacher,
+    required this.scrollController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: scrollController,
+      builder: (context, child) {
+        if (!scrollController.hasClients ||
+            scrollController.positions.length != 1) {
+          return _buildContent(0, false);
+        }
+        final offset = scrollController.offset;
+        final isCollapsed = offset > 90;
+        return _buildContent(isCollapsed ? 8.0 : 12.0, isCollapsed);
+      },
+    );
+  }
+
+  Widget _buildContent(double topPadding, bool isCollapsed) {
+    return Container(
+      height: 64,
+      padding: EdgeInsets.fromLTRB(AppSizes.md, topPadding, AppSizes.md, 8),
+      child: Row(
+        children: [
+          Obx(
+            () => _FilterDropdown(
+              selected: controller.selectedFilter.value,
+              onChanged: (filter) => controller.changeFilter(filter),
+            ),
+          ),
+          const Spacer(),
+          // if (!isTeacher)
+          //   Obx(() {
+          //     final count = controller.selectedPostIdsForAI.length;
+          //     if (count == 0) return const SizedBox.shrink();
+
+          //     return TextButton.icon(
+          //       onPressed: controller.generateAISummary,
+          //       icon: Icon(
+          //         Icons.auto_awesome,
+          //         color: AppColors.primaryPalette[500],
+          //         size: 18,
+          //       ),
+          //       label: Text(
+          //         'เริ่มสรุปเนื้อหา',
+          //         style: TextStyle(
+          //           color: AppColors.primaryPalette[500],
+          //           fontWeight: FontWeight.w600,
+          //         ),
+          //       ),
+          //     );
+          //   }),
+          LiveAndAIAction(controller: controller, isTeacher: isTeacher),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterDropdown extends StatelessWidget {
+  final ClassPostFilter selected;
+  final ValueChanged<ClassPostFilter> onChanged;
+
+  const _FilterDropdown({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<ClassPostFilter>(
+      onSelected: (value) => onChanged(value),
+      itemBuilder: (context) => ClassPostFilter.values
+          .map(
+            (filter) => PopupMenuItem<ClassPostFilter>(
+              value: filter,
+              child: Center(
+                child: Text(
+                  filter.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primaryPalette[900],
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(),
+      offset: const Offset(0, 50),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: AppColors.primaryPalette[300],
+      child: Container(
+        width: 115,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primaryPalette[300],
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              selected.label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.primaryPalette[900],
+                height: 1.0,
+              ),
+            ),
+            Icon(
+              LinkLianIcon.filterpost,
+              size: 18,
+              color: AppColors.primaryPalette[700],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterSectionDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final ScrollController scrollController;
+
+  _FilterSectionDelegate({required this.child, required this.scrollController});
+
+  @override
+  double get minExtent => 64;
+
+  @override
+  double get maxExtent => 64;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: AppColors.white, child: child);
+  }
+
+  @override
+  bool shouldRebuild(_FilterSectionDelegate oldDelegate) {
+    return oldDelegate.child != child;
+  }
+}
+
+class LiveAndAIAction extends StatelessWidget {
+  final ClassDetailController controller;
+  final bool isTeacher;
+
+  const LiveAndAIAction({
+    super.key,
+    required this.controller,
+    required this.isTeacher,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final live = controller.activeLive.value;
+      final selectedCount = controller.selectedPostIdsForAI.length;
+      final liveHistoryCount = controller.liveHistoryCount.value;
+
+      if (selectedCount > 0) {
+        return TextButton.icon(
+          onPressed: controller.generateAISummary,
+          icon: Icon(
+            Icons.auto_awesome,
+            color: AppColors.primaryPalette[500],
+            size: 18,
+          ),
+          label: Text(
+            'เริ่มสรุปเนื้อหา',
+            style: TextStyle(
+              color: AppColors.primaryPalette[500],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      }
+
+      if (live != null) {
+        return Builder(
+          builder: (context) => GestureDetector(
+            onTap: () {
+              final RenderBox button = context.findRenderObject() as RenderBox;
+              final RenderBox overlay =
+                  Overlay.of(context).context.findRenderObject() as RenderBox;
+              final buttonWidth = button.size.width;
+              final buttonPos = button.localToGlobal(
+                Offset.zero,
+                ancestor: overlay,
+              );
+
+              showMenu<String>(
+                context: context,
+                position: RelativeRect.fromLTRB(
+                  buttonPos.dx,
+                  buttonPos.dy + button.size.height + 8,
+                  overlay.size.width - (buttonPos.dx + buttonWidth),
+                  0,
+                ),
+                constraints: BoxConstraints(minWidth: buttonWidth),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                items: const [
+                  PopupMenuItem<String>(
+                    value: 'live',
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Text('เข้าดูไลฟ์'),
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'history',
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Text('ดูประวัติไลฟ์'),
+                    ),
+                  ),
+                ],
+              ).then((value) async {
+                if (value == null) return;
+
+                if (value == 'live') {
+                  final qaLiveId = live?['qa_live_id'];
+                  if (qaLiveId == null) {
+                    Get.snackbar('ข้อผิดพลาด', 'ไม่มีข้อมูลไลฟ์');
+                    return;
+                  }
+
+                  try {
+                    await Get.toNamed(
+                      AppRoutes.livePage,
+                      arguments: {
+                        'qaLiveId': qaLiveId,
+                        'sectionId': controller.sectionId.value,
+                      },
+                    );
+                    await controller.fetchActiveLive();
+                  } catch (e) {
+                    Get.snackbar('ข้อผิดพลาด', 'ไม่สามารถเข้าดูไลฟ์ได้');
+                  }
+                } else if (value == 'history') {
+                  Get.toNamed(
+                    AppRoutes.liveHistory,
+                    arguments: {'sectionId': controller.sectionId.value},
+                  );
+                }
+              });
+            },
+            child: _buildButton(
+              icon: Icons.circle,
+              text: "ไลฟ์",
+              color: Colors.red,
+              animateLive: true,
+            ),
+          ),
+        );
+      }
+
+      if (isTeacher && liveHistoryCount == 0) {
+        return const SizedBox.shrink();
+      }
+
+      return GestureDetector(
+        onTap: () {
+          Get.toNamed(
+            AppRoutes.liveHistory,
+            arguments: {'sectionId': controller.sectionId.value},
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            border: Border.all(
+              color: AppColors.primaryPalette[700]!,
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                LinkLianIcon.live,
+                size: 18,
+                color: AppColors.primaryPalette[700],
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'ประวัติไลฟ์',
+                style: TextStyle(
+                  color: AppColors.primaryPalette[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildButton({
+    required IconData icon,
+    required String text,
+    required Color color,
+    bool animateLive = false,
+  }) {
+    final baseButton = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          animateLive
+              ? const _PulsingLiveIcon()
+              : Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(text, style: const TextStyle(color: Colors.white)),
+        ],
+      ),
+    );
+
+    if (!animateLive) return baseButton;
+
+    return _PulsingLiveButton(child: baseButton);
+  }
+}
+
+class _PulsingLiveButton extends StatefulWidget {
+  final Widget child;
+
+  const _PulsingLiveButton({required this.child});
+
+  @override
+  State<_PulsingLiveButton> createState() => _PulsingLiveButtonState();
+}
+
+class _PulsingLiveButtonState extends State<_PulsingLiveButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final scale = 0.97 + (0.06 * t);
+
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: widget.child,
+    );
+  }
+}
+
+class _PulsingLiveIcon extends StatefulWidget {
+  const _PulsingLiveIcon();
+
+  @override
+  State<_PulsingLiveIcon> createState() => _PulsingLiveIconState();
+}
+
+class _PulsingLiveIconState extends State<_PulsingLiveIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final scale = 0.95 + (0.2 * t);
+        final glowOpacity = (0.40 * (1 - t)).clamp(0.0, 0.40);
+
+        return SizedBox(
+          width: 16,
+          height: 16,
+          child: Transform.scale(
+            scale: scale,
+            child: Icon(
+              LinkLianIcon.live,
+              size: 16,
+              color: Colors.white.withValues(alpha: 0.85 + (0.15 * t)),
+              shadows: [
+                Shadow(
+                  blurRadius: 8,
+                  color: Colors.white.withValues(alpha: glowOpacity),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PulsingSearchButton extends StatefulWidget {
+  final Widget child;
+
+  const _PulsingSearchButton({required this.child});
+
+  @override
+  State<_PulsingSearchButton> createState() => _PulsingSearchButtonState();
+}
+
+class _PulsingSearchButtonState extends State<_PulsingSearchButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final scale = 0.96 + (0.08 * t);
+
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: widget.child,
+    );
+  }
+}

@@ -1,30 +1,39 @@
+import 'package:LinkLian/config/app_routes.dart';
 import 'package:LinkLian/core/services/api_client.dart';
-import 'package:LinkLian/data/repository/profile_repository.dart';
-import 'package:LinkLian/data/repository/teaching_schedule_repository.dart';
-import 'package:LinkLian/features/profile/controllers/profile_controller.dart';
+import 'package:LinkLian/features/chat/presentation/controllers/chat.controller.dart';
+import 'package:LinkLian/features/community/data/repositories/community_member_repository.dart';
+import 'package:LinkLian/features/community/data/repositories/community_post_repository.dart';
+import 'package:LinkLian/features/community/data/repositories/community_repository.dart';
+import 'package:LinkLian/features/shared/repositories/profile_repository.dart';
+import 'package:LinkLian/features/profile/data/repositories/teaching_schedule_repository.dart';
+import 'package:LinkLian/features/profile/data/repositories/report_repository.dart';
+import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
+import 'package:LinkLian/features/community/presentation/controllers/community_detail_controller.dart';
+import 'package:LinkLian/features/community/presentation/pages/community_detail_page.dart';
+import 'package:LinkLian/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:flutter/material.dart';
-import '../../../core/constants/colors.dart';
-import '../../assignment/pages/assignment_page.dart';
-import '../../classes/pages/classes_page.dart';
-import '../../community/pages/community_page.dart';
-import '../../profile/pages/profile_page.dart';
-import '../../../core/constants/linklian-icon.dart';
+import '../../../../core/constants/colors.dart';
+import '../../../../features/assignment/presentation/pages/assignment_page.dart';
+import '../../../features/assignment/presentation/pages/class_assignment_page.dart';
+import '../../classes/presentation/pages/classes_page.dart';
+import '../../community/presentation/pages/community_page.dart';
+import '../../profile/presentation/pages/profile_page.dart';
+import '../../../../core/constants/linklian-icon.dart';
 import '../../../core/constants/strings.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/constants/logo.dart';
 import '../widgets/activeIcon.dart';
-import '../../classes/pages/create_post_class_page.dart';
-import '../../community/pages/create_post_commu_page.dart';
 import '../../notification/pages/notification_page.dart';
-import '../../chat/pages/chat.page.dart';
+import '../../chat/presentation/pages/chat.page.dart';
+import '../../chat/services/chat_badge_service.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:get/get.dart';
-import '../../classes/controllers/class_feed_controller.dart';
-import '../../../data/repository/class_feed_repository.dart';
+import '../../classes/presentation/controllers/class_feed_controller.dart';
+import '../../shared/repositories/class_feed_repository.dart';
 import '../../../data/repository/semester_repository.dart';
-import '../../classes/bindings/create_post_binding.dart';
 import '../controllers/navigation_controller.dart';
-import '../../classes/pages/class_detail_page.dart';
+import '../../classes/presentation/pages/class_detail_page.dart';
+import '../../classes/presentation/controllers/create_post_controller.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -47,17 +56,38 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
 
-    // Check if navigated with selectedIndex argument
     final args = Get.arguments;
     if (args is Map && args.containsKey('selectedIndex')) {
       _selectedIndex = args['selectedIndex'] as int;
     } else {
-      _selectedIndex = 1; // ClassesPage ทั้ง student และ teacher
+      _selectedIndex = 1;
     }
-    
-    // Sync with NavigationController
-    _navController.selectedIndex.value = _selectedIndex;
 
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _navController.selectedIndex.value = _selectedIndex;
+      final chats = await ChatController().getChat();
+      int total = 0;
+      for (final chat in chats) {
+        if (chat.unreadCount != null) {
+          total += chat.unreadCount!;
+        }
+      }
+      ChatBadgeService().set(total);
+    });
+
+    _registerDependencies();
+
+    ever<String?>(_auth.roleName, (role) {
+      if (role == null) return;
+
+      final isStudentRole =
+          role == 'high school student' || role == 'uni student';
+
+      _navController.resetForRoleChange(isStudentRole);
+    });
+  }
+
+  void _registerDependencies() {
     if (!Get.isRegistered<ClassFeedController>()) {
       Get.put<ClassFeedController>(
         ClassFeedController(
@@ -70,17 +100,15 @@ class _MainPageState extends State<MainPage> {
     if (!Get.isRegistered<ProfileRepository>()) {
       Get.put(ProfileRepository(Get.find<ApiClient>()), permanent: true);
     }
-    if (!Get.isRegistered<ProfileRepository>()) {
-      Get.put(ProfileRepository(Get.find<ApiClient>()), permanent: true);
-    }
     if (!Get.isRegistered<TeachingScheduleRepository>()) {
       Get.put(
         TeachingScheduleRepository(Get.find<ApiClient>()),
         permanent: true,
       );
     }
-
-    //2. แล้วค่อย put Controller
+    if (!Get.isRegistered<ReportRepository>()) {
+      Get.put(ReportRepository(Get.find<ApiClient>()), permanent: true);
+    }
     if (!Get.isRegistered<ProfileController>()) {
       Get.put(
         ProfileController(
@@ -90,13 +118,37 @@ class _MainPageState extends State<MainPage> {
         permanent: true,
       );
     }
+    if (!Get.isRegistered<CommunityRepository>()) {
+      Get.put(CommunityRepository(), permanent: true);
+    }
+    if (!Get.isRegistered<CommunityPostRepository>()) {
+      Get.put(CommunityPostRepository(), permanent: true);
+    }
+    if (!Get.isRegistered<CommunityMemberRepository>()) {
+      Get.put(CommunityMemberRepository(), permanent: true);
+    }
+    if (!Get.isRegistered<CommunityDetailController>()) {
+      Get.put(
+        CommunityDetailController(
+          Get.find<CommunityRepository>(),
+          Get.find<CommunityPostRepository>(),
+          Get.find<CommunityMemberRepository>(),
+        ),
+        permanent: true,
+      );
+    }
+    if (!Get.isRegistered<CommunityController>()) {
+      Get.put(
+        CommunityController(Get.find<CommunityRepository>()),
+        permanent: true,
+      );
+    }
   }
 
   void _goTo(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
   }
 
-  /// Get page widget for given index (excluding class tab which is handled separately)
   Widget _getPageForIndex(int index) {
     if (isStudent) {
       switch (index) {
@@ -122,34 +174,45 @@ class _MainPageState extends State<MainPage> {
   }
 
   bool get _hideAddIcon {
-    // Hide add icon when showing class detail (it has its own)
     if (_navController.isShowingClassDetail.value && _selectedIndex == 1) {
       return true;
     }
-    
     if (isStudent) {
-      // student: แสดงเฉพาะ class (1) และ community (2)
       return !(_selectedIndex == 1 || _selectedIndex == 2);
     } else {
-      // teacher: แสดงเฉพาะ assignment (0) และ class (1)
       return !(_selectedIndex == 0 || _selectedIndex == 1);
     }
   }
 
   bool get _hideAppBar {
-    // Hide app bar when showing class detail (it has its own header)
     if (_navController.isShowingClassDetail.value && _selectedIndex == 1) {
       return true;
     }
-    return (!isStudent && _selectedIndex == 2) || (isStudent && _selectedIndex == 3);
+    if (_navController.isShowingCommunityDetail.value && _selectedIndex == 2) {
+      return true;
+    }
+    if (_navController.isShowingClassAssignment.value && _selectedIndex == 0) {
+      return true;
+    }
+    return (!isStudent && _selectedIndex == 2) ||
+        (isStudent && _selectedIndex == 3);
   }
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final showClassDetail = _navController.isShowingClassDetail.value && 
-                              _navController.selectedIndex.value == 1;
-      
+      final currentTab = _navController.selectedIndex.value;
+      final showClassDetail =
+          _navController.isShowingClassDetail.value && currentTab == 1;
+      final showCommunityDetail =
+          _navController.isShowingCommunityDetail.value && currentTab == 2;
+      final showClassAssignment =
+          _navController.isShowingClassAssignment.value && currentTab == 0;
+
+      if (_selectedIndex != currentTab) {
+        _selectedIndex = currentTab;
+      }
+
       return Scaffold(
         appBar: _hideAppBar
             ? null
@@ -164,19 +227,30 @@ class _MainPageState extends State<MainPage> {
                       height: 25,
                       fit: BoxFit.contain,
                     ),
-
                     const Spacer(),
-
                     if (!_hideAddIcon)
                       GestureDetector(
                         onTap: () {
-                          if (_selectedIndex == 1) {
-                            Get.to(
-                              () => const CreatePostClassPage(),
-                              binding: CreatePostBinding(),
+                          if (_selectedIndex == 0) {
+                            Get.toNamed(
+                              AppRoutes.createPost,
+                              arguments: {
+                                'mode': CreatePostMode.create,
+                                'source': CreatePostSource.assignmentFeed,
+                                'postType': 'assignment',
+                                'lockPostType': true,
+                              },
+                            );
+                          } else if (_selectedIndex == 1) {
+                            Get.toNamed(
+                              AppRoutes.createPost,
+                              arguments: {
+                                'mode': CreatePostMode.create,
+                                'source': CreatePostSource.classFeed,
+                              },
                             );
                           } else if (_selectedIndex == 2) {
-                            _goTo(const CreatePostCommuPage());
+                            Get.toNamed(AppRoutes.createCommunity);
                           }
                         },
                         child: Icon(
@@ -185,9 +259,7 @@ class _MainPageState extends State<MainPage> {
                           size: 32,
                         ),
                       ),
-
                     if (!_hideAddIcon) const SizedBox(width: 12),
-
                     GestureDetector(
                       onTap: () => _goTo(const NotificationPage()),
                       child: Icon(
@@ -196,104 +268,194 @@ class _MainPageState extends State<MainPage> {
                         size: 32,
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
-                    GestureDetector(
-                      onTap: () => _goTo(const ChatPage()),
-                      child: Icon(
-                        LinkLianIcon.message,
-                        color: AppColors.successPalette[500],
-                        size: 30,
-                      ),
-                    ),
+                    Obx(() => Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            _goTo(const ChatPage());
+                            final chats = await ChatController().getChat();
+                            int total = 0;
+                            for (final chat in chats) {
+                              if (chat.unreadCount != null) {
+                                total += chat.unreadCount!;
+                              }
+                            }
+                            ChatBadgeService().set(total);
+                          },
+                          child: Icon(
+                            LinkLianIcon.message,
+                            color: AppColors.successPalette[500],
+                            size: 30,
+                          ),
+                        ),
+                        if (ChatBadgeService().observe().value > 0)
+                          Positioned(
+                            right: 1,
+                            top: 1,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                          ChatBadgeService().observe().value > 99
+                                              ? '99+'
+                                              : '${ChatBadgeService().observe().value}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                            ),
+                          ),
+                      ],
+                    )),
                   ],
                 ),
               ),
-        // Use AnimatedSwitcher for smooth transition between ClassesPage and ClassDetailPage
-        body: _selectedIndex == 1
-            ? AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, animation) {
-                  // Slide from right when showing ClassDetail, slide to right when hiding
-                  final isShowingDetail = child is ClassDetailPage;
-                  final slideAnimation = Tween<Offset>(
-                    begin: isShowingDetail 
-                        ? const Offset(1.0, 0.0)  // Slide in from right
-                        : const Offset(-0.3, 0.0), // Slide in from left (smaller)
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ));
-                  
-                  return SlideTransition(
-                    position: slideAnimation,
-                    child: child,
-                  );
-                },
-                child: showClassDetail 
-                    ? const ClassDetailPage(key: ValueKey('classDetail'))
-                    : const ClassesPage(key: ValueKey('classesPage')),
-              )
-            : _getPageForIndex(_selectedIndex),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) {
-            _navController.changeTab(index);
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-
-          type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primaryPalette[900],
-        unselectedItemColor: AppColors.primaryPalette[800],
-        backgroundColor: AppColors.primaryPalette[200],
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
-          items: isStudent
-              ? const [
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.homework),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
-                    label: AppStrings.homework,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.classroom),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
-                    label: AppStrings.classroom,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.community),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.community),
-                    label: AppStrings.community,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.profile),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
-                    label: AppStrings.profile,
-                  ),
-                ]
-              : const [
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.homework),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
-                    label: AppStrings.homework,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.classroom),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
-                    label: AppStrings.classroom,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(LinkLianIcon.profile),
-                    activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
-                    label: AppStrings.profile,
-                  ),
-                ],
+        body: _buildBody(
+          showClassDetail: showClassDetail,
+          showCommunityDetail: showCommunityDetail,
+          showClassAssignment: showClassAssignment,
+          currentTab: currentTab,
         ),
+        bottomNavigationBar: _buildBottomNav(currentTab),
       );
     });
+  }
+
+  Widget _buildBody({
+    required bool showClassDetail,
+    required bool showCommunityDetail,
+    required bool showClassAssignment,
+    required int currentTab,
+  }) {
+    return KeyedSubtree(
+      key: ValueKey(currentTab),
+      child: Builder(
+        builder: (_) {
+          // TAB 1: ClassesPage + ClassDetailPage overlay
+          if (currentTab == 1) {
+            return Stack(
+              children: [
+                const ClassesPage(key: ValueKey('classesPage')),
+                _buildSlideOverlay(
+                  isVisible: showClassDetail,
+                  child: const ClassDetailPage(key: ValueKey('classDetail')),
+                ),
+              ],
+            );
+          }
+
+          // TAB 2: CommunityPage + CommunityDetailPage overlay
+          if (currentTab == 2 && isStudent) {
+            return Stack(
+              children: [
+                const CommuPage(key: ValueKey('communityPage')),
+                _buildSlideOverlay(
+                  isVisible: showCommunityDetail,
+                  child: const CommunityDetailPage(key: ValueKey('communityDetail')),
+                ),
+              ],
+            );
+          }
+
+          // TAB 0: AssignmentPage + ClassAssignmentPage overlay
+          if (currentTab == 0) {
+            return Stack(
+              children: [
+                const AssignmentPage(key: ValueKey('assignmentPage')),
+                _buildSlideOverlay(
+                  isVisible: showClassAssignment,
+                  child: const ClassAssignmentPage(key: ValueKey('classAssignment')),
+                ),
+              ],
+            );
+          }
+
+          return _getPageForIndex(currentTab);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSlideOverlay({
+    required bool isVisible,
+    required Widget child,
+  }) {
+    return IgnorePointer(
+      ignoring: !isVisible,
+      child: AnimatedSlide(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        offset: isVisible ? Offset.zero : const Offset(1.0, 0.0),
+        child: child,
+      ),
+    );
+  }
+
+  Widget? _buildBottomNav(int currentTab) {
+    final maxIndex = isStudent ? 3 : 2;
+    final safeIndex = currentTab > maxIndex ? 1 : currentTab;
+
+    return BottomNavigationBar(
+      currentIndex: safeIndex,
+      onTap: (index) {
+        _navController.changeTab(index);
+        setState(() => _selectedIndex = index);
+      },
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: AppColors.primaryPalette[900],
+      unselectedItemColor: AppColors.primaryPalette[800],
+      backgroundColor: AppColors.primaryPalette[200],
+      selectedFontSize: 12,
+      unselectedFontSize: 12,
+      items: isStudent
+          ? const [
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.homework),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
+                label: AppStrings.homework,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.classroom),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
+                label: AppStrings.classroom,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.community),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.community),
+                label: AppStrings.community,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.profile),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
+                label: AppStrings.profile,
+              ),
+            ]
+          : const [
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.homework),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.homework),
+                label: AppStrings.homework,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.classroom),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.classroom),
+                label: AppStrings.classroom,
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LinkLianIcon.profile),
+                activeIcon: ActiveNavIcon(icon: LinkLianIcon.profile),
+                label: AppStrings.profile,
+              ),
+            ],
+    );
   }
 }

@@ -1,7 +1,13 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../core/services/local_storage.dart';
+import '../../../core/services/socket_service.dart';
+import '../../../core/utils/online_presence_utils.dart';
 import 'package:flutter/foundation.dart';
+import '../../layout/controllers/navigation_controller.dart';
 
 enum AuthStatus { checking, unauthenticated, authenticated }
 
@@ -12,6 +18,7 @@ String shortToken(String token) {
 
 class AuthController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
+  final SocketService _socketService = SocketService();
 
   final RxnString token = RxnString();
   final RxnString roleName = RxnString();
@@ -19,13 +26,74 @@ class AuthController extends GetxController {
   final RxnInt userId = RxnInt();
 
   final Rx<AuthStatus> status = AuthStatus.checking.obs;
+  Worker? _onlinePresenceWorker;
+  int? _onlineJoinedUserId;
 
   @override
   void onInit() {
     super.onInit();
-    // print('🧠 AuthController hash = ${hashCode}');
+    _bindOnlinePresence();
     _tryAutoLogin();
     _loadFromStorage();
+  }
+
+  @override
+  void onClose() {
+    _onlinePresenceWorker?.dispose();
+    super.onClose();
+  }
+
+  void _bindOnlinePresence() {
+    _onlinePresenceWorker?.dispose();
+    _onlinePresenceWorker = everAll([status, userId], (_) {
+      final currentUserId = userId.value;
+      if (status.value == AuthStatus.authenticated && currentUserId != null) {
+        unawaited(_ensureOnlinePresence(currentUserId));
+        return;
+      }
+
+      if (_onlineJoinedUserId != null) {
+        _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
+        _onlineJoinedUserId = null;
+      }
+      OnlinePresenceUtils.clearPresenceState();
+      _socketService.disconnectOnline();
+    });
+  }
+
+  Future<void> _ensureOnlinePresence(int currentUserId) async {
+    if (_onlineJoinedUserId != null && _onlineJoinedUserId != currentUserId) {
+      _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
+    }
+
+    final alreadyJoinedSameUser =
+        _socketService.isOnlineConnected && _onlineJoinedUserId == currentUserId;
+    if (alreadyJoinedSameUser) {
+      return;
+    }
+
+    final onlineUrl = _buildOnlineSocketUrl();
+    await _socketService.connectOnline(onlineUrl);
+
+    if (!_socketService.isOnlineConnected) {
+      return;
+    }
+
+    _socketService.joinOnline(userSysId: currentUserId);
+    _onlineJoinedUserId = currentUserId;
+  }
+
+  String _buildOnlineSocketUrl() {
+    final envSocketUrl = dotenv.env['SOCKET_URL']?.trim();
+    final baseUrl =
+        (envSocketUrl == null || envSocketUrl.isEmpty)
+            ? 'wss://uat-socket.linklian.org/ws'
+            : envSocketUrl;
+
+    if (baseUrl.endsWith('/')) {
+      return '${baseUrl}online';
+    }
+    return '$baseUrl/online';
   }
 
   Future<void> _loadFromStorage() async {
@@ -72,25 +140,18 @@ class AuthController extends GetxController {
   }
 
   Future<void> _tryAutoLogin() async {
+    status.value = AuthStatus.checking;
+
+    final storedToken = await LocalStorage.getToken();
+    final storedUserId = await LocalStorage.getLastLoginUserId();
+
+    if (storedToken == null || storedUserId == null) {
+      _clearSession();
+      return;
+    }
+
     try {
-      status.value = AuthStatus.checking;
-
-      final storedToken = await LocalStorage.getToken();
-      final storedUserId = await LocalStorage.getLastLoginUserId();
-
-      if (storedToken == null || storedUserId == null) {
-        _clearSession();
-        return;
-      }
-
       final res = await _authRepository.verifyAuthContext();
-      if (res['require_reset_password'] == true) {
-        await LocalStorage.clearAuthSession();
-        status.value = AuthStatus.unauthenticated;
-        return;
-      }
-
-      final data = res['data'];
 
       final int tokenUserId = int.parse(res['data']['user_id'].toString());
 
@@ -101,12 +162,24 @@ class AuthController extends GetxController {
 
       token.value = storedToken;
       userId.value = tokenUserId;
-      roleName.value = res['data']['role_name'];
-      instId.value = res['data']['inst_id'];
+      roleName.value = res['data']['role_name']?.toString();
+      instId.value = int.tryParse(res['data']['inst_id'].toString());
 
       status.value = AuthStatus.authenticated;
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 401 || statusCode == 403) {
+        _clearSession();
+      } else {
+        // network error / server error → ใช้ข้อมูลจาก storage แทน
+        token.value = storedToken;
+        userId.value = storedUserId;
+        status.value = AuthStatus.authenticated;
+      }
     } catch (_) {
-      _clearSession();
+      token.value = storedToken;
+      userId.value = storedUserId;
+      status.value = AuthStatus.authenticated;
     }
   }
 
@@ -116,14 +189,43 @@ class AuthController extends GetxController {
 
   /// ===== Logout / hot reload =====
   Future<void> logout() async {
+    if (_onlineJoinedUserId != null) {
+      _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
+      _onlineJoinedUserId = null;
+    }
+    OnlinePresenceUtils.clearPresenceState();
+    _socketService.disconnectOnline();
+
+    await LocalStorage.clearAuthSession();
+
+    if (Get.isRegistered<NavigationController>()) {
+      final nav = Get.find<NavigationController>();
+      nav.selectedIndex.value = 1;
+      nav.hideClassDetail();
+      nav.hideCommunityDetail();
+      nav.hideClassAssignment();
+    }
+
     token.value = null;
     roleName.value = null;
     instId.value = null;
     userId.value = null;
+
     status.value = AuthStatus.unauthenticated;
   }
 
-  void _clearSession() {
+  void _clearSession() async {
+    debugPrint('🚨 _clearSession() called — stack: ${StackTrace.current}');
+
+    if (_onlineJoinedUserId != null) {
+      _socketService.leaveOnline(userSysId: _onlineJoinedUserId!);
+      _onlineJoinedUserId = null;
+    }
+    OnlinePresenceUtils.clearPresenceState();
+    _socketService.disconnectOnline();
+
+    await LocalStorage.clearAuthSession();
+
     token.value = null;
     roleName.value = null;
     instId.value = null;

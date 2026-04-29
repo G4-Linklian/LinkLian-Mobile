@@ -10,12 +10,10 @@ import '../../../core/constants/sizes.dart';
 import '../../../core/constants/linklian-icon.dart';
 import '../../../core/constants/strings.dart';
 import '../controllers/login_controller.dart';
-import '../../auth/controller/auth_controller.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
-  // ✅ Function เปิด BottomSheet (ใช้ร่วมกัน)
   void _openLoginSheet(BuildContext context, LoginController controller) {
     showModalBottomSheet(
       context: context,
@@ -46,7 +44,6 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 สร้าง controller เฉพาะตอนยังไม่ login
     final controller = Get.put(LoginController(), permanent: false);
     return Scaffold(
       body: Container(

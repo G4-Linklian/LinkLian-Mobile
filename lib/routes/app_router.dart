@@ -1,30 +1,54 @@
-import 'package:LinkLian/features/profile/bindings/profile_binding.dart';
+import 'package:LinkLian/features/community/presentation/binding/community_binding.dart';
+import 'package:LinkLian/features/community/presentation/binding/community_detail_binding.dart';
+import 'package:LinkLian/features/community/presentation/binding/community_member_binding.dart';
+import 'package:LinkLian/features/community/presentation/binding/community_pending_binding.dart';
+import 'package:LinkLian/features/community/presentation/binding/create_community_binding.dart';
+import 'package:LinkLian/features/community/presentation/binding/create_post_community_binding.dart';
+import 'package:LinkLian/features/community/presentation/controllers/community_comment_controller.dart';
+import 'package:LinkLian/features/community/presentation/pages/community_comment_page.dart';
+import 'package:LinkLian/features/community/presentation/pages/community_detail_page.dart';
+import 'package:LinkLian/features/community/presentation/pages/community_member_page.dart';
+import 'package:LinkLian/features/community/presentation/pages/community_pending_page.dart';
+import 'package:LinkLian/features/community/presentation/pages/community_search_page.dart';
+import 'package:LinkLian/features/community/presentation/pages/create_community_page.dart';
+import 'package:LinkLian/features/community/presentation/pages/create_post_commu_page.dart';
+import 'package:LinkLian/features/profile/presentation/bindings/profile_binding.dart';
+import 'package:LinkLian/features/profile/presentation/bindings/dashboard_binding.dart';
+import 'package:LinkLian/features/profile/presentation/pages/dashboard_page.dart';
+import 'package:LinkLian/features/qna/presentation/pages/live_history_page.dart';
+import 'package:LinkLian/features/qna/presentation/pages/live_page.dart';
 import 'package:LinkLian/main.dart';
 import 'package:get/get.dart';
 import '../config/app_routes.dart';
-import '../features/assignment/pages/assignment_page.dart';
-import '../features/community/pages/community_page.dart';
-import '../features/profile/pages/profile_page.dart';
+import '../features/assignment/presentation/pages/assignment_page.dart';
+import '../features/community/presentation/pages/community_page.dart';
+import '../features/profile/presentation/pages/profile_page.dart';
 import '../features/layout/pages/layout.dart';
 import '../features/login/pages/login_page.dart';
-import '../features/classes/bindings/class_feed_binding.dart';
-import '../features/classes/pages/class_detail_page.dart';
-import '../features/classes/bindings/class_detail_binding.dart';
-import '../features/classes/pages/create_post_class_page.dart';
-import '../features/classes/controllers/create_post_controller.dart';
-import '../data/repository/post_repository.dart';
-import '../features/classes/pages/comment_page.dart';
-import '../features/classes/bindings/comment_binding.dart';
-import '../features/profile/bindings/bookmark_binding.dart';
-import '../features/classes/pages/search_post_page.dart';
-
+import '../features/classes/presentation/bindings/class_feed_binding.dart';
+import '../features/classes/presentation/pages/class_detail_page.dart';
+import '../features/classes/presentation/bindings/class_detail_binding.dart';
+import '../features/classes/presentation/pages/create_post_class_page.dart';
+import '../features/classes/presentation/controllers/create_post_controller.dart';
+import '../features/shared/repositories/post_repository.dart';
+import '../features/classes/presentation/pages/comment_page.dart';
+import '../features/classes/presentation/bindings/comment_binding.dart';
+import '../features/profile/presentation/bindings/bookmark_binding.dart';
+import '../features/classes/presentation/pages/search_post_page.dart';
+import '../features/assignment/presentation/pages/class_assignment_page.dart';
+import '../features/assignment/presentation/bindings/class_assignment_binding.dart';
+import '../features/assignment/presentation/pages/assignment_submission_page.dart';
+import '../features/assignment/presentation/bindings/assignment_submission_binding.dart';
+import '../features/classes/presentation/controllers/search_post_controller.dart';
+import '../features/assignment/presentation/pages/search_assignment_page.dart';
+import '../features/assignment/presentation/controllers/search_assignment_controller.dart';
+import '../features/assignment/data/repositories/assignment_repository.dart';
+import '../features/assignment/presentation/pages/student_assignment_detail_page.dart';
+import '../features/assignment/presentation/bindings/teacher_submission_binding.dart';
 
 class AppRouter {
   static final routes = [
-    GetPage(
-      name: AppRoutes.authGate,
-      page: () => const AuthGate(),
-    ),
+    GetPage(name: AppRoutes.authGate, page: () => const AuthGate()),
     GetPage(name: AppRoutes.login, page: () => const LoginPage()),
 
     GetPage(
@@ -39,23 +63,29 @@ class AppRouter {
       binding: ClassFeedBinding(),
       transition: Transition.noTransition, // No animation for tab switching
     ),
-     GetPage(
+    GetPage(
       name: AppRoutes.classDetail,
       page: () => const ClassDetailPage(),
-      bindings: [
-        ClassDetailBinding(),
-        BookmarkBinding(),
-      ],
+      bindings: [ClassDetailBinding(), BookmarkBinding()],
       // Use right to left transition for normal navigation
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.livePage,
+      page: () => LivePage(),
+      transition: Transition.rightToLeft,
+    ),
+
+    GetPage(
+      name: AppRoutes.liveHistory,
+      page: () => const LiveHistoryPage(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
       name: AppRoutes.createPost,
       page: () => const CreatePostClassPage(),
       binding: BindingsBuilder(() {
-        Get.put(CreatePostController(
-          postRepository: PostRepository(),
-        ));
+        Get.put(CreatePostController(postRepository: PostRepository()));
       }),
     ),
     GetPage(
@@ -64,14 +94,100 @@ class AppRouter {
       binding: CommentBinding(),
     ),
     GetPage(
-      name: AppRoutes.searchPost,
+      name: '/search-post',
       page: () => const SearchPostPage(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<SearchPostController>(() => SearchPostController());
+      }),
     ),
-    GetPage(name: AppRoutes.community, page: () => const CommuPage()),
+    GetPage(
+      name: AppRoutes.classAssignment,
+      page: () => const ClassAssignmentPage(),
+      binding: ClassAssignmentBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.assignmentSubmission,
+      page: () => const AssignmentSubmissionPage(),
+      binding: AssignmentSubmissionBinding(),
+      transition: Transition.rightToLeft,
+    ),
+
+    GetPage(
+      name: AppRoutes.community,
+      page: () => const CommuPage(),
+      binding: CommunityBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.createCommunity,
+      page: () => const CreateCommunityPage(),
+      binding: CreateCommunityBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.communityDetail,
+      page: () => const CommunityDetailPage(),
+      binding: CommunityDetailBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.createPostCommunity,
+      page: () => const CreatePostCommunityPage(),
+      binding: CreatePostCommunityBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.communityComment,
+      page: () => const CommunityCommentPage(),
+      binding: BindingsBuilder(() {
+        Get.put(CommunityCommentController());
+      }),
+    ),
+    GetPage(
+      name: '/community-members',
+      page: () => const CommunityMemberPage(),
+      binding: CommunityMemberBinding(),
+    ),
+    GetPage(
+      name: '/community-pending',
+      page: () => const CommunityPendingPage(),
+      binding: CommunityPendingBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.communitySearch,
+      page: () => const CommunitySearchPage(),
+    ),
+
     GetPage(
       name: AppRoutes.profile,
       page: () => const ProfilePage(),
       binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.dashboard,
+      page: () => const DashboardPage(),
+      bindings: [ProfileBinding(), DashboardBinding()],
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.searchAssignment,
+      page: () => const SearchAssignmentPage(),
+      binding: BindingsBuilder(() {
+        // Ensure repository exists (may already be registered by NavigationController)
+        if (!Get.isRegistered<AssignmentRepository>()) {
+          Get.put<AssignmentRepository>(
+            AssignmentRepository(apiClient: Get.find()),
+            permanent: true,
+          );
+        }
+        Get.lazyPut<SearchAssignmentController>(
+          () => SearchAssignmentController(),
+        );
+      }),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.studentAssignmentDetail,
+      page: () => const StudentAssignmentDetailPage(),
+      binding: TeacherSubmissionBinding(),
+      transition: Transition.rightToLeft,
     ),
   ];
 }

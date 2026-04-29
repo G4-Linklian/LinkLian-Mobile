@@ -70,6 +70,12 @@ class AppColors {
     800: Color(0xFF3F0010),
     900: Color(0xFF360012),
   };
+
+  // Assignment Status Colors
+  static const Color assignmentSubmitted = Color(0xFF3DA725);       // green - ส่งแล้ว
+  static const Color assignmentNotSubmitted = AppColors.gray;    // orange - ยังไม่ส่ง
+  static const Color assignmentOverdue = Color(0xFFD30000);         // red - ยังไม่ส่งเกินกำหนด
+  static const Color assignmentLateSubmitted = Color(0xFFDB763F);   // deep orange - ส่งแล้วเกินกำหนด
 }
 
 

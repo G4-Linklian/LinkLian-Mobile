@@ -3,21 +3,12 @@ import 'package:get/get.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/sizes.dart';
 import '../../features/login/widgets/otp_popup.dart';
-import '../../features/classes/widgets/image_source_sheet.dart';
-import '../../features/classes/widgets/link_attach_dialog.dart';
+import '../../features/classes/presentation/widgets/image_source_sheet.dart';
+import '../../features/classes/presentation/widgets/link_attach_dialog.dart';
 
 enum NotificationType { success, error, warning, info }
 
 class DialogHelper {
-  // ฟังก์ชันแสดง Error
-  // static void showErrorDialog({String title = "Error", String description = "Something went wrong"}) {
-  //   Get.defaultDialog(
-  //     title: title,
-  //     middleText: description,
-  //     textConfirm: "OK",
-  //     onConfirm: () => Get.back(),
-  //   );
-  // }
 
   static void showErrorDialog({
     String title = "แจ้งเตือน",
@@ -40,6 +31,10 @@ class DialogHelper {
     NotificationType type = NotificationType.success,
     double titleSize = 24.0,
     Duration duration = const Duration(seconds: 2),
+    String? actionLabel,
+    VoidCallback? onAction,
+    VoidCallback? onTap,
+    bool compact = false,
   }) {
     Color bgColor;
     IconData iconData;
@@ -72,8 +67,8 @@ class DialogHelper {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(iconData, color: AppColors.white, size: 40),
-            const SizedBox(height: 8),
+            Icon(iconData, color: AppColors.white, size: compact ? 30 : 40),
+            SizedBox(height: compact ? 4 : 8),
 
             Text(
               title,
@@ -86,11 +81,14 @@ class DialogHelper {
             ),
 
             if (message != null && message.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              SizedBox(height: compact ? 2 : 4),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.white, fontSize: 14),
+                style: TextStyle(
+                  color: AppColors.white,
+                  fontSize: compact ? 12 : 14,
+                ),
               ),
             ],
           ],
@@ -99,14 +97,27 @@ class DialogHelper {
 
       snackPosition: SnackPosition.TOP,
       backgroundColor: bgColor,
-      borderRadius: 16,
+      borderRadius: compact ? 12 : 16,
       margin: const EdgeInsets.all(AppSizes.sm),
       isDismissible: true,
       duration: duration,
-      maxWidth: Get.width * 0.8,
+      maxWidth: Get.width * (compact ? 0.66 : 0.8),
       animationDuration: const Duration(milliseconds: 400),
       forwardAnimationCurve: Curves.fastLinearToSlowEaseIn,
       reverseAnimationCurve: Curves.linearToEaseOut,
+      onTap: (_) => onTap?.call(),
+      mainButton: (actionLabel != null && onAction != null)
+          ? TextButton(
+              onPressed: onAction,
+              child: Text(
+                actionLabel,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          : null,
     );
   }
 

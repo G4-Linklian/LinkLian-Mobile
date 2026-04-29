@@ -1,5 +1,5 @@
 import '../../features/auth/controller/auth_controller.dart';
-import '../../../data/model/post_model.dart';
+import '../../features/shared/models/post_model.dart';
 
 class PostPermission {
   final PostModel post;
@@ -7,23 +7,17 @@ class PostPermission {
 
   PostPermission({required this.post, required this.auth});
 
-  bool get isOwner => post.userSysId == auth.userId.value;
+  int get _currentUserId => auth.userId.value ?? 0;
 
-  bool get isTeacher =>
-      auth.roleName.value == 'teacher' || auth.roleName.value == 'instructor';
+  /// โพสต์เป็นของตัวเองหรือไม่
+  bool get _isOwner => post.userSysId == _currentUserId;
 
-  bool get isAdmin => auth.roleName.value == 'admin';
+  /// แสดงปุ่ม ... เฉพาะเจ้าของโพสต์เท่านั้น
+  bool get canShowMore => _isOwner;
 
-  bool get isStudent =>
-      auth.roleName.value == 'high school student' ||
-      auth.roleName.value == 'uni student';
+  /// แก้ไขได้เฉพาะเจ้าของโพสต์
+  bool get canEdit => _isOwner;
 
-  /// CRUD
-  bool get canEdit => isOwner || isAdmin;
-  bool get canDelete => isOwner || isAdmin;
-
-  /// UI / Feature
-  bool get canSelectAI => isStudent;
-  bool get canReport => !isOwner;
-  bool get canShowMore => canEdit || canDelete || canReport;
+  /// ลบได้เฉพาะเจ้าของโพสต์
+  bool get canDelete => _isOwner;
 }

@@ -15,6 +15,63 @@ class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
 
+MediaType _resolveMediaType(String fileName) {
+    final extension = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : '';
+
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+      case 'png':
+        return MediaType('image', 'png');
+      case 'gif':
+        return MediaType('image', 'gif');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'bmp':
+        return MediaType('image', 'bmp');
+      case 'svg':
+        return MediaType('image', 'svg+xml');
+      case 'pdf':
+        return MediaType('application', 'pdf');
+      case 'doc':
+        return MediaType('application', 'msword');
+      case 'docx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.wordprocessingml.document',
+        );
+      case 'xls':
+        return MediaType('application', 'vnd.ms-excel');
+      case 'xlsx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+      case 'ppt':
+        return MediaType('application', 'vnd.ms-powerpoint');
+      case 'pptx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.presentationml.presentation',
+        );
+      case 'txt':
+        return MediaType('text', 'plain');
+      case 'csv':
+        return MediaType('text', 'csv');
+      case 'mp4':
+        return MediaType('video', 'mp4');
+      case 'mov':
+        return MediaType('video', 'quicktime');
+      case 'mp3':
+        return MediaType('audio', 'mpeg');
+      default:
+        return MediaType('application', 'octet-stream');
+    }
+  }
+
   ApiClient._internal() {
     _dio = Dio(
       BaseOptions(
@@ -32,68 +89,113 @@ class ApiClient {
     _setupInterceptors();
   }
 
-  /// Helper to get current user ID from AuthController
   int? _getCurrentUserId() {
     try {
       if (Get.isRegistered<AuthController>()) {
         return Get.find<AuthController>().userId.value;
       }
     } catch (e) {
-      AppLogger.info('⚠️ Cannot get userId: $e');
+      appLog.warning(
+        'Cannot get userId',
+        actionPage: 'ApiClient',
+        data: {"error": e.toString()},
+      );
     }
     return null;
   }
 
-void _setupInterceptors() {
-  _dio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final extra = options.extra;
-        final requiresAuth = extra['requiresAuth'] ?? true;
+  void _setupInterceptors() {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final requiresAuth = options.extra['requiresAuth'] as bool? ?? true;
 
-        if (requiresAuth) {
-          final token = await LocalStorage.getToken();
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-            AppLogger.info('Attach token → ${options.path}');
+          if (requiresAuth) {
+            final token = await LocalStorage.getToken();
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            } else {
+              options.headers.remove('Authorization');
+              appLog.warning(
+                'Missing token — request will be sent without Authorization',
+                actionPage: 'ApiClient',
+                data: 'url: ${options.path}',
+              );
+            }
+
+            final userId = _getCurrentUserId();
+            if (userId != null) {
+              options.headers['x-user-id'] = userId.toString();
+            }
           } else {
             options.headers.remove('Authorization');
-            AppLogger.info('🚫 Missing token → ${options.path}');
+            options.headers.remove('x-user-id');
           }
 
-          // Add x-user-id header for authenticated requests
-          final userId = _getCurrentUserId();
-          if (userId != null) {
-            options.headers['x-user-id'] = userId.toString();
-            AppLogger.info('👤 Attach x-user-id: $userId → ${options.path}');
-          }
-        } else {
-          options.headers.remove('Authorization');
-          options.headers.remove('x-user-id');
-          AppLogger.info(' Public API → ${options.path}');
-        }
+          options.extra['_startTime'] = DateTime.now().millisecondsSinceEpoch;
 
-        AppLogger.info('🌐 FULL URL: ${options.uri}');
-        handler.next(options);
-      },
-    ),
-  );
-}
+          appLog.info(
+            '${options.method} request sent',
+            actionPage: 'ApiClient',
+            data: 'url : ${options.path}',
+          );
+
+          handler.next(options);
+        },
+
+        onResponse: (response, handler) {
+          final startTime = response.requestOptions.extra['_startTime'];
+          final durationMs = startTime != null
+              ? DateTime.now().millisecondsSinceEpoch - (startTime as int)
+              : 0;
+
+          appLog.http(
+            method: response.requestOptions.method,
+            url: response.requestOptions.path,
+            statusCode: response.statusCode ?? 0,
+            durationMs: durationMs,
+            event: _resolveResponseEvent(response.statusCode ?? 0),
+            actionPage: 'ApiClient',
+          );
+
+          handler.next(response);
+        },
+
+        onError: (error, handler) {
+          final startTime = error.requestOptions.extra['_startTime'];
+          final durationMs = startTime != null
+              ? DateTime.now().millisecondsSinceEpoch - (startTime as int)
+              : 0;
+
+          final statusCode = error.response?.statusCode ?? 0;
+
+          appLog.http(
+            method: error.requestOptions.method,
+            url: error.requestOptions.path,
+            statusCode: statusCode,
+            durationMs: durationMs,
+            event: error.message ?? 'Request failed',
+            actionPage: 'ApiClient',
+          );
+
+          handler.next(error);
+        },
+      ),
+    );
+  }
+
+  // ─── HTTP Methods ──────────────────────────────────────────────
 
   Future<Response<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      return await _dio.get<T>(
-        path,
-        queryParameters: queryParameters,
-        options: options,
-      );
-    } catch (e) {
-      rethrow;
-    }
+    return await _dio.get<T>(
+      path,
+      queryParameters: queryParameters,
+      options: options,
+    );
   }
 
   Future<Response<T>> post<T>(
@@ -104,7 +206,6 @@ void _setupInterceptors() {
     Options? options,
   }) async {
     final requestOptions = options ?? Options();
-
     requestOptions.extra ??= {};
     requestOptions.extra!['requiresAuth'] = requiresAuth;
 
@@ -122,16 +223,12 @@ void _setupInterceptors() {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      return await _dio.put<T>(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-      );
-    } catch (e) {
-      rethrow;
-    }
+    return await _dio.put<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
   }
 
   Future<Response<T>> delete<T>(
@@ -140,42 +237,57 @@ void _setupInterceptors() {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      return await _dio.delete<T>(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-      );
-    } catch (e) {
-      rethrow;
-    }
+    return await _dio.delete<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
+  // ─── Internal Helpers ──────────────────────────────────────────
+
+  /// แปลง statusCode เป็น event message อัตโนมัติ
+  String _resolveResponseEvent(int code) {
+    if (code >= 200 && code < 300) return 'Response received successfully';
+    if (code == 400) return 'Bad request — check request body';
+    if (code == 401) return 'Unauthorized — token may be expired';
+    if (code == 403) return 'Forbidden — insufficient permissions';
+    if (code == 404) return 'Resource not found';
+    if (code == 422) return 'Validation error';
+    if (code == 429) return 'Too many requests — rate limited';
+    if (code >= 500) return 'Server error';
+    return 'Response received';
   }
 }
+
+// ─── Multipart Upload Extension ────────────────────────────────────────────────
 
 extension MultipartApi on ApiClient {
   Future<Response<dynamic>> uploadMultipart(
     String path, {
+    String method = 'POST', 
     required List<File> files,
     required String fieldName,
     Map<String, dynamic>? fields,
     bool requiresAuth = true,
+    String? actionPage, 
   }) async {
     final formData = FormData();
 
     for (final file in files) {
       String fileName = file.path.split('/').last;
-
       if (!fileName.contains('.')) {
         fileName = '$fileName.jpg';
       }
 
-      AppLogger.info(
-  ' Upload file → '
-  'name=$fileName, '
-  'path=${file.path}, '
-  'size=${await file.length()} bytes',
-);
+      final fileSize = await file.length();
+
+      appLog.info(
+        'Uploading file → name=$fileName, size=$fileSize bytes',
+        actionPage: actionPage ?? 'ApiClient',
+        data: 'url: $path',
+      );
 
       formData.files.add(
         MapEntry(
@@ -183,7 +295,7 @@ extension MultipartApi on ApiClient {
           await MultipartFile.fromFile(
             file.path,
             filename: fileName,
-            contentType: MediaType('image', 'jpeg'),
+            contentType: _resolveMediaType(fileName),
           ),
         ),
       );
@@ -196,13 +308,12 @@ extension MultipartApi on ApiClient {
     }
 
     final options = Options(
+      method: method,
       contentType: 'multipart/form-data',
       extra: {'requiresAuth': requiresAuth},
     );
 
-    AppLogger.info('📤 Upload multipart → $path');
-
-    return _dio.post(
+    return _dio.request(
       path,
       data: formData,
       options: options,

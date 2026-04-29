@@ -253,7 +253,7 @@ class LoginBottomSheet extends StatelessWidget {
                   // ===== Info Popup (Stick กับ BottomSheet) =====
                   if (controller.showEmailInfo.value)
                     Positioned(
-                      top: 170, // 👈 ปรับตำแหน่งได้
+                      top: 170, 
                       right: 24,
                       child: const LoginInfoPopup(),
                     ),

@@ -6,11 +6,21 @@ import '../../../core/constants/sizes.dart';
 import '../../../core/constants/style.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../data/repository/auth_repository.dart';
+import '../../auth/controller/auth_controller.dart';
 
 class ResetPasswordBottomSheet extends StatefulWidget {
-  final String email;
+  final String token;
+  final String roleName;
+  final int instId;
+  final int userId;
 
-  const ResetPasswordBottomSheet({super.key, required this.email});
+  const ResetPasswordBottomSheet({
+    super.key,
+    required this.token,
+    required this.roleName,
+    required this.instId,
+    required this.userId,
+  });
 
   @override
   State<ResetPasswordBottomSheet> createState() =>
@@ -20,11 +30,9 @@ class ResetPasswordBottomSheet extends StatefulWidget {
 class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
   final _authRepository = AuthRepository();
 
-  final oldPassword = TextEditingController();
   final newPassword = TextEditingController();
   final confirmPassword = TextEditingController();
 
-  bool obscureOld = true;
   bool obscureNew = true;
   bool obscureConfirm = true;
   bool isLoading = false;
@@ -70,7 +78,7 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -85,18 +93,19 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
       setState(() => isLoading = true);
 
       await _authRepository.resetPassword(
-        email: widget.email,
-        password: oldPassword.text.trim(),
         newPassword: newPassword.text.trim(),
         confirmPassword: confirmPassword.text.trim(),
       );
-      
-      Get.back(); // ปิด reset password bottomsheet
-      
-      DialogHelper.showNotification(
-        title: 'สำเร็จ',
-        message: 'ตั้งค่ารหัสผ่านใหม่เรียบร้อย กรุณาเข้าสู่ระบบอีกครั้ง',
-        type: NotificationType.success,
+
+      Get.back(); // ปิด bottom sheet
+
+      // establish session → AuthGate จะ navigate ไป MainPage เอง
+      final authController = Get.find<AuthController>();
+      await authController.establishSession(
+        token: widget.token,
+        roleName: widget.roleName,
+        instId: widget.instId,
+        userId: widget.userId,
       );
     } catch (e) {
       DialogHelper.showNotification(
@@ -112,8 +121,8 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.6,
+      initialChildSize: 0.65,
+      minChildSize: 0.5,
       maxChildSize: 0.9,
       expand: false,
       builder: (_, scrollController) {
@@ -149,25 +158,11 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
                 'ตั้งค่ารหัสผ่านใหม่',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.titleSemiBold.copyWith(
-                  color: const Color(0xFF9A3B1C), // 🔥 สีตาม Figma
+                  color: const Color(0xFF9A3B1C),
                 ),
               ),
 
               const SizedBox(height: 32),
-
-              _shadowField(
-                TextField(
-                  controller: oldPassword,
-                  obscureText: obscureOld,
-                  decoration: _inputDecoration(
-                    label: 'รหัสผ่านเดิม',
-                    obscure: obscureOld,
-                    onToggle: () => setState(() => obscureOld = !obscureOld),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
 
               _shadowField(
                 TextField(
@@ -198,7 +193,6 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
 
               const SizedBox(height: 32),
 
-              // Submit button
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPalette[300],
@@ -221,7 +215,7 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
                     : Text(
                         'ยืนยัน',
                         style: AppTextStyles.subheadingSemiBold.copyWith(
-                          color: const Color(0xFF9A3B1C), // ตาม Figma
+                          color: const Color(0xFF9A3B1C),
                         ),
                       ),
               ),

@@ -16,11 +16,11 @@ extension JsonParsing on dynamic {
 
   DateTime? toDateTime() {
     if (this == null) return null;
-    return DateTime.tryParse(this.toString());
+    return DateTime.tryParse(toString());
   }
 
   String? toStr() {
     if (this == null) return null;
-    return this.toString();
+    return toString();
   }
 }

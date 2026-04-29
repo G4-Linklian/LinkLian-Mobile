@@ -16,4 +16,18 @@ class AppRoutes {
   //static String? get authGate => null;
   static const String authGate = '/auth-gate';
   static const String searchPost = '/search-post';
+  static const String classAssignment = '/class-assignment';
+  static const String assignmentSubmission = '/assignment-submission';
+
+  static const createCommunity = '/createCommunity';
+  static const communityDetail = '/community-detail';
+  static const createPostCommunity = '/create-post-community';
+  static const String communityComment = '/community-comment';
+  static const communitySearch = '/community-search';
+  static const String searchAssignment = '/search-assignment';
+  static const String studentAssignmentDetail = '/student-assignment-detail';
+  static const String dashboard = '/dashboard';
+
+  static const String livePage = '/live';
+  static const String liveHistory = '/live-history';
 }

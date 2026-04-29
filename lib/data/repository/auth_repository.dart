@@ -1,5 +1,6 @@
 import '../../../core/services/api_client.dart';
 import '../../../core/services/local_storage.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthRepository {
   final ApiClient _apiClient = ApiClient();
@@ -8,8 +9,13 @@ class AuthRepository {
   // VERIFY AUTH CONTEXT (มี token)
   // ===============================
   Future<Map<String, dynamic>> verifyAuthContext() async {
+    final token = await LocalStorage.getToken();
+    if (token == null) throw Exception('No token in storage');
+
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/auth/verify',
+      requiresAuth: false,
+      data: {'token': token},
     );
 
     if (response.data == null) {
@@ -51,23 +57,19 @@ class AuthRepository {
   }
 
   // ===============================
-  // RESET PASSWORD (ยังไม่มี token)
+  // RESET PASSWORD (ใช้ token จาก OTP)
   // ===============================
   Future<void> resetPassword({
-    required String email,
-    required String password,
     required String newPassword,
     required String confirmPassword,
   }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/auth/reset-password',
       data: {
-        'email': email,
-        'password': password,
         'new_password': newPassword,
         'confirm_password': confirmPassword,
       },
-      requiresAuth: false,
+      requiresAuth: true,
     );
 
     if (response.data == null || response.data!['success'] != true) {
@@ -79,8 +81,8 @@ class AuthRepository {
   // FORGOT PASSWORD (ลบ token)
   // ===============================
   Future<void> forgotPassword({required String email}) async {
-    print('🧪 [TEST] calling forgotPassword');
-    print('🧪 [TEST] email = $email');
+    debugPrint('🧪 [TEST] calling forgotPassword');
+    debugPrint('🧪 [TEST] email = $email');
 
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/auth/forgot-password',
@@ -88,7 +90,7 @@ class AuthRepository {
       requiresAuth: false,
     );
 
-    print('🧪 [TEST] response arrived');
+    debugPrint('🧪 [TEST] response arrived');
 
     if (response.data == null || response.data!['success'] != true) {
       throw Exception(response.data?['message'] ?? 'Forgot password failed');
