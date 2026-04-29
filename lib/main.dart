@@ -1,5 +1,5 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'firebase_options.dart';
 import 'package:LinkLian/core/services/api_client.dart';
 import 'package:LinkLian/features/community/data/repositories/community_repository.dart';
 import 'package:LinkLian/features/community/presentation/controllers/community_controller.dart';
@@ -12,7 +12,7 @@ import 'routes/app_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/services/local_storage.dart';
 import 'features/auth/controller/auth_controller.dart';
-import 'features/notification/presentation/widgets/notification_banner.dart';
+// import 'features/notification/presentation/widgets/notification_banner.dart';
 import 'features/shared/repositories/class_feed_repository.dart';
 import 'data/repository/semester_repository.dart';
 import 'features/login/pages/login_page.dart';
@@ -26,9 +26,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // await Firebase.initializeApp(
+  //   options: DefaultFirebaseOptions.currentPlatform,
+  // );
   await dotenv.load(fileName: ".env");
   await LocalStorage.init();
   await initializeDateFormatting('th', null);
@@ -89,7 +89,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      builder: (context, child) => NotificationBannerWrapper(child: child!),
+      // builder: (context, child) => NotificationBannerWrapper(child: child!),
     );
   }
 }

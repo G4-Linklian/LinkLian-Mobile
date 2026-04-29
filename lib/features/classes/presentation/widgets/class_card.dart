@@ -10,6 +10,119 @@ import '../../../../core/constants/linklian-icon.dart';
 import '../../../../core/constants/linklian-bg.dart';
 import '../../../../core/utils/formatter.dart';
 
+class ClassCardSkeleton extends StatefulWidget {
+  const ClassCardSkeleton({super.key});
+
+  @override
+  State<ClassCardSkeleton> createState() => _ClassCardSkeletonState();
+}
+
+class _ClassCardSkeletonState extends State<ClassCardSkeleton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Widget _bar({required double width, double height = 14}) {
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (_, child) => Opacity(
+        opacity: _opacity.value,
+        child: Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: const Color(0xFF9E9E9E),
+            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.md),
+      decoration: BoxDecoration(
+        color: const Color(0xFFBDBDBD),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title area
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.md,
+              AppSizes.md,
+              AppSizes.md,
+              AppSizes.md,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AnimatedBuilder(
+                  animation: _opacity,
+                  builder: (_, child) => Opacity(
+                    opacity: _opacity.value,
+                    child: Text(
+                      'กำลังโหลด...',
+                      style: AppTextStyles.titleBold.copyWith(
+                        color: const Color(0xFF757575),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.xs),
+                _bar(width: screenWidth * 0.38),
+                const SizedBox(height: AppSizes.md),
+              ],
+            ),
+          ),
+
+          // Schedule bar
+          Container(
+            padding: const EdgeInsets.all(AppSizes.sm),
+            decoration: BoxDecoration(
+              color: const Color(0xFF9E9E9E),
+              borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+            ),
+            child: Row(
+              children: [
+                _bar(width: AppSizes.md, height: AppSizes.md),
+                const SizedBox(width: AppSizes.sm),
+                _bar(width: screenWidth * 0.3),
+                const Spacer(),
+                _bar(width: screenWidth * 0.15, height: 26),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 class _CollapsedSchedule extends StatelessWidget {
   final List<ClassScheduleModel> schedules;
@@ -146,7 +259,7 @@ class ClassCard extends StatefulWidget {
 
 class _ClassCardState extends State<ClassCard> {
   bool isExpanded = false;
-  Color _textColor = Colors.white;
+  Color _textColor = const Color(0xFF757575);
 
   bool get isTeacher =>
       widget.roleName == 'teacher' || widget.roleName == 'instructor';
