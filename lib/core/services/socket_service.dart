@@ -613,34 +613,6 @@ class SocketService {
     _qaChannel!.sink.add(jsonEncode(message));
   }
 
-  // void postQuestion({
-  //   required String content,
-  //   required int qaLiveId,
-  //   int? askerId,
-  //   int? postId,
-  //   int? attachmentId,
-  //   int? slideNumber,
-  //   bool? isAnonymous,
-  // }) {
-  //   if (!_isQaConnected || _qaChannel == null) return;
-
-  //   final message = {
-  //     'type': 'QA_NEW_QUESTION',
-  //     'payload': {
-  //       'content': content,
-  //       'question': content,
-  //       'qa_live_id': qaLiveId.toString(),
-  //       if (askerId != null) 'asker_id': askerId,
-  //       if (postId != null) 'post_id': postId,
-  //       if (attachmentId != null) 'attachment_id': attachmentId,
-  //       if (slideNumber != null) 'slide_number': slideNumber,
-  //       if (isAnonymous != null) 'is_anonymous': isAnonymous,
-  //     },
-  //   };
-
-  //   _qaChannel!.sink.add(jsonEncode(message));
-  // }
-
   void sendQaMessage(Map<String, dynamic> message) {
     if (_isQaConnected && _qaChannel != null) {
       _qaChannel!.sink.add(jsonEncode(message));
