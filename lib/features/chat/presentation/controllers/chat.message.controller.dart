@@ -223,7 +223,6 @@ class ChatMessageController {
     // BUG FIX #4: Clear all state on dispose
     _updateTimer?.cancel();
     _socketSubscription?.cancel();
-    _socketService.disconnectChat();
     _messages.clear();
     _currentUserId = null;
     _currentChatId = null;
