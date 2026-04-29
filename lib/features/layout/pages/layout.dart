@@ -223,8 +223,8 @@ class _MainPageState extends State<MainPage> {
                 title: Row(
                   children: [
                     Image.asset(
-                      LinkLianLogos.bannerBlack,
-                      height: 25,
+                      LinkLianLogos.iconBlack,
+                      height: 35,
                       fit: BoxFit.contain,
                     ),
                     const Spacer(),
