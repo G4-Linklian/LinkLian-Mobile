@@ -37,7 +37,10 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
   void initState() {
     super.initState();
     if (widget.chat.chatId != null) {
-      _controller.init(widget.chat.chatId!);
+      _controller.init(
+        chatId: widget.chat.chatId!,
+        receiverId: widget.chat.receiverId ?? widget.chat.userSysId,
+      );
     }
     // Hide go-back button
     _itemPositionsListener.itemPositions.addListener(_onPositionsChanged);

@@ -8,6 +8,7 @@ import 'package:LinkLian/core/utils/logger.dart';
 import 'package:LinkLian/features/auth/controller/auth_controller.dart';
 import 'package:LinkLian/features/chat/presentation/pages/ai_chat_list.page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:LinkLian/features/chat/presentation/controllers/chat.controller.dart';
 import 'package:LinkLian/features/chat/presentation/pages/chat.message.page.dart';
 import 'package:LinkLian/features/chat/data/models/chat.model.dart';
@@ -30,9 +31,11 @@ class _ChatPageState extends State<ChatPage> {
   List<ChatModel> _chats = [];
   bool _isLoading = true;
   final Map<int, bool> _onlineStatuses = <int, bool>{};
+  final ScrollController _listScrollController = ScrollController();
 
   Timer? _debounce;
   StreamSubscription? _onlineSubscription;
+  StreamSubscription? _chatSubscription;
 
   List<ChatModel> _searchUsers = [];
   bool _isSearching = false;
@@ -47,13 +50,33 @@ class _ChatPageState extends State<ChatPage> {
     _onlineSubscription = _socketService.onlineStream.listen(
       _handleOnlineSocketEvent,
     );
+    _chatSubscription = _socketService.chatStream.listen(
+      _handleChatSocketEvent,
+    );
+    _initChatSocket();
     _loadChats();
     _searchController.addListener(() {
       setState(() {});
     });
   }
 
-  Future<void> _loadChats() async {
+  Future<void> _initChatSocket() async {
+    final userId = await LocalStorage.getLastLoginUserId();
+    if (userId == null) {
+      appLog.warning('Skip JOIN_WAITING: userId is null');
+      return;
+    }
+
+    final socketUrl =
+        '${dotenv.env['SOCKET_URL'] ?? 'wss://uat-socket.linklian.org/ws'}/chat';
+    if (!_socketService.isChatConnected) {
+      await _socketService.connectChat(socketUrl);
+    }
+
+    _socketService.joinChatWaiting(userId: userId);
+  }
+
+  Future<void> _loadChats({bool animateToTop = false}) async {
     try {
       final chats = await _chatController.getChat();
       appLog.info('Loaded chats count: \\${chats.length}');
@@ -70,6 +93,14 @@ class _ChatPageState extends State<ChatPage> {
         _chats = chats;
         _isLoading = false;
       });
+
+      if (animateToTop && _listScrollController.hasClients) {
+        _listScrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic,
+        );
+      }
 
       _subscribeOnlineStatusFromChats(chats);
     } catch (e) {
@@ -144,6 +175,16 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _onlineStatuses[userId] = isOnline;
       });
+    }
+  }
+
+  void _handleChatSocketEvent(dynamic event) {
+    appLog.info('Received chat socket event: $event');
+    if (!mounted || event is! Map) return;
+
+    final eventType = event['type']?.toString();
+    if (eventType == 'CHAT_WAITING') {
+      _loadChats(animateToTop: true);
     }
   }
 
@@ -241,6 +282,7 @@ class _ChatPageState extends State<ChatPage> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: ListView.separated(
+                          controller: _listScrollController,
                           itemCount: list.length,
                           separatorBuilder: (context, index) {
                             if (_isSearching) {
@@ -752,6 +794,8 @@ class _ChatPageState extends State<ChatPage> {
   void dispose() {
     _debounce?.cancel();
     _onlineSubscription?.cancel();
+    _chatSubscription?.cancel();
+    _listScrollController.dispose();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
