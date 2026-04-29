@@ -75,7 +75,7 @@ class CommunityDetailController extends GetxController {
     scrollController.addListener(_onScroll);
   }
 
-  void initFromOutside(int id) async {
+  Future<void> initFromOutside(int id) async {
     communityId = id;
     // BUG FIX #2: Properly await async operation
     await loadDetail();
