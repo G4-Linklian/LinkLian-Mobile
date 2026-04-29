@@ -1842,11 +1842,13 @@ class _TeacherGradingTab extends StatelessWidget {
                   _SummaryBadge(
                     label: 'ให้คะแนนแล้ว',
                     count: gradedItems.length,
+                    unit: isGroup ? 'กลุ่ม' : 'คน',
                     color: Colors.green.shade600,
                   ),
                   _SummaryBadge(
                     label: 'รอให้คะแนน',
                     count: ungradedItems.length,
+                    unit: isGroup ? 'กลุ่ม' : 'คน',
                     color: AppColors.primaryPalette[600]!,
                   ),
                 ],
@@ -1904,11 +1906,13 @@ class _TeacherGradingTab extends StatelessWidget {
 class _SummaryBadge extends StatelessWidget {
   final String label;
   final int count;
+  final String unit;
   final Color color;
 
   const _SummaryBadge({
     required this.label,
     required this.count,
+    required this.unit,
     required this.color,
   });
 
@@ -1916,13 +1920,29 @@ class _SummaryBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          '$count',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 3),
+            Text(
+              unit,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(

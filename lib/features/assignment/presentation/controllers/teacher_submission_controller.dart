@@ -7,7 +7,7 @@ import '../../data/models/group_model.dart';
 import '../../../../core/utils/dialog_helper.dart';
 import '../../../../core/utils/logger.dart';
 
-enum SubmissionFilter { all, submitted, notSubmitted, notSubmittedOverdue }
+enum SubmissionFilter { all, submitted, notSubmitted }
 
 /// Represents one group's submission state (used for group assignments)
 class GroupSubmissionItem {
@@ -76,23 +76,6 @@ class TeacherSubmissionController extends GetxController {
   int get submittedCount => allStudents.where((s) => s.hasSubmitted).length;
 
   int get notSubmittedCount => allStudents.where((s) => !s.hasSubmitted).length;
-
-  bool get _isPastDue =>
-      dueDate != null && DateTime.now().isAfter(dueDate!.toLocal());
-
-  bool _isNotSubmittedOverdueStudent(StudentSubmissionStatusModel s) {
-    return !s.hasSubmitted && _isPastDue;
-  }
-
-  bool _isNotSubmittedOverdueGroup(GroupSubmissionItem g) {
-    return !g.hasSubmitted && _isPastDue;
-  }
-
-  int get notSubmittedOverdueCount =>
-      allStudents.where(_isNotSubmittedOverdueStudent).length;
-
-  int get notSubmittedOverdueGroupCount =>
-      groupedList.where(_isNotSubmittedOverdueGroup).length;
 
   DateTime? _latestDate(DateTime? a, DateTime? b) {
     if (a == null) return b;
@@ -314,11 +297,6 @@ class TeacherSubmissionController extends GetxController {
       case SubmissionFilter.notSubmitted:
         studentResult = studentResult.where((s) => !s.hasSubmitted).toList();
         break;
-      case SubmissionFilter.notSubmittedOverdue:
-        studentResult = studentResult
-            .where(_isNotSubmittedOverdueStudent)
-            .toList();
-        break;
       case SubmissionFilter.all:
         break;
     }
@@ -337,9 +315,6 @@ class TeacherSubmissionController extends GetxController {
         break;
       case SubmissionFilter.notSubmitted:
         groupResult = groupResult.where((g) => !g.hasSubmitted).toList();
-        break;
-      case SubmissionFilter.notSubmittedOverdue:
-        groupResult = groupResult.where(_isNotSubmittedOverdueGroup).toList();
         break;
       case SubmissionFilter.all:
         break;
