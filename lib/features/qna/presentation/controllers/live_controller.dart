@@ -825,15 +825,15 @@ class LiveController extends GetxController {
         isAnonymous: isAnonymous.value,
       );
 
-      _socket.postQuestion(
-        content: text.trim(),
-        qaLiveId: qaLiveId.value!,
-        askerId: askerId,
-        postId: postId,
-        attachmentId: attachmentId,
-        slideNumber: slideNumber,
-        isAnonymous: isAnonymous.value,
-      );
+      // _socket.postQuestion(
+      //   content: text.trim(),
+      //   qaLiveId: qaLiveId.value!,
+      //   askerId: askerId,
+      //   postId: postId,
+      //   attachmentId: attachmentId,
+      //   slideNumber: slideNumber,
+      //   isAnonymous: isAnonymous.value,
+      // );
 
       questions.removeWhere((q) => q['qa_question_id'] == tempId);
       questions.refresh();
