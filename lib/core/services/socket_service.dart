@@ -8,18 +8,31 @@ class SocketService {
   factory SocketService() => _instance;
   SocketService._internal();
 
-  WebSocketChannel? _channel;
+  // Chat socket
+  WebSocketChannel? _chatChannel;
+  final StreamController<dynamic> _chatStreamController =
+      StreamController<dynamic>.broadcast();
+  Stream<dynamic> get chatStream => _chatStreamController.stream;
+
+  bool _isChatConnected = false;
+  bool get isChatConnected => _isChatConnected;
+
+  Timer? _chatReconnectTimer;
+  String? _chatUrl;
+  int _chatReconnectAttempts = 0;
+  bool _isChatConnecting = false;
+  bool _chatShouldReconnect = false;
+  int? _chatWaitingUserId;
+  int? _chatRoomUserId;
+  final Set<int> _chatJoinedChatIds = <int>{};
+  static const Duration _chatBaseReconnectDelay = Duration(seconds: 2);
+  static const Duration _chatMaxReconnectDelay = Duration(seconds: 30);
+
+  // Online socket
   WebSocketChannel? _onlineChannel;
-  final StreamController<dynamic> _socketResponseController =
+  final StreamController<dynamic> _onlineStreamController =
       StreamController<dynamic>.broadcast();
-    final StreamController<dynamic> _onlineStreamController =
-      StreamController<dynamic>.broadcast();
-  Stream<dynamic> get socketResponseStream => _socketResponseController.stream;
-    Stream<dynamic> get onlineStream => _onlineStreamController.stream;
-
-  bool _isConnected = false;
-  bool get isConnected => _isConnected;
-
+  Stream<dynamic> get onlineStream => _onlineStreamController.stream;
   bool _isOnlineConnected = false;
   bool get isOnlineConnected => _isOnlineConnected;
 
@@ -33,36 +46,118 @@ class SocketService {
   static const Duration _onlineBaseReconnectDelay = Duration(seconds: 2);
   static const Duration _onlineMaxReconnectDelay = Duration(seconds: 30);
 
-  Future<void> connect(String url) async {
-    if (_isConnected) {
+  Future<void> connectChat(String url) async {
+    _chatUrl = url;
+    _chatShouldReconnect = true;
+
+    if (_isChatConnected && _chatChannel != null) {
       appLog.info('Socket is already connected.');
       return;
     }
 
+    if (_isChatConnecting) {
+      appLog.info('Chat socket is connecting.');
+      return;
+    }
+
+    _chatReconnectTimer?.cancel();
+    await _doConnectChat(url);
+  }
+
+  Future<void> _doConnectChat(String url) async {
+    if (_isChatConnecting) return;
+    _isChatConnecting = true;
+
     try {
       appLog.info('Connecting to WebSocket: $url');
-      _channel = WebSocketChannel.connect(Uri.parse(url));
-      _isConnected = true;
+      _chatChannel = WebSocketChannel.connect(Uri.parse(url));
+      _isChatConnected = true;
+      _chatReconnectAttempts = 0;
+      _restoreChatSession();
 
-      _channel!.stream.listen(
+      _chatChannel!.stream.listen(
         (message) {
           appLog.info('WS Received: $message');
           // Use async parsing to avoid blocking main thread
-          _parseMessageAsync(message);
+          _parseChatMessageAsync(message);
         },
         onError: (error) {
           appLog.error('WS Error: $error');
-          _isConnected = false;
+          _isChatConnected = false;
+          _chatChannel = null;
+          _scheduleChatReconnect();
         },
         onDone: () {
           appLog.info('WS Disconnected');
-          _isConnected = false;
+          _isChatConnected = false;
+          _chatChannel = null;
+          _scheduleChatReconnect();
         },
       );
     } catch (e) {
       appLog.error('WS Connection Exception: $e');
-      _isConnected = false;
+      _isChatConnected = false;
+      _chatChannel = null;
+      _scheduleChatReconnect();
+    } finally {
+      _isChatConnecting = false;
     }
+  }
+
+  void _restoreChatSession() {
+    if (!_isChatConnected || _chatChannel == null) {
+      return;
+    }
+
+    if (_chatWaitingUserId != null) {
+      final message = {
+        'type': 'JOIN_WAITING',
+        'payload': {'user_id': _chatWaitingUserId.toString()},
+      };
+      sendChatMessage(message);
+    }
+
+    if (_chatRoomUserId != null && _chatJoinedChatIds.isNotEmpty) {
+      for (final chatId in _chatJoinedChatIds) {
+        if (chatId <= 0) continue;
+        final message = {
+          'type': 'JOIN_ROOM',
+          'payload': {
+            'user_id': _chatRoomUserId.toString(),
+            'chat_id': chatId.toString(),
+          },
+        };
+        sendChatMessage(message);
+      }
+    }
+  }
+
+  void _scheduleChatReconnect() {
+    if (!_chatShouldReconnect || _chatUrl == null) {
+      return;
+    }
+
+    _chatReconnectTimer?.cancel();
+    _chatReconnectAttempts++;
+
+    final backoffSeconds =
+        _chatBaseReconnectDelay.inSeconds *
+        (1 << (_chatReconnectAttempts - 1).clamp(0, 4));
+    final delaySeconds =
+        backoffSeconds > _chatMaxReconnectDelay.inSeconds
+            ? _chatMaxReconnectDelay.inSeconds
+            : backoffSeconds;
+    final delay = Duration(seconds: delaySeconds);
+
+    appLog.info(
+      'CHAT WS Reconnect attempt $_chatReconnectAttempts scheduled in ${delay.inSeconds}s',
+    );
+
+    _chatReconnectTimer = Timer(delay, () {
+      if (_chatShouldReconnect && !_isChatConnected && _chatUrl != null) {
+        unawaited(_doConnectChat(_chatUrl!));
+      }
+    });
   }
 
   Future<void> connectOnline(String url) async {
@@ -256,8 +351,15 @@ class SocketService {
     return true;
   }
 
-  void joinRoom({required int userId, required int chatId}) {
-    if (!_isConnected || _channel == null) {
+  void joinChatRoom({required int userId, required int chatId}) {
+    if (chatId > 0) {
+      _chatJoinedChatIds.add(chatId);
+    }
+    if (userId > 0) {
+      _chatRoomUserId = userId;
+    }
+
+    if (!_isChatConnected || _chatChannel == null) {
       appLog.warning('Socket not connected. Cannot join room.');
       return;
     }
@@ -267,21 +369,41 @@ class SocketService {
       'payload': {'user_id': userId.toString(), 'chat_id': chatId.toString()},
     };
 
-    sendMessage(message);
+    sendChatMessage(message);
   }
 
-  void sendMessage(Map<String, dynamic> message) {
-    if (_isConnected && _channel != null) {
+  void joinChatWaiting({required int userId}) {
+    if (userId > 0) {
+      _chatWaitingUserId = userId;
+    }
+
+    if (!_isChatConnected || _chatChannel == null) {
+      appLog.warning('Socket not connected. Cannot join waiting.');
+      return;
+    }
+
+    final message = {
+      'type': 'JOIN_WAITING',
+      'payload': {'user_id': userId.toString()},
+    };
+
+    sendChatMessage(message);
+
+    appLog.info('CHAT WAITING Subscribe: $message');
+  }
+
+  void sendChatMessage(Map<String, dynamic> message) {
+    if (_isChatConnected && _chatChannel != null) {
       final jsonMessage = jsonEncode(message);
       appLog.info('WS Sending: $jsonMessage');
-      _channel!.sink.add(jsonMessage);
+      _chatChannel!.sink.add(jsonMessage);
     } else {
       appLog.warning('Socket not connected. Cannot send message.');
     }
   }
 
+  // QA socket
   WebSocketChannel? _qaChannel;
-
   final StreamController<dynamic> _qaStreamController =
       StreamController<dynamic>.broadcast();
   Stream<dynamic> get qaStream => _qaStreamController.stream;
@@ -545,20 +667,20 @@ class SocketService {
   }
 
   // Parse JSON message asynchronously to avoid blocking main thread
-  Future<void> _parseMessageAsync(String message) async {
+  Future<void> _parseChatMessageAsync(String message) async {
     try {
       // Schedule JSON parsing on next frame to avoid blocking current frame
       Future.microtask(() {
         try {
           final decoded = jsonDecode(message);
-          if (!_socketResponseController.isClosed) {
-            _socketResponseController.add(decoded);
+          if (!_chatStreamController.isClosed) {
+            _chatStreamController.add(decoded);
           }
         } catch (e) {
           appLog.error('Error decoding WS message: $e');
           // If it's not JSON, pass it as is or handle accordingly
-          if (!_socketResponseController.isClosed) {
-            _socketResponseController.add(message);
+          if (!_chatStreamController.isClosed) {
+            _chatStreamController.add(message);
           }
         }
       });
@@ -585,10 +707,19 @@ class SocketService {
     }
   }
 
-  void disconnect() {
-    if (_isConnected) {
-      _channel?.sink.close();
-      _isConnected = false;
+  void disconnectChat() {
+    _chatShouldReconnect = false;
+    _chatReconnectTimer?.cancel();
+    _chatReconnectAttempts = 0;
+    _isChatConnecting = false;
+    _chatUrl = null;
+    _chatWaitingUserId = null;
+    _chatRoomUserId = null;
+    _chatJoinedChatIds.clear();
+
+    if (_isChatConnected) {
+      _chatChannel?.sink.close();
+      _isChatConnected = false;
       appLog.info('Socket manual disconnect');
     }
   }
@@ -623,10 +754,10 @@ class SocketService {
   }
 
   void dispose() {
-    disconnect();
+    disconnectChat();
     disconnectOnline();
     disconnectQa();
-    _socketResponseController.close();
+    _chatStreamController.close();
     _onlineStreamController.close();
     _qaStreamController.close();
   }

@@ -599,20 +599,6 @@ class ChatInputArea extends StatelessWidget {
                                               },
                                             ),
 
-                                            ListTile(
-                                              leading: Icon(
-                                                Icons.camera_alt,
-                                                color: AppColors
-                                                    .primaryPalette[600],
-                                              ),
-                                              title: const Text('ถ่ายรูป'),
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                                controller.pickImage(
-                                                  ImageSource.camera,
-                                                );
-                                              },
-                                            ),
 
                                             const SizedBox(height: 10),
 

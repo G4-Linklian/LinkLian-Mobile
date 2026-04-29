@@ -165,6 +165,7 @@ class ChatRepository {
   Future<ChatModel> createMessage({
     required int chatId,
     required int senderId,
+    String? receiverId,
     required String content,
     int? replyId,
     List<dynamic>? file,
@@ -172,6 +173,7 @@ class ChatRepository {
     final Map<String, dynamic> map = {
       'chat_id': chatId,
       'sender_id': senderId,
+      'receiver_id': receiverId,
       'content': content,
       if (replyId != null) 'reply_id': replyId,
     };
