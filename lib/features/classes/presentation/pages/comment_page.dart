@@ -76,6 +76,7 @@ class CommentPage extends StatelessWidget {
     CommentController controller,
     ScrollController scrollController,
   ) {
+    controller.postRefreshTick.value;
     if (controller.isLoading.value && controller.flatComments.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }

@@ -170,7 +170,8 @@ class ClassDetailController extends GetxController {
 
   void _startActiveLivePolling() {
     _activeLivePollingTimer?.cancel();
-    _activeLivePollingTimer = Timer.periodic(const Duration(seconds: 6), (_) {
+    // เพิ่มเป็น 60 วินาที เพื่อลดการยิง API รัวๆ (อาศัย WebSocket ช่วยอัปเดตแบบเรียลไทม์แทน)
+    _activeLivePollingTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       if (sectionId.value == null) return;
       unawaited(fetchActiveLive());
       unawaited(fetchHasLiveHistory());
