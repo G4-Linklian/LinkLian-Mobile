@@ -46,6 +46,7 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(LoginController(), permanent: false);
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Container(
         width: double.infinity,
         height: double.infinity,

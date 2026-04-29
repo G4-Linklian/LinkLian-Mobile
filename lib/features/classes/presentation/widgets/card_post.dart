@@ -26,7 +26,6 @@ import '../../../../core/utils/post_permission.dart';
 import '../../../shared/repositories/post_repository.dart';
 import '../../../../core/utils/dialog_helper.dart';
 import '../../../shared/presentations/bookmark_controller.dart';
-import '../../../../core/utils/online_presence_utils.dart';
 
 class CardPost extends StatefulWidget {
   final PostModel post;
@@ -104,8 +103,9 @@ class _CardPostState extends State<CardPost> {
   bool get _shouldShowTitle => widget.post.title.trim().isNotEmpty;
 
   bool get _canSelectForAI {
-    final postType = widget.post.postType.toLowerCase();
-    return postType == 'announcement';
+    if (widget.post.postType.toLowerCase() != 'announcement') return false;
+    final attachments = widget.post.attachments;
+    return attachments != null && attachments.isNotEmpty;
   }
 
   @override
@@ -1245,10 +1245,8 @@ class _CardPostState extends State<CardPost> {
   }
 
   Widget _buildProfileAvatar() {
-    late final Widget baseAvatar;
-
     if (widget.post.isUserDeleted) {
-      baseAvatar = Container(
+      return Container(
         width: 48,
         height: 48,
         decoration: const BoxDecoration(
@@ -1262,11 +1260,10 @@ class _CardPostState extends State<CardPost> {
           ),
         ),
       );
-      return baseAvatar;
     }
 
     if (widget.post.isAnonymous) {
-      baseAvatar = Container(
+      return Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
@@ -1279,60 +1276,27 @@ class _CardPostState extends State<CardPost> {
           color: AppColors.primaryPalette[600],
         ),
       );
-      return baseAvatar;
     }
 
     if (widget.post.profilePic != null && widget.post.profilePic!.isNotEmpty) {
-      baseAvatar = CircleAvatar(
+      return CircleAvatar(
         radius: 24,
         backgroundImage: NetworkImage(widget.post.profilePic!),
         backgroundColor: AppColors.primaryPalette[100],
       );
-    } else {
-      baseAvatar = CircleAvatar(
-        radius: 24,
-        backgroundColor: AppColors.primaryPalette[200],
-        child: Text(
-          _getInitial(widget.post.displayName),
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primaryPalette[700],
-          ),
-        ),
-      );
     }
 
-    return ValueListenableBuilder<Map<int, bool>>(
-      valueListenable: OnlinePresenceUtils.onlineStatuses,
-      builder: (_, statuses, __) {
-        final userId = widget.post.userSysId;
-        final isOnline = userId != null && (statuses[userId] ?? false);
-
-        if (!isOnline) {
-          return baseAvatar;
-        }
-
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            baseAvatar,
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: AppColors.primaryPalette[200],
+      child: Text(
+        _getInitial(widget.post.displayName),
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.primaryPalette[700],
+        ),
+      ),
     );
   }
 

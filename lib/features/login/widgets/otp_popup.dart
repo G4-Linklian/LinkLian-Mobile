@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/colors.dart';
@@ -7,13 +8,20 @@ import '../../../core/constants/style.dart';
 import '../controllers/otp_controller.dart';
 
 class OtpPopup extends StatelessWidget {
-  const OtpPopup({super.key});
+  final OtpController controller;
+
+  const OtpPopup({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-final controller = Get.find<OtpController>();
-    return Center(
-      child: Material(
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+    return AnimatedPadding(
+      padding: EdgeInsets.only(bottom: keyboardHeight > 0 ? keyboardHeight + 16 : 0),
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      child: Center(
+        child: Material(
         color: Colors.transparent,
         child: Container(
           width: 320,
@@ -56,6 +64,7 @@ final controller = Get.find<OtpController>();
                   enabled: !controller.isExpired.value,
                   maxLength: 6,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 24,
@@ -106,6 +115,7 @@ final controller = Get.find<OtpController>();
             ],
           ),
         ),
+      ),
       ),
     );
   }

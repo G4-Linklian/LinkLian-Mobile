@@ -10,21 +10,56 @@ import '../../../core/constants/linklian-icon.dart';
 import '../widgets/login_info.dart';
 import '../widgets/forgot_bottom_sheet.dart';
 
-class LoginBottomSheet extends StatelessWidget {
+class LoginBottomSheet extends StatefulWidget {
   final LoginController controller;
 
   const LoginBottomSheet({super.key, required this.controller});
 
   @override
+  State<LoginBottomSheet> createState() => _LoginBottomSheetState();
+}
+
+class _LoginBottomSheetState extends State<LoginBottomSheet> {
+  final DraggableScrollableController _sheetController = DraggableScrollableController();
+  bool _wasKeyboardOpen = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    if (isKeyboardOpen && !_wasKeyboardOpen) {
+      _wasKeyboardOpen = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_sheetController.isAttached && mounted && _sheetController.size < 0.65) {
+          _sheetController.animateTo(
+            0.85,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } else if (!isKeyboardOpen && _wasKeyboardOpen) {
+      _wasKeyboardOpen = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _sheetController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
+      controller: _sheetController,
       initialChildSize: 0.45,
       minChildSize: 0.35,
       maxChildSize: 0.85,
       builder: (context, scrollController) {
         scrollController.addListener(() {
-          if (controller.showEmailInfo.value && scrollController.offset > 0) {
-            controller.showEmailInfo.value = false;
+          if (widget.controller.showEmailInfo.value && scrollController.offset > 0) {
+            widget.controller.showEmailInfo.value = false;
           }
         });
 
@@ -43,8 +78,8 @@ class LoginBottomSheet extends StatelessWidget {
 
               // ✅ เพิ่ม: กดตรงไหนก็ได้เพื่อปิด popup
               onTap: () {
-                if (controller.showEmailInfo.value) {
-                  controller.showEmailInfo.value = false;
+                if (widget.controller.showEmailInfo.value) {
+                  widget.controller.showEmailInfo.value = false;
                 }
               },
 
@@ -87,7 +122,7 @@ class LoginBottomSheet extends StatelessWidget {
 
                       // ===== Email =====
                       TextField(
-                        onChanged: (value) => controller.email.value = value,
+                        onChanged: (value) => widget.controller.email.value = value,
                         keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
                           labelText: AppStrings.email,
@@ -98,7 +133,7 @@ class LoginBottomSheet extends StatelessWidget {
                               color: AppColors.black,
                             ),
                             onPressed: () {
-                              controller.showEmailInfo.toggle();
+                              widget.controller.showEmailInfo.toggle();
                             },
                           ),
                         ),
@@ -110,20 +145,20 @@ class LoginBottomSheet extends StatelessWidget {
                       Obx(
                         () => TextField(
                           onChanged: (value) =>
-                              controller.password.value = value,
-                          obscureText: controller.obscurePassword.value,
+                              widget.controller.password.value = value,
+                          obscureText: widget.controller.obscurePassword.value,
                           decoration: InputDecoration(
                             labelText: AppStrings.password,
                             suffixIcon: IconButton(
                               icon: Icon(
-                                controller.obscurePassword.value
+                                widget.controller.obscurePassword.value
                                     ? LinkLianIcon.eyeOff
                                     : LinkLianIcon.eye,
                                 color: AppColors.black,
                               ),
                               onPressed: () {
-                                controller.obscurePassword.value =
-                                    !controller.obscurePassword.value;
+                                widget.controller.obscurePassword.value =
+                                    !widget.controller.obscurePassword.value;
                               },
                             ),
                           ),
@@ -140,9 +175,9 @@ class LoginBottomSheet extends StatelessWidget {
                             children: [
                               Obx(
                                 () => Checkbox(
-                                  value: controller.rememberMe.value,
+                                  value: widget.controller.rememberMe.value,
                                   onChanged: (value) {
-                                    controller.rememberMe.value =
+                                    widget.controller.rememberMe.value =
                                         value ?? false;
                                   },
                                   activeColor: AppColors.primaryPalette[600],
@@ -175,29 +210,31 @@ class LoginBottomSheet extends StatelessWidget {
                       const SizedBox(height: AppSizes.lg),
 
                       // ===== Submit =====
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryPalette[300],
-                        ),
-                        onPressed: controller.isLoading.value
-                            ? null
-                            : controller.submit,
-                        child: controller.isLoading.value
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.white,
+                      Obx(
+                        () => ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryPalette[300],
+                          ),
+                          onPressed: widget.controller.isLoading.value
+                              ? null
+                              : widget.controller.submit,
+                          child: widget.controller.isLoading.value
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.white,
+                                  ),
+                                )
+                              : Text(
+                                  AppStrings.login,
+                                  style: AppTextStyles.subheadingSemiBold
+                                      .copyWith(
+                                        color: AppColors.primaryPalette[800],
+                                      ),
                                 ),
-                              )
-                            : Text(
-                                AppStrings.login,
-                                style: AppTextStyles.subheadingSemiBold
-                                    .copyWith(
-                                      color: AppColors.primaryPalette[800],
-                                    ),
-                              ),
+                        ),
                       ),
 
                       const SizedBox(height: AppSizes.xl),
@@ -213,7 +250,7 @@ class LoginBottomSheet extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            AppStrings.or, // หรือ
+                            AppStrings.or,
                             style: AppTextStyles.descriptionRegular.copyWith(
                               color: AppColors.primaryPalette[600],
                             ),
@@ -251,9 +288,9 @@ class LoginBottomSheet extends StatelessWidget {
                   ),
 
                   // ===== Info Popup (Stick กับ BottomSheet) =====
-                  if (controller.showEmailInfo.value)
+                  if (widget.controller.showEmailInfo.value)
                     Positioned(
-                      top: 170, 
+                      top: 170,
                       right: 24,
                       child: const LoginInfoPopup(),
                     ),
