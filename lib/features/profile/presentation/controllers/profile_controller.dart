@@ -245,13 +245,6 @@ class ProfileController extends GetxController {
     final cleanLastName = lastName.trim();
     final cleanPhone = phone.trim();
 
-    if (cleanFirstName.isEmpty || cleanLastName.isEmpty) {
-      throw Exception('กรุณาใส่ชื่อและนามสกุล');
-    }
-    if (cleanPhone.isEmpty) {
-      throw Exception('กรุณากรอกเบอร์โทรศัพท์');
-    }
-
     // BUG FIX #7: Enhance phone validation - check for common Thai telecom prefixes
     // Valid Thai prefixes: 08, 09 (mobile), 02 (Bangkok), 0xx (other areas)
     if (!RegExp(r'^0[0-9]{9}$').hasMatch(cleanPhone)) {
@@ -259,7 +252,7 @@ class ProfileController extends GetxController {
     }
     
     // Additional telecom validation for Thai numbers
-    final prefix = cleanPhone.substring(0, 3);
+    final prefix = cleanPhone.substring(0, 2);
     if (!['08', '09', '02'].contains(prefix) && !RegExp(r'^0[3-7]').hasMatch(prefix)) {
       throw Exception('หมายเลขโทรศัพท์ไม่ถูกต้อง');
     }

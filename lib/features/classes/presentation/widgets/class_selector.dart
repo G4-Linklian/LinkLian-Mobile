@@ -59,9 +59,6 @@ class ClassSelector extends StatelessWidget {
             ),
           ),
 
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.5 - 8,
-          ),
           child: Row(
   mainAxisSize: MainAxisSize.min,
   children: [

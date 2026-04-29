@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/sizes.dart';
+import '../../features/login/controllers/otp_controller.dart';
 import '../../features/login/widgets/otp_popup.dart';
 import '../../features/classes/presentation/widgets/image_source_sheet.dart';
 import '../../features/classes/presentation/widgets/link_attach_dialog.dart';
@@ -146,7 +147,7 @@ class DialogHelper {
 
   static void showOtpDialog() {
     Get.dialog(
-      const OtpPopup(),
+      OtpPopup(controller: Get.find<OtpController>()),
       barrierDismissible: false,
     );
   }

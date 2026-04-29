@@ -114,22 +114,6 @@ class _AccountPageState extends State<AccountPage> {
       );
       return;
     }
-    if (phone.isEmpty) {
-      DialogHelper.showNotification(
-        title: 'แจ้งเตือน',
-        message: 'กรุณากรอกเบอร์โทรศัพท์',
-        type: NotificationType.warning,
-      );
-      return;
-    }
-    if (phone.isNotEmpty && !RegExp(r'^0[0-9]{9}$').hasMatch(phone)) {
-      DialogHelper.showNotification(
-        title: 'แจ้งเตือน',
-        message: 'กรุณากรอกเบอร์โทรให้ถูกต้อง',
-        type: NotificationType.warning,
-      );
-      return;
-    }
 
     try {
       final auth = Get.find<AuthController>();
@@ -201,24 +185,6 @@ class _AccountPageState extends State<AccountPage> {
           'บัญชี',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-        actions: [
-          if (!isEditing)
-            IconButton(
-              icon: const Icon(LinkLianIcon.edit, color: Colors.black),
-              onPressed: _toggleEdit,
-            )
-          else
-            TextButton(
-              onPressed: _toggleEdit,
-              child: Text(
-                'ยกเลิก',
-                style: TextStyle(
-                  color: AppColors.primaryPalette[800],
-                  fontSize: 16,
-                ),
-              ),
-            ),
-        ],
       ),
       body: Obx(() {
         final profile = controller.profile.value;
@@ -276,7 +242,7 @@ class _AccountPageState extends State<AccountPage> {
 
               TextFormField(
                 controller: firstNameCtrl,
-                enabled: isEditing,
+                enabled: false,
                 inputFormatters: [NoEmojiInputFormatter()],
                 decoration: const InputDecoration(
                   labelText: 'ชื่อ',
@@ -288,7 +254,7 @@ class _AccountPageState extends State<AccountPage> {
 
               TextFormField(
                 controller: lastNameCtrl,
-                enabled: isEditing,
+                enabled: false,
                 inputFormatters: [NoEmojiInputFormatter()],
                 decoration: const InputDecoration(
                   labelText: 'นามสกุล',
@@ -300,7 +266,7 @@ class _AccountPageState extends State<AccountPage> {
 
               TextFormField(
                 controller: phoneCtrl,
-                enabled: isEditing,
+                enabled: false,
                 keyboardType: TextInputType.phone,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
@@ -380,17 +346,6 @@ class _AvatarSection extends StatelessWidget {
                   onPickGallery();
                 },
               ),
-              ListTile(
-                leading: Icon(
-                  LinkLianIcon.camera,
-                  color: AppColors.primaryPalette[600],
-                ),
-                title: const Text('ถ่ายรูป'),
-                onTap: () {
-                  Navigator.pop(context);
-                  onPickCamera();
-                },
-              ),
               if (avatarUrl != null)
                 ListTile(
                   leading: Icon(
@@ -443,24 +398,23 @@ class _AvatarSection extends StatelessWidget {
       child: Column(
         children: [
           GestureDetector(
-            onTap: isEditing ? () => _showAvatarOptions(context) : null,
+            onTap: () => _showAvatarOptions(context),
             child: Stack(
               alignment: Alignment.bottomRight,
               children: [
                 _buildAvatar(profile),
-                if (isEditing)
-                  Container(
-                    padding: EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryPalette[600],
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      LinkLianIcon.pencil,
-                      size: 18,
-                      color: Colors.white,
-                    ),
+                Container(
+                  padding: EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryPalette[600],
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(
+                    LinkLianIcon.pencil,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),

@@ -116,18 +116,6 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
                       _tc.selectedFilter.value == SubmissionFilter.notSubmitted,
                   onTap: () => _tc.changeFilter(SubmissionFilter.notSubmitted),
                 ),
-                _StatusChip(
-                  label: 'ยังไม่ส่งเกินกำหนด',
-                  count: isGroup
-                      ? _tc.notSubmittedOverdueGroupCount
-                      : _tc.notSubmittedOverdueCount,
-                  color: Colors.deepOrange.shade400,
-                  selected:
-                      _tc.selectedFilter.value ==
-                      SubmissionFilter.notSubmittedOverdue,
-                  onTap: () =>
-                      _tc.changeFilter(SubmissionFilter.notSubmittedOverdue),
-                ),
               ],
             ),
 

@@ -447,7 +447,7 @@ class _CommuPageState extends State<CommuPage> {
                       final detailController =
                           Get.find<CommunityDetailController>();
 
-                      detailController.initFromOutside(community.communityId);
+                      await detailController.initFromOutside(community.communityId);
 
                       final result = await Get.toNamed(
                         AppRoutes.createCommunity,
