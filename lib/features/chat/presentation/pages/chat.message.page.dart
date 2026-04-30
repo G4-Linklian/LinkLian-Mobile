@@ -502,7 +502,8 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                                 key: ValueKey(
                                   'date_${message.createdAt?.day}_${message.createdAt?.month}',
                                 ),
-                                date: message.createdAt ?? DateTime.now(),
+                                date: (message.createdAt ?? DateTime.now())
+                                  .toLocal(),
                               ),
                             ChatMessageBubble(
                               key: ValueKey(

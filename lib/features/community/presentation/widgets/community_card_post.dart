@@ -938,7 +938,7 @@ class _CardPostCommunityState extends State<CardPostCommunity> {
 
   String _formatDateTime(DateTime dt) {
     final formatter = DateFormat('HH:mm • dd/MM/yyyy', 'th');
-    return formatter.format(dt);
+    return formatter.format(dt.toLocal());
   }
 
   void _toggleBookmark() async {

@@ -138,7 +138,7 @@ class _StudentAssignmentDetailPageState
   }
 
   String _formatDateTime(DateTime dt) =>
-      DateFormat('dd/MM/yy HH:mm น.', 'th').format(dt);
+      DateFormat('dd/MM/yy HH:mm น.', 'th').format(dt.toLocal());
 
   String _formatFileSize(int? bytes) {
     if (bytes == null) return '';

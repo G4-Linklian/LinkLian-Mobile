@@ -185,7 +185,8 @@ class DashboardRemoteDataSource {
               if (assignment is Map<String, dynamic>) {
                 assignment['assignment_id'] ??= 0;
                 assignment['title'] ??= '';
-                assignment['due_date'] ??= DateTime.now().toIso8601String();
+                assignment['due_date'] ??=
+                  DateTime.now().toLocal().toIso8601String();
                 assignment['status'] ??= 'pending';
                 assignment['score'] ??= 0;
               }

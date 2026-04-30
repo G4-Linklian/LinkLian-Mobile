@@ -23,8 +23,12 @@ class RoleRepository {
     if (roleType != null) body['role_type'] = roleType;
     if (access != null) body['access'] = access;
     if (flagValid != null) body['flag_valid'] = flagValid;
-    if (createdAt != null) body['created_at'] = createdAt.toIso8601String();
-    if (updatedAt != null) body['updated_at'] = updatedAt.toIso8601String();
+    if (createdAt != null) {
+      body['created_at'] = createdAt.toLocal().toIso8601String();
+    }
+    if (updatedAt != null) {
+      body['updated_at'] = updatedAt.toLocal().toIso8601String();
+    }
 
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/role.get',

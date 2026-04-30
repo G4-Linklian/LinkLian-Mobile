@@ -245,8 +245,8 @@ class _AssignmentClassCardState extends State<AssignmentClassCard> {
     return _assignments.where((a) =>
       a.submittedAt == null &&
       a.dueDate != null &&
-      a.dueDate!.isAfter(now) &&
-      a.dueDate!.isBefore(cutoff),
+      a.dueDate!.toLocal().isAfter(now) &&
+      a.dueDate!.toLocal().isBefore(cutoff),
     ).length;
   }
 
@@ -269,10 +269,12 @@ class _AssignmentClassCardState extends State<AssignmentClassCard> {
     return _assignments
         .where((a) =>
             a.dueDate != null &&
-            a.dueDate!.isAfter(now) &&
-            a.dueDate!.isBefore(cutoff))
+            a.dueDate!.toLocal().isAfter(now) &&
+            a.dueDate!.toLocal().isBefore(cutoff))
         .toList()
-      ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+      ..sort(
+        (a, b) => a.dueDate!.toLocal().compareTo(b.dueDate!.toLocal()),
+      );
   }
 
   // ─── Build ────────────────────────────────────────────────────────────────
@@ -634,7 +636,7 @@ class _AssignmentClassCardState extends State<AssignmentClassCard> {
   }
 
   Widget _nearestDuePill(AssignmentModel a) {
-    final daysLeft = a.dueDate!.difference(DateTime.now()).inDays;
+    final daysLeft = a.dueDate!.toLocal().difference(DateTime.now()).inDays;
     final label = daysLeft == 0
         ? 'วันนี้'
         : daysLeft == 1

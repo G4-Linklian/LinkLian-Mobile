@@ -22,9 +22,9 @@ bool _boolFromJson(dynamic value) {
 DateTime _dateTimeFromJson(dynamic value) {
   if (value is DateTime) return value;
   if (value is String && value.trim().isNotEmpty) {
-    return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.tryParse(value)?.toLocal() ?? DateTime.now().toLocal();
   }
-  return DateTime.now();
+  return DateTime.now().toLocal();
 }
 
 @JsonSerializable()

@@ -179,8 +179,8 @@ class LiveInfo {
       questionCount: json['questionCount'] ?? 0,
       duration: json['duration'] ?? 0,
       liveDate: json['liveDate'] != null
-          ? DateTime.parse(json['liveDate'])
-          : DateTime.now(),
+          ? DateTime.parse(json['liveDate']).toLocal()
+          : DateTime.now().toLocal(),
       recordingUrl: json['recordingUrl'] ?? '',
     );
   }

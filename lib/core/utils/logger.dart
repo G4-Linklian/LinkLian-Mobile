@@ -43,8 +43,9 @@ class _AppLogPrinter extends LogPrinter {
 
     final data = message;
 
+    final localTime = data.time.toLocal();
     final time =
-        "${_pad(data.time.hour)}:${_pad(data.time.minute)}:${_pad(data.time.second)}";
+      "${_pad(localTime.hour)}:${_pad(localTime.minute)}:${_pad(localTime.second)}";
 
     final lines = <String>[];
 
@@ -149,7 +150,7 @@ class AppLogger {
   }) {
 
     final logEvent = AppLogEvent(
-      time: DateTime.now(),
+      time: DateTime.now().toLocal(),
       event: event,
       method: method,
       url: url,
@@ -175,7 +176,7 @@ class AppLogger {
   }) {
     _logger.d(
       AppLogEvent(
-        time: DateTime.now(),
+        time: DateTime.now().toLocal(),
         event: event,
         actionPage: actionPage,
         data: data,
@@ -190,7 +191,7 @@ class AppLogger {
 }) {
   _logger.w(
     AppLogEvent(
-      time: DateTime.now(),
+      time: DateTime.now().toLocal(),
       event: event,
       actionPage: actionPage,
       data: data,
@@ -205,7 +206,7 @@ class AppLogger {
   }) {
     _logger.i(
       AppLogEvent(
-        time: DateTime.now(),
+        time: DateTime.now().toLocal(),
         event: event,
         actionPage: actionPage,
         data: data,
@@ -222,7 +223,7 @@ class AppLogger {
   }) {
     _logger.e(
       AppLogEvent(
-        time: DateTime.now(),
+        time: DateTime.now().toLocal(),
         event: event,
         actionPage: actionPage,
         data: data,

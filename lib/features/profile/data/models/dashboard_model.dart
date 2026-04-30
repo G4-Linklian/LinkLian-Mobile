@@ -332,8 +332,8 @@ class AssignmentData {
       assignmentId: _toInt(json['assignment_id']) ?? 0,
       title: json['title'] as String? ?? '',
       dueDate:
-          DateTime.tryParse(json['due_date'] as String? ?? '') ??
-          DateTime.now(),
+          DateTime.tryParse(json['due_date'] as String? ?? '')?.toLocal() ??
+          DateTime.now().toLocal(),
       status: json['status'] as String? ?? 'pending',
       score: _toInt(json['score']) ?? 0,
       onTimeCount: _toInt(json['on_time_count']) ?? 0,
@@ -389,8 +389,8 @@ class LiveData {
       liveDate:
           DateTime.tryParse(
             json['started_at'] as String? ?? json['live_date'] as String? ?? '',
-          ) ??
-          DateTime.now(),
+          )?.toLocal() ??
+          DateTime.now().toLocal(),
       duration: minutes,
       recordingUrl: json['recording_url'] as String? ?? '',
       totalQuestions: totalQuestions,

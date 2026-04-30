@@ -458,11 +458,12 @@ class _AssignmentCardState extends State<AssignmentCard> {
   }
 
   String _formatDueDate(DateTime date) {
-    final buddhistYear = date.year + 543;
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
+    final localDate = date.toLocal();
+    final buddhistYear = localDate.year + 543;
+    final day = localDate.day.toString().padLeft(2, '0');
+    final month = localDate.month.toString().padLeft(2, '0');
     final yearShort = (buddhistYear % 100).toString().padLeft(2, '0');
-    final time = DateFormat('HH:mm').format(date);
+    final time = DateFormat('HH:mm').format(localDate);
     return '$day/$month/$yearShort $time น.';
   }
 

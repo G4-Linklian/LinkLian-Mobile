@@ -26,7 +26,7 @@ class QuizAttemptStore {
     _results[storeKey] = QuizAttemptResult(
       correct: correct,
       total: total,
-      completedAt: DateTime.now(),
+      completedAt: DateTime.now().toLocal(),
       userAnswers: userAnswers != null
           ? Map<int, String>.from(userAnswers)
           : const <int, String>{},

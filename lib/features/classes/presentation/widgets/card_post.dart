@@ -555,7 +555,7 @@ class _CardPostState extends State<CardPost> {
     if (widget.post.dueDate != null) {
       try {
         final formatter = DateFormat('dd/MM/yy HH:mm', 'th');
-        dueDateText = formatter.format(widget.post.dueDate!);
+        dueDateText = formatter.format(widget.post.dueDate!.toLocal());
       } catch (e) {
         dueDateText = 'ไม่ระบุ';
       }
@@ -1229,7 +1229,7 @@ class _CardPostState extends State<CardPost> {
 
   String _formatDateTime(DateTime dt) {
     final formatter = DateFormat('HH:mm • dd/MM/yyyy', 'th');
-    return formatter.format(dt);
+    return formatter.format(dt.toLocal());
   }
 
   IconData _getFileIconData(String fileType) {
