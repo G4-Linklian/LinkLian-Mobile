@@ -171,7 +171,7 @@ class _AssignmentFeedBody extends StatelessWidget {
             ],
           ),
         );
-      }),
+        }),
     );
   }
 }

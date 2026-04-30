@@ -40,6 +40,9 @@ class CommentController extends GetxController {
   final visibleChildrenCount = <int, int>{}.obs;
   final int replyPageSize = 5;
 
+  // Trigger UI refreshes when post content changes.
+  final RxInt postRefreshTick = 0.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -62,6 +65,7 @@ class CommentController extends GetxController {
     if (args['post'] != null) {
       post = args['post'] as PostModel;
       appLog.debug('[CommentController] Post from args (cached)');
+      _notifyPostChanged();
     } else {
       appLog.debug('[CommentController] Fetching post from server...');
       await _loadPostFromServer(postId);
@@ -138,6 +142,7 @@ class CommentController extends GetxController {
       final result = await repo.getPostDetail(id);
 
       post = result;
+      _notifyPostChanged();
       appLog.debug('[CommentController] ✓ POST LOADED');
       appLog.debug('[CommentController] Title: ${result.title}');
       final contentPreview = result.content.length > 100
@@ -150,6 +155,14 @@ class CommentController extends GetxController {
       appLog.debug('[CommentController] Stack trace: $stack');
       DialogHelper.showErrorDialog(description: 'โหลดโพสต์ล้มเหลว: $e');
     }
+  }
+
+  Future<void> refreshPost() async {
+    await _loadPostFromServer(postId);
+  }
+
+  void _notifyPostChanged() {
+    postRefreshTick.value++;
   }
 
   // FLATTEN COMMENTS

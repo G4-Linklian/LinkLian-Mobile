@@ -50,15 +50,16 @@ class CreateCommunityController extends GetxController {
     super.onInit();
 
     final args = Get.arguments;
+    
 
-    // if (args != null && args['isEdit'] == true) {
-    //   setCommunityForEdit(args['community']);
-    // }
     if (args is Map && args['isEdit'] == true) {
       final community = args['community'];
       if (community is CommunityModel) {
         setCommunityForEdit(community);
       }
+    } else {
+      resetForm();
+      isEditMode.value = false;
     }
   }
 

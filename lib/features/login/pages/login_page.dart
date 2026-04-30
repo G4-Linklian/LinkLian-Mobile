@@ -5,9 +5,9 @@ import '../widgets/login_bottom_sheet.dart';
 import '../widgets/role_card.dart';
 
 import '../../../core/constants/colors.dart';
-import '../../../core/constants/logo.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/constants/linklian-icon.dart';
+import '../../../core/constants/logo.dart';
 import '../../../core/constants/strings.dart';
 import '../controllers/login_controller.dart';
 
@@ -21,18 +21,13 @@ class LoginPage extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isDismissible: true,
       enableDrag: true,
-
       builder: (_) {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-
           onTap: () => Navigator.of(context).pop(),
-
           child: Container(
             color: Colors.transparent,
             alignment: Alignment.bottomCenter,
-
-            // 👇 ตัว BottomSheet จริง
             child: LoginBottomSheet(controller: controller),
           ),
         );
@@ -50,18 +45,45 @@ class LoginPage extends StatelessWidget {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        color: AppColors.primaryPalette[300],
+
+        decoration: const BoxDecoration(
+
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Color(0xFFFFF0E0), 
+            ],
+            stops: [0.5, 1.0],
+          ),
+          // image: DecorationImage(
+          //   image: AssetImage('assets/images/wave_bg.png'),
+          //   fit: BoxFit.cover,
+          //   alignment: Alignment.topCenter,
+          // ),
+        ),
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 96),
 
-              // ===== Logo =====
-              Image.asset(LinkLianLogos.bannerBlack, height: 56),
+              const SizedBox(height: 60),
 
-              const SizedBox(height: AppSizes.xxl),
+               Image.asset(LinkLianLogos.bannerBlack, height: 56),
 
-              // ===== Student Role =====
+              const SizedBox(height: 16),
+
+              const Text(
+                'เลือกบทบาทเพื่อเข้าสู่ระบบ',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF6C2D13), 
+                ),
+              ),
+
+              const SizedBox(height: AppSizes.xxxl),
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 60),
                 child: RoleCard(
@@ -70,6 +92,7 @@ class LoginPage extends StatelessWidget {
                     size: 128,
                     color: AppColors.black,
                   ),
+
                   title: AppStrings.titleStudent,
                   onTap: () {
                     controller.selectedUserGroup.value = 'student';
@@ -80,7 +103,6 @@ class LoginPage extends StatelessWidget {
 
               const SizedBox(height: AppSizes.xxxl),
 
-              // ===== Teacher Role =====
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 60),
                 child: RoleCard(
@@ -89,6 +111,7 @@ class LoginPage extends StatelessWidget {
                     size: 128,
                     color: AppColors.black,
                   ),
+
                   title: AppStrings.titleTeacher,
                   onTap: () {
                     controller.selectedUserGroup.value = 'teacher';
@@ -96,6 +119,8 @@ class LoginPage extends StatelessWidget {
                   },
                 ),
               ),
+              
+              const SizedBox(height: 60),
             ],
           ),
         ),

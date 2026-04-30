@@ -191,7 +191,7 @@ class _TagSelectionPopupState extends State<TagSelectionPopup> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "กด Enter เพื่อเพิ่มแท็กใหม่",
+                          "กดยืนยันเพื่อเพิ่มแท็กใหม่",
                           style: TextStyle(
                             fontSize: 14,
                             color: AppColors.primaryPalette[600],

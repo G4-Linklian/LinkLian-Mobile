@@ -140,7 +140,11 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                     if (dashboard.overview.popularPosts.isNotEmpty) ...[
                       Text(
                         'โพสต์ยอดนิยม',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: TextStyle(
+                        fontSize: 18, 
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
                       ),
                       const SizedBox(height: 12),
                       ..._buildPopularPostsCards(
@@ -152,7 +156,11 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                     // Sections
                     Text(
                       'ภาพรวมรายห้องเรียน',
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: TextStyle(
+                        fontSize: 18, 
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     ..._buildSectionCards(dashboard.sections),
@@ -441,36 +449,40 @@ class _OverviewStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _CompactStatCard(
+    return Row(
+      children: [
+        Expanded(
+          child: _CompactStatCard(
             icon: LinkLianIcon.fileDescription,
             label: 'ไฟล์เอกสาร',
             value: (assets['totalFiles'] ?? 0).toString(),
             change: _safeToInt(assets['filesChange']),
             color: AppColors.primaryPalette[700]!,
           ),
-          const SizedBox(width: 12),
-          _CompactStatCard(
+        ),
+        const SizedBox(width: 8),
+
+        Expanded(
+          child: _CompactStatCard(
             icon: LinkLianIcon.broadcast,
             label: 'จำนวนไลฟ์',
             value: (assets['totalLives'] ?? 0).toString(),
             change: _safeToInt(assets['livesChange']),
             color: AppColors.primaryPalette[700]!,
           ),
-          const SizedBox(width: 12),
-          _CompactStatCard(
+        ),
+        const SizedBox(width: 8),
+
+        Expanded(
+          child: _CompactStatCard(
             icon: LinkLianIcon.alignCenter,
             label: 'งานทั้งหมด',
             value: (assets['totalAssignments'] ?? 0).toString(),
             change: _safeToInt(assets['assignmentsChange']),
             color: AppColors.primaryPalette[700]!,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -493,8 +505,7 @@ class _CompactStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 110,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -508,37 +519,43 @@ class _CompactStatCard extends StatelessWidget {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 6),
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 4),
+
           Text(
             value,
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 16, // ลดลงจาก 20
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 4),
+
+          const SizedBox(height: 2),
+
           Text(
             change >= 0 ? '+$change' : '$change',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 9,
               color: change >= 0 ? Colors.orange : Colors.grey,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
+
+          const SizedBox(height: 2),
+
           Text(
             label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               color: Colors.grey.shade600,
               fontWeight: FontWeight.w500,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

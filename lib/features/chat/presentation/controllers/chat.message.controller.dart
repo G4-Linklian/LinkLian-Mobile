@@ -22,6 +22,7 @@ class ChatMessageController {
   int? _currentUserId;
   int? get currentUserId => _currentUserId;
   int? _currentChatId;
+  int? _currentReceiverId;
 
   // Debounce timer for UI updates
   Timer? _updateTimer;
@@ -29,7 +30,7 @@ class ChatMessageController {
   StreamSubscription? _socketSubscription;
   final Set<String> _socketFallbackKeys = <String>{};
 
-  Future<void> init(int chatId) async {
+  Future<void> init({required int chatId, int? receiverId}) async {
     // BUG FIX #2: Validate chatId
     if (chatId <= 0) {
       appLog.error('Invalid chatId: $chatId');
@@ -37,6 +38,7 @@ class ChatMessageController {
     }
 
     _currentChatId = chatId;
+    _currentReceiverId = receiverId;
     _currentUserId = await LocalStorage.getLastLoginUserId();
 
     if (_currentUserId == null) {
@@ -44,23 +46,27 @@ class ChatMessageController {
       return;
     }
 
+    if (_currentReceiverId == null) {
+      appLog.error('Receiver ID not found for chat $chatId');
+    }
+
     // Load messages from API
     await _loadMessages();
 
     // Socket functionality
     final socketUrl =
-        '${dotenv.env['SOCKET_URL'] ?? 'wss://socket-wachawich.linklian.org/ws'}/chat';
-    if (!_socketService.isConnected) {
-      await _socketService.connect(socketUrl);
+        '${dotenv.env['SOCKET_URL'] ?? 'wss://uat-socket.linklian.org/ws'}/chat';
+    if (!_socketService.isChatConnected) {
+      await _socketService.connectChat(socketUrl);
     }
-    _socketService.joinRoom(userId: _currentUserId!, chatId: chatId);
-    // _socketService.socketResponseStream.listen((data) {
+    _socketService.joinChatRoom(userId: _currentUserId!, chatId: chatId);
+    // _socketService.chatStream.listen((data) {
     //    print("WS DATA: $data");
     //   _handleIncomingMessage(data);
     // });
     _socketSubscription?.cancel();
 
-    _socketSubscription = _socketService.socketResponseStream.listen((data) {
+    _socketSubscription = _socketService.chatStream.listen((data) {
       _handleIncomingMessage(data);
     });
   }
@@ -177,10 +183,16 @@ class ChatMessageController {
       return;
     }
 
+    if (_currentReceiverId == null) {
+      appLog.error('Cannot send message: receiverId is null');
+      return;
+    }
+
     try {
       final newMessage = await _chatRepository.createMessage(
         chatId: _currentChatId!,
         senderId: _currentUserId!,
+        receiverId: _currentReceiverId!.toString(),
         content: content,
         replyId: replyingMessage?.messageId,
       );
@@ -204,14 +216,13 @@ class ChatMessageController {
         'content': content,
       },
     };
-    _socketService.sendMessage(message);
+    _socketService.sendChatMessage(message);
   }
 
   void dispose() {
     // BUG FIX #4: Clear all state on dispose
     _updateTimer?.cancel();
     _socketSubscription?.cancel();
-    _socketService.disconnect();
     _messages.clear();
     _currentUserId = null;
     _currentChatId = null;
@@ -227,6 +238,11 @@ class ChatMessageController {
       return;
     }
 
+    if (_currentReceiverId == null) {
+      appLog.error('Cannot pick image: receiverId is null');
+      return;
+    }
+
     try {
       final picker = ImagePicker();
       final picked = await picker.pickImage(source: source);
@@ -238,6 +254,7 @@ class ChatMessageController {
       final newMessage = await _chatRepository.createMessage(
         chatId: _currentChatId!,
         senderId: _currentUserId!,
+        receiverId: _currentReceiverId!.toString(),
         content: "[image]",
         file: [file],
       );
@@ -257,6 +274,11 @@ class ChatMessageController {
       return;
     }
 
+    if (_currentReceiverId == null) {
+      appLog.error('Cannot pick file: receiverId is null');
+      return;
+    }
+
     try {
       final result = await FilePicker.platform.pickFiles();
 
@@ -267,6 +289,7 @@ class ChatMessageController {
       final newMessage = await _chatRepository.createMessage(
         chatId: _currentChatId!,
         senderId: _currentUserId!,
+        receiverId: _currentReceiverId!.toString(),
         content: "[file]",
         file: [file],
       );
@@ -291,12 +314,19 @@ class ChatMessageController {
       return;
     }
 
+    if (_currentReceiverId == null) {
+      appLog.error('Cannot send link: receiverId is null');
+      return;
+    }
+
     try {
       final newMessage = await _chatRepository.createMessage(
         chatId: _currentChatId!,
         senderId: _currentUserId!,
+        receiverId: _currentReceiverId!.toString(),
         content: url,
       );
+  _currentReceiverId = null;
 
       _messages.add(newMessage);
       // _messagesController.add(List.unmodifiable(_messages));

@@ -21,6 +21,7 @@ import 'package:intl/intl.dart';
 import '../controllers/class_detail_controller.dart';
 import '../../../../config/app_routes.dart';
 import '../controllers/create_post_controller.dart';
+import '../controllers/comment_controller.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../../../core/utils/post_permission.dart';
 import '../../../shared/repositories/post_repository.dart';
@@ -1070,7 +1071,12 @@ class _CardPostState extends State<CardPost> {
 
     if (result?['success'] == true && result?['edited'] == true) {
       debugPrint('📝 Refreshing posts after edit...');
-      await _classController!.fetchPosts(keepScroll: true);
+      if (_hasClassController) {
+        await _classController!.fetchPosts(keepScroll: true);
+      }
+      if (Get.isRegistered<CommentController>()) {
+        await Get.find<CommentController>().refreshPost();
+      }
       DialogHelper.showNotification(
         title: 'แก้ไขโพสต์สำเร็จ',
         message: 'โพสต์ของคุณถูกอัปเดตแล้ว',
