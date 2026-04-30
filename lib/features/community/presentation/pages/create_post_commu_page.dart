@@ -300,16 +300,105 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
                   ),
 
                   // ATTACHMENTS
-
                   Obx(() {
                     if (controller.filesPreviews.isEmpty) {
                       return const SizedBox();
                     }
+                    final files = controller.filesPreviews;
+                    final isAllLinks =
+                        files.isNotEmpty &&
+                        files.every((f) {
+                          final t = (f['file_type'] ?? '')
+                              .toString()
+                              .toLowerCase();
+                          return t == 'link';
+                        });
+                    if (isAllLinks) {
+                      return Container(
+                        constraints: const BoxConstraints(maxHeight: 180),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+                          ),
+                        ),
+                        child: Container(
+                          margin: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: AppColors.primaryPalette[600]!,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Scrollbar(
+                            trackVisibility: true,
+                            thumbVisibility: true,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              itemCount: controller.filesPreviews.length,
+                              itemBuilder: (context, index) {
+                                final file = controller.filesPreviews[index];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 3,
+                                  ),
+                                  child: AttachmentTile(
+                                    file: file,
+                                    onRemove: () =>
+                                        controller.removeAttachment(index),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    }
 
+                    String infoText;
+                    final isAllImages =
+                        files.isNotEmpty &&
+                        files.every((f) {
+                          final t = (f['file_type'] ?? '')
+                              .toString()
+                              .toLowerCase();
+                          return t == 'jpg' ||
+                              t == 'jpeg' ||
+                              t == 'png' ||
+                              t == 'gif' ||
+                              t == 'image';
+                        });
+                    final isAllFiles =
+                        files.isNotEmpty &&
+                        files.every((f) {
+                          final t = (f['file_type'] ?? '')
+                              .toString()
+                              .toLowerCase();
+                          return t != 'jpg' &&
+                              t != 'jpeg' &&
+                              t != 'png' &&
+                              t != 'gif' &&
+                              t != 'image' &&
+                              t != 'link';
+                        });
+                    if (isAllImages) {
+                      infoText =
+                          'อัปโหลดรูปภาพได้สูงสุด 10 MB ต่อไฟล์ (JPG, PNG, GIF)';
+                    } else if (isAllFiles) {
+                      infoText =
+                          'อัปโหลดไฟล์เอกสารหรือไฟล์อื่นๆ ได้สูงสุด 10 MB ต่อไฟล์';
+                    } else {
+                      infoText = 'อัปโหลดไฟล์หรือรูปภาพได้สูงสุด 10 MB ต่อไฟล์';
+                    }
                     return Column(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
+                          ),
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
@@ -332,7 +421,7 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'อัปโหลดไฟล์ได้สูงสุด 10 MB ต่อไฟล์ รองรับไฟล์รูปภาพ (JPG, PNG, GIF)',
+                                    infoText,
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: AppColors.primaryPalette[700],
@@ -343,12 +432,14 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
                             ),
                           ),
                         ),
-
                         Container(
                           constraints: const BoxConstraints(maxHeight: 180),
                           decoration: const BoxDecoration(
                             border: Border(
-                              top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+                              top: BorderSide(
+                                color: Color(0xFFEEEEEE),
+                                width: 1,
+                              ),
                             ),
                           ),
                           child: Container(
@@ -542,50 +633,60 @@ class _CreatePostCommunityPageState extends State<CreatePostCommunityPage> {
     );
   }
 
-  Widget _buildPostButton({required CreatePostCommunityController controller, String? contentText}) {
-    return Obx(
-      () {
-        final hasContent = (contentText ?? controller.contentController.text).trim().isNotEmpty;
-        final hasFiles = controller.filesPreviews.isNotEmpty;
-        final isUploading = controller.filesPreviews.any((f) => f['is_uploading'] == true);
-        final canPost = !controller.isSubmitting.value && !isUploading && (hasContent || hasFiles);
+  Widget _buildPostButton({
+    required CreatePostCommunityController controller,
+    String? contentText,
+  }) {
+    return Obx(() {
+      final hasContent = (contentText ?? controller.contentController.text)
+          .trim()
+          .isNotEmpty;
+      final hasFiles = controller.filesPreviews.isNotEmpty;
+      final isUploading = controller.filesPreviews.any(
+        (f) => f['is_uploading'] == true,
+      );
+      final canPost =
+          !controller.isSubmitting.value &&
+          !isUploading &&
+          (hasContent || hasFiles);
 
-        return GestureDetector(
-          onTap: canPost
-              ? () async {
-                  try {
-                    await controller.submitPost();
-                  } catch (e) {
-                    // Error already handled in controller
-                  }
+      return GestureDetector(
+        onTap: canPost
+            ? () async {
+                try {
+                  await controller.submitPost();
+                } catch (e) {
+                  // Error already handled in controller
                 }
-              : null,
-          child: Opacity(
-            opacity: canPost ? 1.0 : 0.6,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: canPost ? AppColors.primaryPalette[500] : AppColors.primaryPalette[300],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    controller.isEditMode.value ? "บันทึก" : "โพสต์",
-                    style: const TextStyle(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+              }
+            : null,
+        child: Opacity(
+          opacity: canPost ? 1.0 : 0.6,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: canPost
+                  ? AppColors.primaryPalette[500]
+                  : AppColors.primaryPalette[300],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  controller.isEditMode.value ? "บันทึก" : "โพสต์",
+                  style: const TextStyle(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: 6),
-                  const Icon(LinkLianIcon.post, size: 18, color: AppColors.white),
-                ],
-              ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(LinkLianIcon.post, size: 18, color: AppColors.white),
+              ],
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
 }

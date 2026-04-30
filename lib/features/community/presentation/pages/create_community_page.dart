@@ -247,7 +247,7 @@ class CreateCommunityPage extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          "แนะนำรูปแนวนอน ขนาดไฟล์ไม่เกิน 10 MB",
+                          "แนะนำรูปแนวนอน ขนาดไฟล์ภาพไม่เกิน 10 MB",
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.primaryPalette[500],

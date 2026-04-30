@@ -186,67 +186,69 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                   Padding(
                     padding: const EdgeInsets.only(left: 8),
                     child: Obx(() {
-                    final isEditMode =
-                        controller.mode.value == CreatePostMode.edit;
-                    final isPostTypeLocked = controller.isPostTypeLocked.value;
+                      final isEditMode =
+                          controller.mode.value == CreatePostMode.edit;
+                      final isPostTypeLocked =
+                          controller.isPostTypeLocked.value;
 
-                    if (!isTeacher) {
-                      return Opacity(
-                        opacity: isEditMode ? 0.4 : 1.0,
-                        child: _buildTagChip(
-                          label: 'คำถาม',
-                          isSelected: controller.postType.value == 'question',
-                          onTap: isEditMode
-                              ? () {}
-                              : () => controller.postType.value = 'question',
-                        ),
+                      if (!isTeacher) {
+                        return Opacity(
+                          opacity: isEditMode ? 0.4 : 1.0,
+                          child: _buildTagChip(
+                            label: 'คำถาม',
+                            isSelected: controller.postType.value == 'question',
+                            onTap: isEditMode
+                                ? () {}
+                                : () => controller.postType.value = 'question',
+                          ),
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Opacity(
+                            opacity:
+                                (isEditMode &&
+                                        controller.postType.value !=
+                                            'assignment') ||
+                                    (isPostTypeLocked &&
+                                        controller.postType.value !=
+                                            'assignment')
+                                ? 0.4
+                                : 1.0,
+                            child: _buildTagChip(
+                              label: 'การบ้าน',
+                              isSelected:
+                                  controller.postType.value == 'assignment',
+                              onTap: (isEditMode || isPostTypeLocked)
+                                  ? () {}
+                                  : () => controller.postType.value =
+                                        'assignment',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Opacity(
+                            opacity:
+                                (isEditMode &&
+                                        controller.postType.value !=
+                                            'announcement') ||
+                                    (isPostTypeLocked &&
+                                        controller.postType.value !=
+                                            'announcement')
+                                ? 0.4
+                                : 1.0,
+                            child: _buildTagChip(
+                              label: 'ประกาศ',
+                              isSelected:
+                                  controller.postType.value == 'announcement',
+                              onTap: (isEditMode || isPostTypeLocked)
+                                  ? () {}
+                                  : () => controller.postType.value =
+                                        'announcement',
+                            ),
+                          ),
+                        ],
                       );
-                    }
-
-                    return Row(
-                      children: [
-                        Opacity(
-                          opacity:
-                              (isEditMode &&
-                                      controller.postType.value !=
-                                          'assignment') ||
-                                  (isPostTypeLocked &&
-                                      controller.postType.value != 'assignment')
-                              ? 0.4
-                              : 1.0,
-                          child: _buildTagChip(
-                            label: 'การบ้าน',
-                            isSelected:
-                                controller.postType.value == 'assignment',
-                            onTap: (isEditMode || isPostTypeLocked)
-                                ? () {}
-                                : () =>
-                                      controller.postType.value = 'assignment',
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Opacity(
-                          opacity:
-                              (isEditMode &&
-                                      controller.postType.value !=
-                                          'announcement') ||
-                                  (isPostTypeLocked &&
-                                      controller.postType.value !=
-                                          'announcement')
-                              ? 0.4
-                              : 1.0,
-                          child: _buildTagChip(
-                            label: 'ประกาศ',
-                            isSelected:
-                                controller.postType.value == 'announcement',
-                            onTap: (isEditMode || isPostTypeLocked)
-                                ? () {}
-                                : () => controller.postType.value =
-                                      'announcement',
-                          ),
-                        ),
-                      ],
-                    );
                     }),
                   ),
                 ],
@@ -343,47 +345,190 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                       if (controller.attachments.isEmpty) {
                         return const SizedBox();
                       }
-                      return Container(
-                        constraints: const BoxConstraints(maxHeight: 180),
-                        decoration: const BoxDecoration(
-                          border: Border(
-                            top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
-                          ),
-                        ),
-                        child: Container(
-                          margin: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.primaryPalette[600]!,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Scrollbar(
-                            controller: _attachmentScrollController,
-                            trackVisibility: true,
-                            thumbVisibility: true,
-                            child: ListView.builder(
-                              controller: _attachmentScrollController,
-                              scrollDirection: Axis.vertical,
-                              shrinkWrap: true,
-                              itemCount: controller.attachments.length,
-                              itemBuilder: (context, index) {
-                                final file = controller.attachments[index];
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+                      final files = controller.attachments;
+                      final isAllLinks =
+                          files.isNotEmpty &&
+                          files.every((f) {
+                            final t = (f['file_type'] ?? '')
+                                .toString()
+                                .toLowerCase();
+                            return t == 'link';
+                          });
+                      if (isAllLinks) {
+                        return Column(
+                          children: [
+                            Container(
+                              constraints: const BoxConstraints(maxHeight: 180),
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  top: BorderSide(
+                                    color: Color(0xFFEEEEEE),
+                                    width: 1,
                                   ),
-                                  child: AttachmentTile(
-                                    file: file,
-                                    onRemove: () =>
-                                        controller.removeAttachment(index),
+                                ),
+                              ),
+                              child: Container(
+                                margin: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AppColors.primaryPalette[600]!,
                                   ),
-                                );
-                              },
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Scrollbar(
+                                  controller: _attachmentScrollController,
+                                  trackVisibility: true,
+                                  thumbVisibility: true,
+                                  child: ListView.builder(
+                                    controller: _attachmentScrollController,
+                                    scrollDirection: Axis.vertical,
+                                    shrinkWrap: true,
+                                    itemCount: controller.attachments.length,
+                                    itemBuilder: (context, index) {
+                                      final file =
+                                          controller.attachments[index];
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        child: AttachmentTile(
+                                          file: file,
+                                          onRemove: () => controller
+                                              .removeAttachment(index),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+
+                      String infoText;
+                      final isAllImages =
+                          files.isNotEmpty &&
+                          files.every((f) {
+                            final t = (f['file_type'] ?? '')
+                                .toString()
+                                .toLowerCase();
+                            return t == 'jpg' ||
+                                t == 'jpeg' ||
+                                t == 'png' ||
+                                t == 'gif' ||
+                                t == 'image';
+                          });
+                      final isAllFiles =
+                          files.isNotEmpty &&
+                          files.every((f) {
+                            final t = (f['file_type'] ?? '')
+                                .toString()
+                                .toLowerCase();
+                            return t != 'jpg' &&
+                                t != 'jpeg' &&
+                                t != 'png' &&
+                                t != 'gif' &&
+                                t != 'image' &&
+                                t != 'link';
+                          });
+                      if (isAllImages) {
+                        infoText =
+                            'อัปโหลดรูปภาพได้สูงสุด 10 MB ต่อไฟล์ (JPG, PNG, GIF)';
+                      } else if (isAllFiles) {
+                        infoText =
+                            'อัปโหลดไฟล์เอกสารหรือไฟล์อื่นๆ ได้สูงสุด 10 MB ต่อไฟล์';
+                      } else {
+                        infoText =
+                            'อัปโหลดไฟล์หรือรูปภาพได้สูงสุด 10 MB ต่อไฟล์';
+                      }
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 8.0,
+                            ),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryPalette[50],
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.primaryPalette[100]!,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    size: 20,
+                                    color: AppColors.primaryPalette[600],
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      infoText,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.primaryPalette[700],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 180),
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: Color(0xFFEEEEEE),
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: AppColors.primaryPalette[600]!,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Scrollbar(
+                                controller: _attachmentScrollController,
+                                trackVisibility: true,
+                                thumbVisibility: true,
+                                child: ListView.builder(
+                                  controller: _attachmentScrollController,
+                                  scrollDirection: Axis.vertical,
+                                  shrinkWrap: true,
+                                  itemCount: controller.attachments.length,
+                                  itemBuilder: (context, index) {
+                                    final file = controller.attachments[index];
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      child: AttachmentTile(
+                                        file: file,
+                                        onRemove: () =>
+                                            controller.removeAttachment(index),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       );
                     }),
                   ],
@@ -1227,19 +1372,21 @@ class _CreatePostClassPageState extends State<CreatePostClassPage> {
                     appLog.info(
                       '[CreatePost Class page] Edit mode: Going back',
                     );
-                    Get.back(result: {
-                      'success': true,
-                      'edited': true,
-                      'post': {
-                        'post_content_id': controller.editingPostContentId,
-                        'title': isTeacher
-                            ? controller.title.value
-                            : controller.content.value,
-                        'content': controller.content.value,
-                        'post_type': controller.postType.value,
-                        'attachments': controller.attachments,
+                    Get.back(
+                      result: {
+                        'success': true,
+                        'edited': true,
+                        'post': {
+                          'post_content_id': controller.editingPostContentId,
+                          'title': isTeacher
+                              ? controller.title.value
+                              : controller.content.value,
+                          'content': controller.content.value,
+                          'post_type': controller.postType.value,
+                          'attachments': controller.attachments,
+                        },
                       },
-                    });
+                    );
                     return;
                   }
 

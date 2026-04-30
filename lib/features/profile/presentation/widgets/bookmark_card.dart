@@ -82,12 +82,6 @@ class BookmarkCard extends StatelessWidget {
                     style: const TextStyle(fontSize: 10),
                   ),
 
-                  Text(
-                    item.creatorName != null
-                        ? 'ผู้สอน ${item.creatorName}'
-                        : 'ไม่ระบุผู้สอน',
-                    style: const TextStyle(fontSize: 10),
-                  ),
                 ],
               ),
             ),
