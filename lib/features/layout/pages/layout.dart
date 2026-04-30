@@ -269,53 +269,58 @@ class _MainPageState extends State<MainPage> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Obx(() => Stack(
-                      children: [
-                        GestureDetector(
-                          onTap: () async {
-                            _goTo(const ChatPage());
-                            final chats = await ChatController().getChat();
-                            int total = 0;
-                            for (final chat in chats) {
-                              if (chat.unreadCount != null) {
-                                total += chat.unreadCount!;
+                    Obx(() {
+                      final count = ChatBadgeService().observe().value;
+                      return Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              _goTo(const ChatPage());
+                              final chats = await ChatController().getChat();
+                              int total = 0;
+                              for (final chat in chats) {
+                                if (chat.unreadCount != null) {
+                                  total += chat.unreadCount!;
+                                }
                               }
-                            }
-                            ChatBadgeService().set(total);
-                          },
-                          child: Icon(
-                            LinkLianIcon.message,
-                            color: AppColors.successPalette[500],
-                            size: 30,
-                          ),
-                        ),
-                        if (ChatBadgeService().observe().value > 0)
-                          Positioned(
-                            right: 1,
-                            top: 1,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                          ChatBadgeService().observe().value > 99
-                                              ? '99+'
-                                              : '${ChatBadgeService().observe().value}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
+                              ChatBadgeService().set(total);
+                            },
+                            child: Icon(
+                              LinkLianIcon.message,
+                              color: AppColors.successPalette[500],
+                              size: 30,
                             ),
                           ),
-                      ],
-                    )),
+                          if (count > 0)
+                            Positioned(
+                              top: -1,
+                              right: -1,
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white, width: 1.5),
+                                ),
+                                child: Text(
+                                  count > 99 ? '99+' : count.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.4,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    }),
                   ],
                 ),
               ),
