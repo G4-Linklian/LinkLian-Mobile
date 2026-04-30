@@ -38,16 +38,17 @@ class LiveController extends GetxController {
   final pdfController = Rxn<PDFViewController>();
   final totalPages = 0.obs;
   final currentPage = 0.obs;
-  final pdfRebuildToken = 0.obs;  // Incremented when file changes to force UI rebuild
-  bool _isFileChangingInProgress = false;  // Flag to track file change state
+  final pdfRebuildToken =
+      0.obs; // Incremented when file changes to force UI rebuild
+  bool _isFileChangingInProgress = false; // Flag to track file change state
 
   final SocketService _socket = SocketService();
   final QnaRepository _repo = QnaRepository();
   ProfileRepository? _profileRepo;
 
   StreamSubscription<dynamic>? _qaSubscription;
-  Timer? _questionsPollingTimer;
-  Timer? _liveStatusPollingTimer;
+  // Timer? _questionsPollingTimer;
+  // Timer? _liveStatusPollingTimer;
   final Map<int, QaAsker> _askerProfileCache = {};
   final Set<int> _loadingAskerIds = <int>{};
   final Set<int> _persistedUpvotedQuestionIds = <int>{};
@@ -71,7 +72,11 @@ class LiveController extends GetxController {
     final nextIsHistoryMode = args?['isHistoryMode'] == true;
 
     if (nextLiveId == null || nextLiveId <= 0) {
-      appLog.warning('qaLiveId is invalid', actionPage: 'LiveController.enterLiveSessionFromArgs', data: {'qaLiveId': nextLiveId});
+      appLog.warning(
+        'qaLiveId is invalid',
+        actionPage: 'LiveController.enterLiveSessionFromArgs',
+        data: {'qaLiveId': nextLiveId},
+      );
       return;
     }
 
@@ -102,16 +107,19 @@ class LiveController extends GetxController {
     _ensureSelectedAttachmentHasUrl();
     await fetchQuestions();
     if (isHistoryMode.value) {
-      _questionsPollingTimer?.cancel();
-      _liveStatusPollingTimer?.cancel();
       await _qaSubscription?.cancel();
       _socket.disconnectQa();
       return;
     }
 
-    _startQuestionsPolling();
-    _startLiveStatusPolling();
-    appLog.debug('About to call connectSocket', actionPage: 'LiveController.enterLiveSessionFromArgs', data: {'sectionId': liveDetail.value?['section_id'], 'liveId': qaLiveId.value});
+    appLog.debug(
+      'About to call connectSocket',
+      actionPage: 'LiveController.enterLiveSessionFromArgs',
+      data: {
+        'sectionId': liveDetail.value?['section_id'],
+        'liveId': qaLiveId.value,
+      },
+    );
     await connectSocket();
   }
 
@@ -126,10 +134,7 @@ class LiveController extends GetxController {
             .map((m) => _enrichQuestion(m))
             .map((m) => QaQuestion.fromJson(m))
             .toList();
-        final merged = [
-          ...questions,
-          ...mapped,
-        ];
+        final merged = [...questions, ...mapped];
         questions.assignAll(_dedupeQaQuestions(merged));
         unawaited(_hydrateMissingAskers());
       }
@@ -141,7 +146,8 @@ class LiveController extends GetxController {
             Map<String, dynamic>.from(attachment),
           );
           final currentPostId = res.currentSlide?['post_id'];
-          if (normalizedAttachment['post_id'] == null && currentPostId != null) {
+          if (normalizedAttachment['post_id'] == null &&
+              currentPostId != null) {
             normalizedAttachment['post_id'] = currentPostId;
           }
           selectedAttachment.value = normalizedAttachment;
@@ -161,7 +167,11 @@ class LiveController extends GetxController {
 
       _ensureSelectedAttachmentHasUrl();
     } catch (e) {
-      appLog.error('Failed to fetch live detail', actionPage: 'LiveController.fetchLiveDetail', data: {'error': e.toString()});
+      appLog.error(
+        'Failed to fetch live detail',
+        actionPage: 'LiveController.fetchLiveDetail',
+        data: {'error': e.toString()},
+      );
     }
   }
 
@@ -171,7 +181,10 @@ class LiveController extends GetxController {
           _toInt(Get.arguments?['sectionId']) ??
           _toInt(liveDetail.value?['section_id']);
       if (sectionId == null) {
-        appLog.warning('sectionId is null', actionPage: 'LiveController.fetchLiveFiles');
+        appLog.warning(
+          'sectionId is null',
+          actionPage: 'LiveController.fetchLiveFiles',
+        );
         return;
       }
 
@@ -185,7 +198,11 @@ class LiveController extends GetxController {
 
       _ensureSelectedAttachmentHasUrl();
     } catch (e) {
-      appLog.error('Failed to fetch live files', actionPage: 'LiveController.fetchLiveFiles', data: {'error': e.toString()});
+      appLog.error(
+        'Failed to fetch live files',
+        actionPage: 'LiveController.fetchLiveFiles',
+        data: {'error': e.toString()},
+      );
     }
   }
 
@@ -217,9 +234,11 @@ class LiveController extends GetxController {
       }
 
       logs.sort((a, b) {
-        final aTime = DateTime.tryParse(a['opened_at']?.toString() ?? '') ??
+        final aTime =
+            DateTime.tryParse(a['opened_at']?.toString() ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0);
-        final bTime = DateTime.tryParse(b['opened_at']?.toString() ?? '') ??
+        final bTime =
+            DateTime.tryParse(b['opened_at']?.toString() ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0);
         return aTime.compareTo(bTime);
       });
@@ -229,7 +248,11 @@ class LiveController extends GetxController {
       _syncSelectedAttachmentWithLiveLogs();
       _ensureSelectedAttachmentHasUrl();
     } catch (e) {
-      appLog.error('Failed to fetch live logs', actionPage: 'LiveController.fetchLiveLogs', data: {'error': e.toString()});
+      appLog.error(
+        'Failed to fetch live logs',
+        actionPage: 'LiveController.fetchLiveLogs',
+        data: {'error': e.toString()},
+      );
       liveLogFiles.clear();
     }
   }
@@ -255,7 +278,11 @@ class LiveController extends GetxController {
 
       _ensureSelectedAttachmentHasUrl();
     } catch (e) {
-      appLog.error('Failed to fetch current slide', actionPage: 'LiveController.fetchCurrentSlide', data: {'error': e.toString()});
+      appLog.error(
+        'Failed to fetch current slide',
+        actionPage: 'LiveController.fetchCurrentSlide',
+        data: {'error': e.toString()},
+      );
     }
   }
 
@@ -273,21 +300,40 @@ class LiveController extends GetxController {
           .toList();
 
       // Guard against transient empty responses that would hide existing items.
-      if (qaQuestions.isEmpty && detailQuestions.isEmpty && questions.isNotEmpty) {
+      if (qaQuestions.isEmpty &&
+          detailQuestions.isEmpty &&
+          questions.isNotEmpty) {
         return;
       }
 
       // Merge and deduplicate
-      final merged = <QaQuestion>[...questions, ...qaQuestions, ...detailQuestions];
+      final merged = <QaQuestion>[
+        ...questions,
+        ...qaQuestions,
+        ...detailQuestions,
+      ];
       final deduped = _dedupeQaQuestions(merged);
 
       questions.assignAll(deduped);
       _applyPersistedUpvoteState();
       unawaited(_hydrateMissingAskers());
 
-      appLog.debug('Question sync completed', actionPage: 'LiveController.fetchQuestions', data: {'apiCount': qaQuestions.length, 'detailCount': detailQuestions.length, 'totalShown': questions.length, 'qaLiveId': qaLiveId.value});
+      appLog.debug(
+        'Question sync completed',
+        actionPage: 'LiveController.fetchQuestions',
+        data: {
+          'apiCount': qaQuestions.length,
+          'detailCount': detailQuestions.length,
+          'totalShown': questions.length,
+          'qaLiveId': qaLiveId.value,
+        },
+      );
     } catch (e) {
-      appLog.error('Failed to fetch questions', actionPage: 'LiveController.fetchQuestions', data: {'error': e.toString()});
+      appLog.error(
+        'Failed to fetch questions',
+        actionPage: 'LiveController.fetchQuestions',
+        data: {'error': e.toString()},
+      );
     }
   }
 
@@ -297,15 +343,28 @@ class LiveController extends GetxController {
     }
 
     try {
-      appLog.debug('Setting up QA socket', actionPage: 'LiveController.connectSocket');
+      appLog.debug(
+        'Setting up QA socket',
+        actionPage: 'LiveController.connectSocket',
+      );
       if (!_socket.isQaConnected) {
         final qaSocketUrl =
             '${dotenv.env['SOCKET_URL'] ?? 'wss://uat-socket.linklian.org/ws'}/qa';
-        appLog.debug('Connecting to socket', actionPage: 'LiveController.connectSocket', data: {'url': qaSocketUrl});
+        appLog.debug(
+          'Connecting to socket',
+          actionPage: 'LiveController.connectSocket',
+          data: {'url': qaSocketUrl},
+        );
         await _socket.connectQaLive(qaSocketUrl);
-        appLog.debug('Socket connected successfully', actionPage: 'LiveController.connectSocket');
+        appLog.debug(
+          'Socket connected successfully',
+          actionPage: 'LiveController.connectSocket',
+        );
       } else {
-        appLog.debug('Socket already connected', actionPage: 'LiveController.connectSocket');
+        appLog.debug(
+          'Socket already connected',
+          actionPage: 'LiveController.connectSocket',
+        );
       }
 
       final auth = Get.find<AuthController>();
@@ -315,52 +374,93 @@ class LiveController extends GetxController {
           _toInt(Get.arguments?['sectionId']) ??
           _toInt(liveDetail.value?['section_id']);
 
-      appLog.debug('Socket setup parameters', actionPage: 'LiveController.connectSocket', data: {'userId': userId, 'liveId': liveId, 'sectionId': sectionId});
+      appLog.debug(
+        'Socket setup parameters',
+        actionPage: 'LiveController.connectSocket',
+        data: {'userId': userId, 'liveId': liveId, 'sectionId': sectionId},
+      );
 
       if (userId == null || liveId == null) {
-        appLog.warning('userId or liveId is null, returning', actionPage: 'LiveController.connectSocket', data: {'userId': userId, 'liveId': liveId});
+        appLog.warning(
+          'userId or liveId is null, returning',
+          actionPage: 'LiveController.connectSocket',
+          data: {'userId': userId, 'liveId': liveId},
+        );
         return;
       }
 
       if (sectionId != null) {
-        appLog.debug('Joining section room', actionPage: 'LiveController.connectSocket', data: {'sectionId': sectionId});
+        appLog.debug(
+          'Joining section room',
+          actionPage: 'LiveController.connectSocket',
+          data: {'sectionId': sectionId},
+        );
         _socket.joinQaSectionRoom(userId: userId, sectionId: sectionId);
       } else {
-        appLog.debug('sectionId is null, skipping section room join', actionPage: 'LiveController.connectSocket');
+        appLog.debug(
+          'sectionId is null, skipping section room join',
+          actionPage: 'LiveController.connectSocket',
+        );
       }
-      
-      appLog.debug('Joining QA live', actionPage: 'LiveController.connectSocket', data: {'liveId': liveId});
+
+      appLog.debug(
+        'Joining QA live',
+        actionPage: 'LiveController.connectSocket',
+        data: {'liveId': liveId},
+      );
       _socket.joinQaLive(userId: userId, qaLiveId: liveId);
 
-      appLog.debug('Setting up socket event listener', actionPage: 'LiveController.connectSocket');
+      appLog.debug(
+        'Setting up socket event listener',
+        actionPage: 'LiveController.connectSocket',
+      );
       await _qaSubscription?.cancel();
-      
+
       // Listen to qaStream with error handling and auto-reconnect on stream close
-      _qaSubscription = _socket.qaStream
-          .listen(
-            handleSocketEvent,
-            onError: (e) {
-              appLog.warning('Socket stream error', actionPage: 'LiveController.connectSocket', data: {'error': e.toString()});
-              _scheduleSocketReconnect();
-            },
-            onDone: () {
-              appLog.warning('Socket stream closed unexpectedly', actionPage: 'LiveController.connectSocket');
-              _scheduleSocketReconnect();
-            },
+      _qaSubscription = _socket.qaStream.listen(
+        handleSocketEvent,
+        onError: (e) {
+          appLog.warning(
+            'Socket stream error',
+            actionPage: 'LiveController.connectSocket',
+            data: {'error': e.toString()},
           );
-      appLog.debug('Socket listener setup complete', actionPage: 'LiveController.connectSocket');
+          _scheduleSocketReconnect();
+        },
+        onDone: () {
+          appLog.warning(
+            'Socket stream closed unexpectedly',
+            actionPage: 'LiveController.connectSocket',
+          );
+          _scheduleSocketReconnect();
+        },
+      );
+      appLog.debug(
+        'Socket listener setup complete',
+        actionPage: 'LiveController.connectSocket',
+      );
     } catch (e) {
-      appLog.error('Socket connection error', actionPage: 'LiveController.connectSocket', data: {'error': e.toString()});
+      appLog.error(
+        'Socket connection error',
+        actionPage: 'LiveController.connectSocket',
+        data: {'error': e.toString()},
+      );
     }
   }
 
   Timer? _socketReconnectTimer;
   void _scheduleSocketReconnect() {
     _socketReconnectTimer?.cancel();
-    appLog.debug('Scheduling socket reconnect in 3 seconds', actionPage: 'LiveController._scheduleSocketReconnect');
+    appLog.debug(
+      'Scheduling socket reconnect in 3 seconds',
+      actionPage: 'LiveController._scheduleSocketReconnect',
+    );
     _socketReconnectTimer = Timer(Duration(seconds: 3), () {
       if (!_hasLeftLiveSession && qaLiveId.value != null) {
-        appLog.debug('Executing auto-reconnect', actionPage: 'LiveController._scheduleSocketReconnect');
+        appLog.debug(
+          'Executing auto-reconnect',
+          actionPage: 'LiveController._scheduleSocketReconnect',
+        );
         unawaited(connectSocket());
       }
     });
@@ -372,8 +472,16 @@ class LiveController extends GetxController {
 
     final type = normalized['type'];
     final payload = Map<String, dynamic>.from(normalized['payload'] ?? {});
-    
-    appLog.debug('Socket event received', actionPage: 'LiveController.handleSocketEvent', data: {'type': type, 'isFollowing': isFollowing.value, 'hasPdf': pdfController.value != null});
+
+    appLog.debug(
+      'Socket event received',
+      actionPage: 'LiveController.handleSocketEvent',
+      data: {
+        'type': type,
+        'isFollowing': isFollowing.value,
+        'hasPdf': pdfController.value != null,
+      },
+    );
 
     switch (type) {
       case 'VIEWER_COUNT_UPDATED':
@@ -413,19 +521,34 @@ class LiveController extends GetxController {
         final slideNumber = _toInt(payload['slide_number']);
         if (slideNumber != null) {
           final pageIndex = slideNumber > 0 ? slideNumber - 1 : 0;
-          appLog.debug('SLIDE_SYNC received', actionPage: 'LiveController.handleSocketEvent', data: {'slide': slideNumber, 'pageIndex': pageIndex, 'hasPdf': pdfController.value != null, 'isFileChanging': _isFileChangingInProgress});
+          appLog.debug(
+            'SLIDE_SYNC received',
+            actionPage: 'LiveController.handleSocketEvent',
+            data: {
+              'slide': slideNumber,
+              'pageIndex': pageIndex,
+              'hasPdf': pdfController.value != null,
+              'isFileChanging': _isFileChangingInProgress,
+            },
+          );
           currentSlide.value = slideNumber;
           currentPage.value = pageIndex;
           _pendingFollowPage = pageIndex;
-          
+
           // Try to apply immediately
           _applyPendingFollowPage();
-          
+
           // If controller wasn't available, log the state for debugging
           if (pdfController.value == null) {
-            appLog.debug('SLIDE_SYNC - PDF controller not yet loaded', actionPage: 'LiveController.handleSocketEvent');
+            appLog.debug(
+              'SLIDE_SYNC - PDF controller not yet loaded',
+              actionPage: 'LiveController.handleSocketEvent',
+            );
           } else {
-            appLog.debug('SLIDE_SYNC - PDF controller available, page applied', actionPage: 'LiveController.handleSocketEvent');
+            appLog.debug(
+              'SLIDE_SYNC - PDF controller available, page applied',
+              actionPage: 'LiveController.handleSocketEvent',
+            );
           }
         }
         break;
@@ -454,7 +577,11 @@ class LiveController extends GetxController {
         break;
 
       default:
-        appLog.debug('Unhandled socket event type', actionPage: 'LiveController.handleSocketEvent', data: {'type': type, 'payloadKeys': payload.keys.toList()});
+        appLog.debug(
+          'Unhandled socket event type',
+          actionPage: 'LiveController.handleSocketEvent',
+          data: {'type': type, 'payloadKeys': payload.keys.toList()},
+        );
         if (_looksLikeQuestionPayload(payload)) {
           addQuestion(
             payload['question'] is Map ? payload['question'] : payload,
@@ -476,22 +603,40 @@ class LiveController extends GetxController {
         totalPages.value = 0;
         _pendingFollowPage = null;
         pdfRebuildToken.value = (pdfRebuildToken.value + 1) % 1000000;
-        
-        appLog.debug('FILE_CHANGED - Fetching current slide', actionPage: 'LiveController._handleFileChanged', data: {'attachmentId': file['attachment_id']});
-        
+
+        appLog.debug(
+          'FILE_CHANGED - Fetching current slide',
+          actionPage: 'LiveController._handleFileChanged',
+          data: {'attachmentId': file['attachment_id']},
+        );
+
         _ensureSelectedAttachmentHasUrl();
-        
+
         // IMPORTANT: Await fetchCurrentSlide BEFORE updating selectedAttachment
         // This ensures currentPage is set correctly before the rebuild is triggered
         await fetchCurrentSlide();
-        
-        appLog.debug('FILE_CHANGED - After fetchCurrentSlide', actionPage: 'LiveController._handleFileChanged', data: {'currentPage': currentPage.value, 'currentSlide': currentSlide.value});
-        
+
+        appLog.debug(
+          'FILE_CHANGED - After fetchCurrentSlide',
+          actionPage: 'LiveController._handleFileChanged',
+          data: {
+            'currentPage': currentPage.value,
+            'currentSlide': currentSlide.value,
+          },
+        );
+
         // Now safely update selectedAttachment to trigger UI rebuild
         // currentPage is already correctly set
         selectedAttachment.value = Map<String, dynamic>.from(file);
-        
-        appLog.debug('FILE_CHANGED - Updated attachment', actionPage: 'LiveController._handleFileChanged', data: {'attachmentId': file['attachment_id'], 'rebuildToken': pdfRebuildToken.value});
+
+        appLog.debug(
+          'FILE_CHANGED - Updated attachment',
+          actionPage: 'LiveController._handleFileChanged',
+          data: {
+            'attachmentId': file['attachment_id'],
+            'rebuildToken': pdfRebuildToken.value,
+          },
+        );
       }
 
       final changedAttachmentId = _toInt(payload['attachment_id']);
@@ -510,10 +655,14 @@ class LiveController extends GetxController {
         deduped.add(nextLog);
         liveLogFiles.assignAll(_dedupeLiveLogs(deduped));
       }
-      
+
       _isFileChangingInProgress = false;
     } catch (e) {
-      appLog.error('FILE_CHANGED error', actionPage: 'LiveController._handleFileChanged', data: {'error': e.toString()});
+      appLog.error(
+        'FILE_CHANGED error',
+        actionPage: 'LiveController._handleFileChanged',
+        data: {'error': e.toString()},
+      );
       _isFileChangingInProgress = false;
     }
   }
@@ -657,7 +806,7 @@ class LiveController extends GetxController {
   void addQuestion(dynamic q) {
     // Support both Map and QaQuestion for backward compatibility with sockets
     late final QaQuestion question;
-    
+
     if (q is QaQuestion) {
       question = q;
     } else if (q is Map<String, dynamic>) {
@@ -667,8 +816,10 @@ class LiveController extends GetxController {
     }
 
     final id = question.qaQuestionId;
-    final matchingPendingIndex = _findMatchingPendingQuestionIndexForQa(question);
-    
+    final matchingPendingIndex = _findMatchingPendingQuestionIndexForQa(
+      question,
+    );
+
     if (matchingPendingIndex != -1) {
       questions[matchingPendingIndex] = question;
       _applyPersistedUpvoteState();
@@ -712,7 +863,9 @@ class LiveController extends GetxController {
 
   void handleUpvote(Map<String, dynamic> data) {
     final id = data['qa_question_id'];
-    final index = questions.indexWhere((q) => q.qaQuestionId == id || q.qaQuestionId.toString() == id.toString());
+    final index = questions.indexWhere(
+      (q) => q.qaQuestionId == id || q.qaQuestionId.toString() == id.toString(),
+    );
 
     if (index != -1) {
       final upvoteCount = _toInt(data['upvote_count']) ?? 0;
@@ -741,7 +894,11 @@ class LiveController extends GetxController {
       await _persistUpvotedQuestion(questionId);
       return true;
     } catch (e) {
-      appLog.error('Failed to upvote question', actionPage: 'LiveController.upvote', data: {'questionId': questionId, 'error': e.toString()});
+      appLog.error(
+        'Failed to upvote question',
+        actionPage: 'LiveController.upvote',
+        data: {'questionId': questionId, 'error': e.toString()},
+      );
       return false;
     }
   }
@@ -787,7 +944,16 @@ class LiveController extends GetxController {
         attachmentId == null ||
         qaLiveId.value == null ||
         askerId == null) {
-      appLog.warning('sendQuestion aborted - missing required parameters', actionPage: 'LiveController.sendQuestion', data: {'postId': postIdRaw, 'attachmentId': attachmentIdRaw, 'askerId': askerIdRaw, 'qaLiveId': qaLiveId.value});
+      appLog.warning(
+        'sendQuestion aborted - missing required parameters',
+        actionPage: 'LiveController.sendQuestion',
+        data: {
+          'postId': postIdRaw,
+          'attachmentId': attachmentIdRaw,
+          'askerId': askerIdRaw,
+          'qaLiveId': qaLiveId.value,
+        },
+      );
       return false;
     }
 
@@ -814,7 +980,17 @@ class LiveController extends GetxController {
     isSendingQuestion.value = true;
 
     try {
-      appLog.debug('Sending question', actionPage: 'LiveController.sendQuestion', data: {'qaLiveId': qaLiveId.value, 'askerId': askerId, 'postId': postId, 'attachmentId': attachmentId, 'slideNumber': slideNumber});
+      appLog.debug(
+        'Sending question',
+        actionPage: 'LiveController.sendQuestion',
+        data: {
+          'qaLiveId': qaLiveId.value,
+          'askerId': askerId,
+          'postId': postId,
+          'attachmentId': attachmentId,
+          'slideNumber': slideNumber,
+        },
+      );
       await _repo.sendQuestion(
         qaLiveId: qaLiveId.value!,
         question: text.trim(),
@@ -834,7 +1010,11 @@ class LiveController extends GetxController {
     } catch (e) {
       questions.removeWhere((q) => q['qa_question_id'] == tempId);
       questions.refresh();
-      appLog.error('Failed to send question', actionPage: 'LiveController.sendQuestion', data: {'error': e.toString()});
+      appLog.error(
+        'Failed to send question',
+        actionPage: 'LiveController.sendQuestion',
+        data: {'error': e.toString()},
+      );
       return false;
     } finally {
       isSendingQuestion.value = false;
@@ -857,7 +1037,11 @@ class LiveController extends GetxController {
 
       return file.path;
     } catch (e) {
-      appLog.error('Failed to download PDF', actionPage: 'LiveController.downloadPdf', data: {'url': url, 'error': e.toString()});
+      appLog.error(
+        'Failed to download PDF',
+        actionPage: 'LiveController.downloadPdf',
+        data: {'url': url, 'error': e.toString()},
+      );
       return null;
     }
   }
@@ -1054,7 +1238,8 @@ class LiveController extends GetxController {
       if (askerId == null || question.isAnonymous) continue;
 
       final asker = question.asker;
-      final hasName = asker != null &&
+      final hasName =
+          asker != null &&
           ((asker.firstName?.trim().isNotEmpty ?? false) ||
               (asker.lastName?.trim().isNotEmpty ?? false));
       if (hasName) continue;
@@ -1074,8 +1259,9 @@ class LiveController extends GetxController {
       final updated = questions.map((q) {
         if (q.askerId != null && !q.isAnonymous) {
           final cached = _askerProfileCache[q.askerId];
-          if (cached != null && (q.asker == null ||
-              (q.asker!.firstName?.trim().isEmpty ?? true))) {
+          if (cached != null &&
+              (q.asker == null ||
+                  (q.asker!.firstName?.trim().isEmpty ?? true))) {
             return q.copyWith(asker: cached);
           }
         }
@@ -1123,10 +1309,11 @@ class LiveController extends GetxController {
       }
 
       final asker = question.asker;
-      final hasName = asker != null &&
+      final hasName =
+          asker != null &&
           ((asker.firstName?.trim().isNotEmpty ?? false) ||
               (asker.lastName?.trim().isNotEmpty ?? false));
-      
+
       if (!hasName) {
         updated.add(question.copyWith(asker: cached));
         changed = true;
@@ -1137,41 +1324,6 @@ class LiveController extends GetxController {
 
     if (changed) {
       questions.assignAll(updated);
-    }
-  }
-
-  void _startQuestionsPolling() {
-    _questionsPollingTimer?.cancel();
-    _questionsPollingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
-      if (qaLiveId.value != null) {
-        fetchQuestions();
-      }
-    });
-  }
-
-  void _startLiveStatusPolling() {
-    _liveStatusPollingTimer?.cancel();
-    _liveStatusPollingTimer = Timer.periodic(const Duration(seconds: 6), (_) {
-      unawaited(_checkLiveStillActive());
-    });
-  }
-
-  Future<void> _checkLiveStillActive() async {
-    final sectionId = _toInt(Get.arguments?['sectionId']);
-    final currentLiveId = qaLiveId.value;
-    if (sectionId == null || currentLiveId == null) {
-      return;
-    }
-
-    try {
-      final res = await _repo.getActiveLive(sectionId: sectionId);
-      final activeLiveId = res?.qaLiveId;
-      if (activeLiveId == null || activeLiveId != currentLiveId) {
-        _exitLivePage();
-      }
-    } catch (_) {
-      // NotFound/no active live should also close the current live page.
-      _exitLivePage();
     }
   }
 
@@ -1260,33 +1412,37 @@ class LiveController extends GetxController {
     return _normalizeAttachmentShape(fallback);
   }
 
-  Map<String, dynamic> _normalizeAttachmentShape(Map<String, dynamic> attachment) {
+  Map<String, dynamic> _normalizeAttachmentShape(
+    Map<String, dynamic> attachment,
+  ) {
     final normalized = Map<String, dynamic>.from(attachment);
 
-    final candidateUrl = [
-      normalized['file_url'],
-      normalized['url'],
-      normalized['file_path'],
-      normalized['attachment_url'],
-      normalized['s3_url'],
-      normalized['download_url'],
-    ].firstWhere(
-      (value) => value != null && value.toString().trim().isNotEmpty,
-      orElse: () => null,
-    );
+    final candidateUrl =
+        [
+          normalized['file_url'],
+          normalized['url'],
+          normalized['file_path'],
+          normalized['attachment_url'],
+          normalized['s3_url'],
+          normalized['download_url'],
+        ].firstWhere(
+          (value) => value != null && value.toString().trim().isNotEmpty,
+          orElse: () => null,
+        );
 
     if (candidateUrl != null) {
       normalized['file_url'] = candidateUrl.toString();
     }
 
-    final candidateType = [
-      normalized['file_type'],
-      normalized['mime_type'],
-      normalized['content_type'],
-    ].firstWhere(
-      (value) => value != null && value.toString().trim().isNotEmpty,
-      orElse: () => null,
-    );
+    final candidateType =
+        [
+          normalized['file_type'],
+          normalized['mime_type'],
+          normalized['content_type'],
+        ].firstWhere(
+          (value) => value != null && value.toString().trim().isNotEmpty,
+          orElse: () => null,
+        );
 
     if (candidateType != null) {
       normalized['file_type'] = candidateType.toString().toLowerCase();
@@ -1311,7 +1467,9 @@ class LiveController extends GetxController {
       return;
     }
 
-    final normalized = _normalizeAttachmentShape(Map<String, dynamic>.from(resolved));
+    final normalized = _normalizeAttachmentShape(
+      Map<String, dynamic>.from(resolved),
+    );
     final resolvedUrl = normalized['file_url']?.toString().trim() ?? '';
     if (resolvedUrl.isNotEmpty) {
       selectedAttachment.value = normalized;
@@ -1320,17 +1478,35 @@ class LiveController extends GetxController {
 
   Map<String, dynamic>? resolveAttachmentById(dynamic attachmentIdRaw) {
     final attachmentId = _toInt(attachmentIdRaw);
-    appLog.debug('Resolving attachment', actionPage: 'LiveController.resolveAttachmentById', data: {'attachmentIdRaw': attachmentIdRaw, 'attachmentId': attachmentId});
+    appLog.debug(
+      'Resolving attachment',
+      actionPage: 'LiveController.resolveAttachmentById',
+      data: {'attachmentIdRaw': attachmentIdRaw, 'attachmentId': attachmentId},
+    );
     if (attachmentId == null) {
-      appLog.debug('Attachment ID conversion failed', actionPage: 'LiveController.resolveAttachmentById');
+      appLog.debug(
+        'Attachment ID conversion failed',
+        actionPage: 'LiveController.resolveAttachmentById',
+      );
       return null;
     }
 
-    appLog.debug('Searching in collections', actionPage: 'LiveController.resolveAttachmentById', data: {'liveFilesCount': liveFiles.length, 'liveLogFilesCount': liveLogFiles.length});
+    appLog.debug(
+      'Searching in collections',
+      actionPage: 'LiveController.resolveAttachmentById',
+      data: {
+        'liveFilesCount': liveFiles.length,
+        'liveLogFilesCount': liveLogFiles.length,
+      },
+    );
     for (final file in liveFiles) {
       final fileAttId = _toInt(file['attachment_id']);
       if (fileAttId == attachmentId) {
-        appLog.debug('Found in liveFiles', actionPage: 'LiveController.resolveAttachmentById', data: {'attachmentId': attachmentId});
+        appLog.debug(
+          'Found in liveFiles',
+          actionPage: 'LiveController.resolveAttachmentById',
+          data: {'attachmentId': attachmentId},
+        );
         return file;
       }
     }
@@ -1338,16 +1514,28 @@ class LiveController extends GetxController {
     for (final log in liveLogFiles) {
       final logAttId = _toInt(log['attachment_id']);
       if (logAttId == attachmentId) {
-        appLog.debug('Found in liveLogFiles, resolving', actionPage: 'LiveController.resolveAttachmentById', data: {'attachmentId': attachmentId});
+        appLog.debug(
+          'Found in liveLogFiles, resolving',
+          actionPage: 'LiveController.resolveAttachmentById',
+          data: {'attachmentId': attachmentId},
+        );
         final resolved = _resolveAttachmentForLog(log);
         if (resolved != null) {
-          appLog.debug('Successfully resolved from log', actionPage: 'LiveController.resolveAttachmentById', data: {'attachmentId': attachmentId});
+          appLog.debug(
+            'Successfully resolved from log',
+            actionPage: 'LiveController.resolveAttachmentById',
+            data: {'attachmentId': attachmentId},
+          );
           return resolved;
         }
       }
     }
 
-    appLog.debug('Attachment not found in any collection', actionPage: 'LiveController.resolveAttachmentById', data: {'attachmentId': attachmentId});
+    appLog.debug(
+      'Attachment not found in any collection',
+      actionPage: 'LiveController.resolveAttachmentById',
+      data: {'attachmentId': attachmentId},
+    );
     return null;
   }
 
@@ -1374,7 +1562,9 @@ class LiveController extends GetxController {
       return;
     }
 
-    final currentAttachmentId = _toInt(selectedAttachment.value?['attachment_id']);
+    final currentAttachmentId = _toInt(
+      selectedAttachment.value?['attachment_id'],
+    );
     if (currentAttachmentId != null) {
       final currentResolved = resolveAttachmentById(currentAttachmentId);
       if (currentResolved != null) {
@@ -1525,7 +1715,11 @@ class LiveController extends GetxController {
     isFollowing.value = false;
 
     final attachmentId = _toInt(attachment['attachment_id']);
-    appLog.debug('selectPresentationFile - Starting', actionPage: 'LiveController.selectPresentationFile', data: {'attachmentId': attachmentId});
+    appLog.debug(
+      'selectPresentationFile - Starting',
+      actionPage: 'LiveController.selectPresentationFile',
+      data: {'attachmentId': attachmentId},
+    );
 
     // Reset previous PDF controller state before swapping files.
     pdfController.value = null;
@@ -1533,17 +1727,27 @@ class LiveController extends GetxController {
     currentSlide.value = 1;
     currentPage.value = 0;
     _pendingFollowPage = null;
-    
+
     // Increment token to force UI rebuild and signal that a new PDF is being loaded
     pdfRebuildToken.value = (pdfRebuildToken.value + 1) % 1000000;
 
     final normalized = Map<String, dynamic>.from(attachment);
     selectedAttachment.value = normalized;
-    
-    appLog.debug('selectPresentationFile - After reset', actionPage: 'LiveController.selectPresentationFile', data: {'attachmentId': attachmentId, 'rebuildToken': pdfRebuildToken.value});
+
+    appLog.debug(
+      'selectPresentationFile - After reset',
+      actionPage: 'LiveController.selectPresentationFile',
+      data: {
+        'attachmentId': attachmentId,
+        'rebuildToken': pdfRebuildToken.value,
+      },
+    );
 
     if (isHistoryMode.value || !isCurrentUserPresenter) {
-      appLog.debug('selectPresentationFile - Skipping (history mode or not presenter)', actionPage: 'LiveController.selectPresentationFile');
+      appLog.debug(
+        'selectPresentationFile - Skipping (history mode or not presenter)',
+        actionPage: 'LiveController.selectPresentationFile',
+      );
       return;
     }
 
@@ -1555,7 +1759,15 @@ class LiveController extends GetxController {
     );
 
     if (liveId == null || postId == null || attachmentId == null) {
-      appLog.warning('selectPresentationFile - Missing required IDs', actionPage: 'LiveController.selectPresentationFile', data: {'liveId': liveId, 'postId': postId, 'attachmentId': attachmentId});
+      appLog.warning(
+        'selectPresentationFile - Missing required IDs',
+        actionPage: 'LiveController.selectPresentationFile',
+        data: {
+          'liveId': liveId,
+          'postId': postId,
+          'attachmentId': attachmentId,
+        },
+      );
       return;
     }
 
@@ -1565,26 +1777,45 @@ class LiveController extends GetxController {
         postId: postId,
         attachmentId: attachmentId,
       );
-      appLog.debug('selectPresentationFile - Created live log successfully', actionPage: 'LiveController.selectPresentationFile');
+      appLog.debug(
+        'selectPresentationFile - Created live log successfully',
+        actionPage: 'LiveController.selectPresentationFile',
+      );
       // Do NOT immediately fetch logs after creating a new live log.
       // The backend may return stale current-log that can override selectedAttachment.
       // Instead, rely on FILE_CHANGED event or next polling cycle to update liveLogFiles.
       // await fetchLiveLogs();
     } catch (e) {
-      appLog.error('Failed to create live log', actionPage: 'LiveController.selectPresentationFile', data: {'error': e.toString()});
+      appLog.error(
+        'Failed to create live log',
+        actionPage: 'LiveController.selectPresentationFile',
+        data: {'error': e.toString()},
+      );
     }
   }
 
   void onPdfPageChanged(int pageIndex) {
     // Ignore automatic page change from PDF render if we're syncing a specific page
     if (_isFileChangingInProgress && currentPage.value != pageIndex) {
-      appLog.debug('PDF page change ignored (file changing)', actionPage: 'LiveController.onPdfPageChanged', data: {'pageIndex': pageIndex, 'currentPage': currentPage.value});
+      appLog.debug(
+        'PDF page change ignored (file changing)',
+        actionPage: 'LiveController.onPdfPageChanged',
+        data: {'pageIndex': pageIndex, 'currentPage': currentPage.value},
+      );
       return;
     }
-    
+
     final safePageIndex = pageIndex < 0 ? 0 : pageIndex;
     final slideNumber = safePageIndex + 1;
-    appLog.debug('PDF page changed', actionPage: 'LiveController.onPdfPageChanged', data: {'pageIndex': pageIndex, 'safePageIndex': safePageIndex, 'slideNumber': slideNumber});
+    appLog.debug(
+      'PDF page changed',
+      actionPage: 'LiveController.onPdfPageChanged',
+      data: {
+        'pageIndex': pageIndex,
+        'safePageIndex': safePageIndex,
+        'slideNumber': slideNumber,
+      },
+    );
     currentSlide.value = slideNumber;
     currentPage.value = safePageIndex;
 
@@ -1606,7 +1837,8 @@ class LiveController extends GetxController {
     final justPublishedSameSlide =
         _lastPublishedSlideNumber == slideNumber &&
         _lastPublishedSlideAt != null &&
-        now.difference(_lastPublishedSlideAt!) < const Duration(milliseconds: 450);
+        now.difference(_lastPublishedSlideAt!) <
+            const Duration(milliseconds: 450);
 
     if (justPublishedSameSlide) {
       return;
@@ -1624,22 +1856,44 @@ class LiveController extends GetxController {
 
   void applyCurrentPageToPdf() {
     final currentPageValue = currentPage.value;
-    appLog.debug('applyCurrentPageToPdf', actionPage: 'LiveController.applyCurrentPageToPdf', data: {'currentPage': currentPageValue, 'hasPdf': pdfController.value != null});
+    appLog.debug(
+      'applyCurrentPageToPdf',
+      actionPage: 'LiveController.applyCurrentPageToPdf',
+      data: {
+        'currentPage': currentPageValue,
+        'hasPdf': pdfController.value != null,
+      },
+    );
     _pendingFollowPage = currentPageValue < 0 ? 0 : currentPageValue;
-    appLog.debug('Set pending follow page', actionPage: 'LiveController.applyCurrentPageToPdf', data: {'pendingPage': _pendingFollowPage});
+    appLog.debug(
+      'Set pending follow page',
+      actionPage: 'LiveController.applyCurrentPageToPdf',
+      data: {'pendingPage': _pendingFollowPage},
+    );
     _applyPendingFollowPage();
   }
 
   void _applyPendingFollowPage() {
     final controller = pdfController.value;
     final pending = _pendingFollowPage;
-    appLog.debug('Applying pending follow page', actionPage: 'LiveController._applyPendingFollowPage', data: {'hasPdf': controller != null, 'pending': pending});
+    appLog.debug(
+      'Applying pending follow page',
+      actionPage: 'LiveController._applyPendingFollowPage',
+      data: {'hasPdf': controller != null, 'pending': pending},
+    );
     if (controller == null || pending == null) {
-      appLog.debug('Controller or pending is null', actionPage: 'LiveController._applyPendingFollowPage');
+      appLog.debug(
+        'Controller or pending is null',
+        actionPage: 'LiveController._applyPendingFollowPage',
+      );
       return;
     }
 
-    appLog.debug('Calling PDF controller.setPage', actionPage: 'LiveController._applyPendingFollowPage', data: {'page': pending});
+    appLog.debug(
+      'Calling PDF controller.setPage',
+      actionPage: 'LiveController._applyPendingFollowPage',
+      data: {'page': pending},
+    );
     unawaited(controller.setPage(pending));
     _pendingFollowPage = null;
   }
@@ -1671,7 +1925,8 @@ class LiveController extends GetxController {
         continue;
       }
 
-      if (_persistedUpvotedQuestionIds.contains(questionId) && !question.isUpvoted) {
+      if (_persistedUpvotedQuestionIds.contains(questionId) &&
+          !question.isUpvoted) {
         updated.add(question.copyWith(isUpvoted: true));
         changed = true;
       } else {
@@ -1691,7 +1946,10 @@ class LiveController extends GetxController {
     _hasLeftLiveSession = true;
 
     _socketReconnectTimer?.cancel();
-    appLog.debug('leaveLiveSession - cancelled reconnect timer', actionPage: 'LiveController.leaveLiveSession');
+    appLog.debug(
+      'leaveLiveSession - cancelled reconnect timer',
+      actionPage: 'LiveController.leaveLiveSession',
+    );
 
     final auth = Get.isRegistered<AuthController>()
         ? Get.find<AuthController>()
@@ -1710,8 +1968,7 @@ class LiveController extends GetxController {
     }
 
     await _qaSubscription?.cancel();
-    _questionsPollingTimer?.cancel();
-    _liveStatusPollingTimer?.cancel();
+
     _socket.disconnectQa();
   }
 

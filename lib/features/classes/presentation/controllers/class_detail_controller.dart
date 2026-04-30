@@ -48,7 +48,7 @@ class ClassDetailController extends GetxController {
   final SocketService _socket = SocketService();
   final ScrollController scrollController = ScrollController();
   StreamSubscription<dynamic>? _qaSubscription;
-  Timer? _activeLivePollingTimer;
+  // Timer? _activeLivePollingTimer;
   int? _joinedSectionId;
 
   DateTime? _lastFetchTime;
@@ -153,7 +153,9 @@ class ClassDetailController extends GetxController {
     sectionId.value = newSectionId;
     subjectNameTh.value = args['subjectName'] as String? ?? '';
     effectiveClassName.value =
-      (args['className'] as String?) ?? (args['sectionName'] as String?) ?? '';
+        (args['className'] as String?) ??
+        (args['sectionName'] as String?) ??
+        '';
 
     fetchClassDetailFromFeed();
     unawaited(fetchHasLiveHistory());
@@ -165,18 +167,18 @@ class ClassDetailController extends GetxController {
     }
     fetchActiveLive();
     unawaited(_connectSectionLiveSocket());
-    _startActiveLivePolling();
+    // _startActiveLivePolling();
   }
 
-  void _startActiveLivePolling() {
-    _activeLivePollingTimer?.cancel();
-    // เพิ่มเป็น 60 วินาที เพื่อลดการยิง API รัวๆ (อาศัย WebSocket ช่วยอัปเดตแบบเรียลไทม์แทน)
-    _activeLivePollingTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      if (sectionId.value == null) return;
-      unawaited(fetchActiveLive());
-      unawaited(fetchHasLiveHistory());
-    });
-  }
+  // void _startActiveLivePolling() {
+  //   _activeLivePollingTimer?.cancel();
+  //   // เพิ่มเป็น 60 วินาที เพื่อลดการยิง API รัวๆ (อาศัย WebSocket ช่วยอัปเดตแบบเรียลไทม์แทน)
+  //   _activeLivePollingTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+  //     if (sectionId.value == null) return;
+  //     unawaited(fetchActiveLive());
+  //     unawaited(fetchHasLiveHistory());
+  //   });
+  // }
 
   Future<void> _connectSectionLiveSocket() async {
     final currentSectionId = sectionId.value;
@@ -673,7 +675,6 @@ class ClassDetailController extends GetxController {
       _socket.leaveQaSectionRoom(userId: userId, sectionId: joinedSectionId);
     }
     _qaSubscription?.cancel();
-    _activeLivePollingTimer?.cancel();
     _joinedSectionId = null;
     scrollController.dispose();
     selectedPostIdsForAI.clear();
