@@ -953,6 +953,13 @@ class _StudentSubmissionTabState extends State<_StudentSubmissionTab> {
                             color: Colors.grey[400],
                           ),
                         ),
+                        Text(
+                          '(ขนาดไฟล์ไม่เกิน 10 MB)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        ),
                       ],
                     ),
                   )
