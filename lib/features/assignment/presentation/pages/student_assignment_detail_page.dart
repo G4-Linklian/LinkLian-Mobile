@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/linklian-icon.dart';
 import '../../../../core/constants/sizes.dart';
@@ -175,6 +176,19 @@ class _StudentAssignmentDetailPageState
     }
   }
 
+  void _openFilePreview(SubmissionAttachmentDetail file) {
+    final fileName =
+        file.originalName ?? file.fileUrl.split('/').last.split('?').first;
+    showDialog(
+      context: context,
+      builder: (_) => _FilePreviewDialog(
+        fileUrl: file.fileUrl,
+        fileName: fileName,
+        fileType: (file.fileType ?? '').toLowerCase(),
+      ),
+    );
+  }
+
   Future<void> _downloadFile(SubmissionAttachmentDetail file) async {
     try {
       Get.dialog(
@@ -193,7 +207,7 @@ class _StudentAssignmentDetailPageState
       await downloadedFile.writeAsBytes(response.bodyBytes);
       Get.back();
       if (Platform.isIOS) {
-        await Share.shareXFiles([XFile(filePath)], text: fileName);
+        await Share.shareXFiles([XFile(filePath)], subject: fileName);
       } else {
         var status = await Permission.storage.status;
         if (!status.isGranted) status = await Permission.storage.request();
@@ -648,54 +662,70 @@ class _StudentAssignmentDetailPageState
           )
         else
           ...detail.attachments.map(
-            (file) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _fileIcon(file.fileType),
-                    size: 28,
-                    color: AppColors.primaryPalette[500],
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          file.originalName ?? 'ไม่ทราบชื่อไฟล์',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.black,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (file.fileSize != null)
-                          Text(
-                            _formatFileSize(file.fileSize),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => _downloadFile(file),
-                    icon: Icon(
-                      Icons.download_outlined,
+            (file) => InkWell(
+              onTap: () => _openFilePreview(file),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _fileIcon(file.fileType),
+                      size: 28,
                       color: AppColors.primaryPalette[500],
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            file.originalName ?? 'ไม่ทราบชื่อไฟล์',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.black,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (file.fileSize != null)
+                            Text(
+                              _formatFileSize(file.fileSize),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => _openFilePreview(file),
+                      icon: Icon(
+                        Icons.visibility_outlined,
+                        color: AppColors.primaryPalette[400],
+                      ),
+                      tooltip: 'ดูไฟล์',
+                    ),
+                    IconButton(
+                      onPressed: () => _downloadFile(file),
+                      icon: Icon(
+                        Icons.download_outlined,
+                        color: AppColors.primaryPalette[500],
+                      ),
+                      tooltip: 'ดาวน์โหลด',
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1320,6 +1350,196 @@ class _DropdownStudentTile extends StatelessWidget {
               Icon(Icons.check_circle, size: 15, color: Colors.green.shade500),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── File Preview Dialog ──────────────────────────────────────────────────────
+class _FilePreviewDialog extends StatefulWidget {
+  final String fileUrl;
+  final String fileName;
+  final String fileType;
+
+  const _FilePreviewDialog({
+    required this.fileUrl,
+    required this.fileName,
+    required this.fileType,
+  });
+
+  @override
+  State<_FilePreviewDialog> createState() => _FilePreviewDialogState();
+}
+
+class _FilePreviewDialogState extends State<_FilePreviewDialog> {
+  String? _localPdfPath;
+  bool _isPdfLoading = false;
+  bool _pdfLoadFailed = false;
+  int _currentPage = 0;
+  int _totalPages = 0;
+
+  bool get _isImage {
+    final t = widget.fileType;
+    return t == 'jpg' ||
+        t == 'jpeg' ||
+        t == 'png' ||
+        t == 'gif' ||
+        t == 'webp';
+  }
+
+  bool get _isPdf => widget.fileType == 'pdf';
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isPdf) _loadPdf();
+  }
+
+  Future<void> _loadPdf() async {
+    setState(() {
+      _isPdfLoading = true;
+      _pdfLoadFailed = false;
+    });
+    try {
+      final name = widget.fileUrl.split('/').last.split('?').first;
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/$name');
+      if (!await file.exists()) {
+        final response = await http.get(Uri.parse(widget.fileUrl));
+        if (response.statusCode != 200) {
+          throw Exception('HTTP ${response.statusCode}');
+        }
+        await file.writeAsBytes(response.bodyBytes);
+      }
+      if (mounted) {
+        setState(() {
+          _localPdfPath = file.path;
+          _isPdfLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isPdfLoading = false);
+      if (mounted) setState(() => _pdfLoadFailed = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          height: screenHeight * 0.75,
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                color: AppColors.primaryPalette[500],
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.fileName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (_isPdf && _totalPages > 0) ...[
+                      Text(
+                        '${_currentPage + 1}/$_totalPages',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const Icon(Icons.close, color: Colors.white, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+              // Content
+              Expanded(child: _buildContent()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isImage) {
+      return InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 4.0,
+        child: Image.network(
+          widget.fileUrl,
+          fit: BoxFit.contain,
+          loadingBuilder: (_, child, progress) {
+            if (progress == null) return child;
+            return const Center(child: CircularProgressIndicator());
+          },
+          errorBuilder: (_, _, _) => const Center(
+            child: Text('ไม่สามารถโหลดรูปภาพได้'),
+          ),
+        ),
+      );
+    }
+
+    if (_isPdf) {
+      if (_pdfLoadFailed) {
+        return const Center(child: Text('ไม่สามารถโหลด PDF ได้'));
+      }
+      if (_isPdfLoading || _localPdfPath == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return PDFView(
+        filePath: _localPdfPath!,
+        enableSwipe: true,
+        swipeHorizontal: false,
+        autoSpacing: true,
+        pageFling: true,
+        pageSnap: true,
+        defaultPage: 0,
+        fitPolicy: FitPolicy.BOTH,
+        onRender: (pages) => setState(() => _totalPages = pages ?? 0),
+        onPageChanged: (page, total) => setState(() {
+          _currentPage = page ?? 0;
+          _totalPages = total ?? 0;
+        }),
+      );
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.insert_drive_file, size: 56, color: Colors.grey[400]),
+          const SizedBox(height: 12),
+          Text(
+            'ไม่รองรับการดูไฟล์ประเภทนี้',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'กรุณาดาวน์โหลดเพื่อเปิดดู',
+            style: TextStyle(color: Colors.grey[400], fontSize: 12),
+          ),
+        ],
       ),
     );
   }

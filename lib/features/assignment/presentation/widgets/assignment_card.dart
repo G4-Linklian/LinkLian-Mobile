@@ -6,6 +6,114 @@ import '../../../../core/constants/linklian-bg.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/linklian-icon.dart';
 
+// ─── AssignmentCardSkeleton ───────────────────────────────────────────────────
+
+class AssignmentCardSkeleton extends StatefulWidget {
+  const AssignmentCardSkeleton({super.key});
+
+  @override
+  State<AssignmentCardSkeleton> createState() => _AssignmentCardSkeletonState();
+}
+
+class _AssignmentCardSkeletonState extends State<AssignmentCardSkeleton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Widget _bar({required double width, double height = 14}) {
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (_, child) => Opacity(
+        opacity: _opacity.value,
+        child: Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: const Color(0xFF9E9E9E),
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sw = MediaQuery.of(context).size.width;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      height: 150,
+      decoration: BoxDecoration(
+        color: const Color(0xFFBDBDBD),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title + subject badge
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _bar(width: sw * 0.45),
+                    const SizedBox(height: 4),
+                    _bar(width: sw * 0.32),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _bar(width: 64, height: 26),
+            ],
+          ),
+          const Spacer(),
+          // Due date row
+          Row(
+            children: [
+              _bar(width: 14, height: 14),
+              const SizedBox(width: 4),
+              _bar(width: sw * 0.3),
+            ],
+          ),
+          const Spacer(),
+          // Bottom pills
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _bar(width: 72, height: 26),
+              _bar(width: 72, height: 26),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── AssignmentCard ───────────────────────────────────────────────────────────
+
 class AssignmentCard extends StatefulWidget {
   final AssignmentModel assignment;
   final bool isTeacher;
@@ -23,8 +131,7 @@ class AssignmentCard extends StatefulWidget {
 }
 
 class _AssignmentCardState extends State<AssignmentCard> {
-  // default: light text สำหรับ bg มืด (classCardDefault เป็น blue/dark)
-  Color _textColor = AppColors.primaryPalette[100]!;
+  Color _textColor = Colors.black54;
 
   AssignmentModel get assignment => widget.assignment;
   bool get isTeacher => widget.isTeacher;
@@ -49,21 +156,18 @@ class _AssignmentCardState extends State<AssignmentCard> {
           const Color(0xFFCCBFA0);
 
       // Gradient overlay: primaryPalette[300] = 0xFFFFCF9A
-      // top@0.2 → bottom@0.5 → ใช้ @0.35 เป็นค่ากลาง
-      final blended = _blendColor(bgColor, const Color(0xFFFFCF9A), 0.35);
+      // ใช้ opacity 0.60 เพื่อให้ warm overlay มีน้ำหนักเพียงพอต่อ luminance
+      final blended = _blendColor(bgColor, const Color(0xFFFFCF9A), 0.60);
       final effectiveLuminance = blended.computeLuminance();
 
-      // > 0.4 → background สว่าง → primaryPalette[900] (dark brown)
-      // ≤ 0.4 → background มืด  → primaryPalette[100] (light cream)
       if (mounted) {
         setState(() {
-          _textColor = effectiveLuminance > 0.4
-              ? AppColors.primaryPalette[900]!
-              : AppColors.primaryPalette[100]!;
+          _textColor =
+              effectiveLuminance > 0.4 ? Colors.black : Colors.white;
         });
       }
     } catch (_) {
-      // safe default: primaryPalette[100]
+      // keep default Colors.black54
     }
   }
 

@@ -6,7 +6,6 @@ import '../../../../core/constants/linklian-icon.dart';
 import '../controllers/assignment_submission_controller.dart';
 import '../controllers/teacher_submission_controller.dart';
 import '../../data/models/student_submission_status_model.dart';
-import '../pages/student_assignment_detail_page.dart';
 
 class TeacherSubmissionListTab extends StatefulWidget {
   final AssignmentSubmissionController controller;
@@ -57,10 +56,8 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
   @override
   Widget build(BuildContext context) {
     final assignmentId = widget.controller.assignmentInfo.value?.assignmentId;
-    final maxScore = widget.controller.assignmentInfo.value?.maxScore;
     final dueDate = widget.controller.assignmentInfo.value?.dueDate;
     final isGroup = widget.controller.assignmentInfo.value?.isGroup == true;
-    final subjectName = _tc.subjectName;
     _tc.dueDate = dueDate;
 
     if (assignmentId == null) {
@@ -107,11 +104,37 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
                 ),
                 const SizedBox(width: 8),
                 _StatusChip(
+                  label: 'ส่งล่าช้า',
+                  count: isGroup
+                      ? _tc.groupedList
+                            .where(
+                              (g) =>
+                                  g.hasSubmitted &&
+                                  g.submittedAt != null &&
+                                  _tc.dueDate != null &&
+                                  g.submittedAt!.isAfter(_tc.dueDate!),
+                            )
+                            .length
+                      : _tc.allStudents
+                            .where(
+                              (s) =>
+                                  s.hasSubmitted &&
+                                  s.submittedAt != null &&
+                                  _tc.dueDate != null &&
+                                  s.submittedAt!.isAfter(_tc.dueDate!),
+                            )
+                            .length,
+                  color: Colors.orange.shade600,
+                  selected: _tc.selectedFilter.value == SubmissionFilter.late,
+                  onTap: () => _tc.changeFilter(SubmissionFilter.late),
+                ),
+                const SizedBox(width: 8),
+                _StatusChip(
                   label: 'ยังไม่ส่ง',
                   count: isGroup
                       ? _tc.groupedList.where((g) => !g.hasSubmitted).length
                       : _tc.notSubmittedCount,
-                  color: Colors.red.shade400,
+                  color: Colors.grey.shade600,
                   selected:
                       _tc.selectedFilter.value == SubmissionFilter.notSubmitted,
                   onTap: () => _tc.changeFilter(SubmissionFilter.notSubmitted),
@@ -162,9 +185,9 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
 
             // ─── List ────────────────────────────────────────────────
             if (isGroup)
-              _buildGroupList(assignmentId, maxScore, subjectName)
+              _buildGroupList(dueDate)
             else
-              _buildStudentList(assignmentId, maxScore, subjectName),
+              _buildStudentList(dueDate),
 
             const SizedBox(height: 80),
           ],
@@ -174,11 +197,7 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
   }
 
   // ─── Group List (งานกลุ่ม) ────────────────────────────────────────────────
-  Widget _buildGroupList(
-    int assignmentId,
-    dynamic maxScore,
-    String? subjectName,
-  ) {
+  Widget _buildGroupList(DateTime? dueDate) {
     final filteredGroups = _tc.filteredGroupedList;
 
     if (filteredGroups.isEmpty) {
@@ -198,22 +217,13 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
       separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey[200]),
       itemBuilder: (_, index) {
         final group = filteredGroups[index];
-        return _GroupTile(
-          group: group,
-          assignmentId: assignmentId,
-          maxScore: maxScore != null ? (maxScore as num).toDouble() : null,
-          subjectName: subjectName,
-        );
+        return _GroupTile(group: group, dueDate: dueDate);
       },
     );
   }
 
   // ─── Student List (งานเดี่ยว) ─────────────────────────────────────────────
-  Widget _buildStudentList(
-    int assignmentId,
-    dynamic maxScore,
-    String? subjectName,
-  ) {
+  Widget _buildStudentList(DateTime? dueDate) {
     if (_tc.filteredStudents.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
@@ -235,12 +245,7 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
           Divider(height: 1, color: Colors.grey[200], indent: 64),
       itemBuilder: (_, index) {
         final student = _tc.filteredStudents[index];
-        return _StudentListTile(
-          student: student,
-          maxScore: maxScore != null ? (maxScore as num).toDouble() : null,
-          assignmentId: assignmentId,
-          subjectName: subjectName,
-        );
+        return _StudentListTile(student: student, dueDate: dueDate);
       },
     );
   }
@@ -249,16 +254,9 @@ class _TeacherSubmissionListTabState extends State<TeacherSubmissionListTab> {
 // ─── Group Tile with expand/collapse ─────────────────────────────────────────
 class _GroupTile extends StatefulWidget {
   final GroupSubmissionItem group;
-  final int assignmentId;
-  final double? maxScore;
-  final String? subjectName;
+  final DateTime? dueDate;
 
-  const _GroupTile({
-    required this.group,
-    required this.assignmentId,
-    required this.maxScore,
-    this.subjectName,
-  });
+  const _GroupTile({required this.group, this.dueDate});
 
   @override
   State<_GroupTile> createState() => _GroupTileState();
@@ -271,33 +269,20 @@ class _GroupTileState extends State<_GroupTile> {
   Widget build(BuildContext context) {
     final g = widget.group;
     final hasSubmitted = g.hasSubmitted;
-    final isMarked =
-        g.markedAt != null ||
-        g.score != null ||
-        (g.feedback?.trim().isNotEmpty ?? false);
+    final isLate = hasSubmitted &&
+        g.submittedAt != null &&
+        widget.dueDate != null &&
+        g.submittedAt!.isAfter(widget.dueDate!);
 
     return Column(
       children: [
         // ─── Group header row ────────────────────────────────────────
         InkWell(
-          onTap: () {
-            Get.to(
-              () => const StudentAssignmentDetailPage(),
-              arguments: {
-                'groupItem': g,
-                'assignmentId': widget.assignmentId,
-                'maxScore': widget.maxScore,
-                'isGroup': true,
-                'subjectName': widget.subjectName,
-              },
-              transition: Transition.rightToLeft,
-            );
-          },
+          onTap: () => setState(() => _expanded = !_expanded),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
-                // Group avatar
                 CircleAvatar(
                   radius: 22,
                   backgroundColor: AppColors.primaryPalette[200],
@@ -330,22 +315,17 @@ class _GroupTileState extends State<_GroupTile> {
                     ],
                   ),
                 ),
-                // Status badge
                 _GroupStatusBadge(
                   hasSubmitted: hasSubmitted,
-                  isMarked: isMarked,
+                  isLate: isLate,
                 ),
                 const SizedBox(width: 8),
-                // Expand toggle
-                GestureDetector(
-                  onTap: () => setState(() => _expanded = !_expanded),
-                  child: Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    color: Colors.grey[400],
-                    size: 20,
-                  ),
+                Icon(
+                  _expanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: Colors.grey[400],
+                  size: 20,
                 ),
               ],
             ),
@@ -440,64 +420,44 @@ class _GroupTileState extends State<_GroupTile> {
   }
 }
 
+// ─── Group Status Badge (text only) ──────────────────────────────────────────
 class _GroupStatusBadge extends StatelessWidget {
   final bool hasSubmitted;
-  final bool isMarked;
+  final bool isLate;
 
-  const _GroupStatusBadge({required this.hasSubmitted, required this.isMarked});
+  const _GroupStatusBadge({
+    required this.hasSubmitted,
+    this.isLate = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     if (!hasSubmitted) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: Text(
-          'ยังไม่ส่ง',
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      );
-    }
-    if (isMarked) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.green.shade200),
-        ),
-        child: Text(
-          'ให้คะแนนแล้ว',
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.green.shade700,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      );
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.primaryPalette[50],
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryPalette[300]!),
-      ),
-      child: Text(
-        'ส่งแล้ว',
+      return Text(
+        'ยังไม่ส่ง',
         style: TextStyle(
           fontSize: 11,
-          color: AppColors.primaryPalette[700],
+          color: Colors.grey[500],
           fontWeight: FontWeight.w500,
         ),
+      );
+    }
+    if (isLate) {
+      return Text(
+        'ส่งล่าช้า',
+        style: TextStyle(
+          fontSize: 11,
+          color: Colors.orange.shade600,
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    }
+    return Text(
+      'ส่งแล้ว',
+      style: TextStyle(
+        fontSize: 11,
+        color: Colors.green.shade600,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
@@ -570,67 +530,51 @@ class _StatusChip extends StatelessWidget {
 // ─── Student List Tile (งานเดี่ยว) ───────────────────────────────────────────
 class _StudentListTile extends StatelessWidget {
   final StudentSubmissionStatusModel student;
-  final double? maxScore;
-  final int assignmentId;
-  final String? subjectName;
+  final DateTime? dueDate;
 
-  const _StudentListTile({
-    required this.student,
-    required this.maxScore,
-    required this.assignmentId,
-    this.subjectName,
-  });
+  const _StudentListTile({required this.student, this.dueDate});
+
+  bool get _isLate =>
+      student.hasSubmitted &&
+      student.submittedAt != null &&
+      dueDate != null &&
+      student.submittedAt!.isAfter(dueDate!);
 
   String _formatTime(DateTime dt) =>
       DateFormat('HH:mm • dd/MM/yy', 'th').format(dt);
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        Get.to(
-          () => const StudentAssignmentDetailPage(),
-          arguments: {
-            'student': student,
-            'assignmentId': assignmentId,
-            'maxScore': maxScore,
-            'isGroup': false,
-            'subjectName': subjectName,
-          },
-          transition: Transition.rightToLeft,
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            _buildAvatar(),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    student.displayName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                      color: student.isUserDeleted
-                          ? Colors.grey[500]
-                          : AppColors.black,
-                    ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          _buildAvatar(),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  student.displayName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: student.isUserDeleted
+                        ? Colors.grey[500]
+                        : AppColors.black,
                   ),
-                  if (student.submittedAt != null)
-                    Text(
-                      'ส่งเมื่อ ${_formatTime(student.submittedAt!)}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                    ),
-                ],
-              ),
+                ),
+                if (student.submittedAt != null)
+                  Text(
+                    'ส่งเมื่อ ${_formatTime(student.submittedAt!)}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  ),
+              ],
             ),
-            _buildStatusBadge(),
-          ],
-        ),
+          ),
+          _buildStatusText(),
+        ],
       ),
     );
   }
@@ -671,57 +615,33 @@ class _StudentListTile extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge() {
+  Widget _buildStatusText() {
     if (!student.hasSubmitted) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: Text(
-          'ยังไม่ส่ง',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      );
-    }
-    if (student.isGraded) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.green.shade200),
-        ),
-        child: Text(
-          'ให้คะแนนแล้ว',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.green.shade700,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      );
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.primaryPalette[50],
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryPalette[300]!),
-      ),
-      child: Text(
-        'ส่งแล้ว',
+      return Text(
+        'ยังไม่ส่ง',
         style: TextStyle(
           fontSize: 12,
-          color: AppColors.primaryPalette[700],
+          color: Colors.grey[500],
           fontWeight: FontWeight.w500,
         ),
+      );
+    }
+    if (_isLate) {
+      return Text(
+        'ส่งล่าช้า',
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.orange.shade600,
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    }
+    return Text(
+      'ส่งแล้ว',
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.green.shade600,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
