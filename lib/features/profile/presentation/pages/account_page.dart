@@ -81,23 +81,82 @@ class _AccountPageState extends State<AccountPage> {
     super.dispose();
   }
 
-  void _toggleEdit() {
-    setState(() {
-      isEditing = !isEditing;
-    });
+  bool get _isAvatarDirty => draftProfilePic != originalProfilePic;
 
-    if (!isEditing) {
-      draftProfilePic = originalProfilePic;
-      final profile = controller.profile.value;
-      if (profile != null) {
-        firstNameCtrl.text = profile.firstName;
-        lastNameCtrl.text = profile.lastName;
-        phoneCtrl.text = profile.phone ?? '';
-        // controller.restoreOriginalProfilePic(originalProfilePic);
+  Future<void> _saveAvatar() async {
+    if (!_isAvatarDirty) return;
+
+    final profile = controller.profile.value;
+    if (profile == null) return;
+
+    final auth = Get.find<AuthController>();
+    final userId = auth.userId.value;
+    if (userId == null) {
+      DialogHelper.showNotification(
+        title: 'ผิดพลาด',
+        message: 'ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    try {
+      controller.saving.value = true;
+
+      if (draftProfilePic == null) {
+        await controller.repo.updateProfile(
+          userId,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          phone: profile.phone,
+          clearProfilePic: true,
+        );
+      } else if (draftProfilePic!.startsWith('http')) {
+        await controller.repo.updateProfile(
+          userId,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          phone: profile.phone,
+          profilePic: draftProfilePic,
+        );
+      } else {
+        final url = await controller.repo.uploadAvatar(
+          userId,
+          File(draftProfilePic!),
+        );
+
+        await controller.repo.updateProfile(
+          userId,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          phone: profile.phone,
+          profilePic: url,
+        );
       }
-    } else {
-      originalProfilePic = controller.profile.value?.profilePic;
-      draftProfilePic = originalProfilePic;
+
+      imageCache.clear();
+      imageCache.clearLiveImages();
+
+      await controller.loadProfile();
+
+      setState(() {
+        originalProfilePic = controller.profile.value?.profilePic;
+        draftProfilePic = originalProfilePic;
+      });
+
+      DialogHelper.showNotification(
+        title: 'สำเร็จ',
+        message: 'บันทึกรูปโปรไฟล์สำเร็จ',
+        type: NotificationType.success,
+      );
+    } catch (e) {
+      DialogHelper.showNotification(
+        title: 'ผิดพลาด',
+        message: 'บันทึกรูปโปรไฟล์ไม่สำเร็จ',
+        type: NotificationType.error,
+      );
+    } finally {
+      controller.saving.value = false;
     }
   }
 
@@ -116,6 +175,7 @@ class _AccountPageState extends State<AccountPage> {
     }
 
     try {
+      controller.saving.value = true;
       final auth = Get.find<AuthController>();
       final userId = auth.userId.value!;
 
@@ -168,6 +228,8 @@ class _AccountPageState extends State<AccountPage> {
         message: 'บันทึกไม่สำเร็จ',
         type: NotificationType.error,
       );
+    } finally {
+      controller.saving.value = false;
     }
   }
 
@@ -192,6 +254,25 @@ class _AccountPageState extends State<AccountPage> {
         if (profile == null) {
           return const Center(child: CircularProgressIndicator());
         }
+
+        if (!_isAvatarDirty &&
+            !isEditing &&
+            (originalProfilePic != profile.profilePic ||
+                firstNameCtrl.text.isEmpty ||
+                lastNameCtrl.text.isEmpty)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            if (_isAvatarDirty || isEditing) return;
+            setState(() {
+              originalProfilePic = profile.profilePic;
+              draftProfilePic = profile.profilePic;
+              firstNameCtrl.text = profile.firstName;
+              lastNameCtrl.text = profile.lastName;
+              phoneCtrl.text = profile.phone ?? '';
+            });
+          });
+        }
+
         return Padding(
           padding: const EdgeInsets.all(16),
           child: ListView(
@@ -278,6 +359,27 @@ class _AccountPageState extends State<AccountPage> {
                   prefixIcon: Icon(LinkLianIcon.phone),
                 ),
               ),
+
+              if (_isAvatarDirty) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryPalette[500],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: controller.saving.value ? null : _saveAvatar,
+                    child: controller.saving.value
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'บันทึกรูปโปรไฟล์',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 32),
 
