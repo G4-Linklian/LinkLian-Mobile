@@ -1,5 +1,6 @@
 import 'package:LinkLian/core/constants/colors.dart';
 import 'package:LinkLian/core/constants/linklian-icon.dart';
+import 'package:LinkLian/features/login/widgets/re-password_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../auth/controller/auth_controller.dart';
@@ -105,7 +106,23 @@ class SettingsBottomSheet extends StatelessWidget {
           _SettingItem(
             icon: LinkLianIcon.security,
             title: 'รหัสผ่านและความปลอดภัย',
-            onTap: () {},
+            onTap: () {
+              final auth = Get.find<AuthController>();
+              final token = auth.token.value ?? '';
+              final roleName = auth.roleName.value ?? '';
+              final instId = auth.instId.value ?? 0;
+              final userId = auth.userId.value ?? 0;
+              Get.bottomSheet(
+                ResetPasswordBottomSheet(
+                  token: token,
+                  roleName: roleName,
+                  instId: instId,
+                  userId: userId,
+                ),
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+              );
+            },
           ),
 
           const Divider(indent: 16, endIndent: 16),

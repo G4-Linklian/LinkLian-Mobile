@@ -60,12 +60,14 @@ class AuthRepository {
   // RESET PASSWORD (ใช้ token จาก OTP)
   // ===============================
   Future<void> resetPassword({
+    required String oldPassword,
     required String newPassword,
     required String confirmPassword,
   }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/auth/reset-password',
       data: {
+        'old_password': oldPassword,
         'new_password': newPassword,
         'confirm_password': confirmPassword,
       },

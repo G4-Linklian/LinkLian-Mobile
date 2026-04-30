@@ -30,9 +30,29 @@ class ResetPasswordBottomSheet extends StatefulWidget {
 class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
   final _authRepository = AuthRepository();
 
+  final oldPassword = TextEditingController();
   final newPassword = TextEditingController();
   final confirmPassword = TextEditingController();
+  final FocusNode passwordFocus = FocusNode();
+  bool isFocused = false;
+  @override
+  void initState() {
+    super.initState();
 
+    passwordFocus.addListener(() {
+      setState(() {
+        isFocused = passwordFocus.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    passwordFocus.dispose();
+    super.dispose();
+  }
+
+  bool obscureOld = true;
   bool obscureNew = true;
   bool obscureConfirm = true;
   bool isLoading = false;
@@ -89,17 +109,74 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
   }
 
   Future<void> _submitResetPassword() async {
+    final oldPass = oldPassword.text.trim();
+    final newPass = newPassword.text.trim();
+    final confirmPass = confirmPassword.text.trim();
+
+    // Validate
+    if (oldPass.isEmpty || newPass.isEmpty || confirmPass.isEmpty) {
+      DialogHelper.showNotification(
+        title: 'ไม่สำเร็จ',
+        message: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    if (newPass.length < 8) {
+      DialogHelper.showNotification(
+        title: 'ไม่สำเร็จ',
+        message: 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    if (!RegExp(r'[a-z]').hasMatch(newPass) ||
+        !RegExp(r'[A-Z]').hasMatch(newPass)) {
+      DialogHelper.showNotification(
+        title: 'ไม่สำเร็จ',
+        message: 'รหัสผ่านใหม่ควรมีตัวพิมพ์เล็กและตัวพิมพ์ใหญ่',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    if (newPass != confirmPass) {
+      DialogHelper.showNotification(
+        title: 'ไม่สำเร็จ',
+        message: 'รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    if (oldPass == newPass) {
+      DialogHelper.showNotification(
+        title: 'ไม่สำเร็จ',
+        message: 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
     try {
       setState(() => isLoading = true);
 
       await _authRepository.resetPassword(
-        newPassword: newPassword.text.trim(),
-        confirmPassword: confirmPassword.text.trim(),
+        oldPassword: oldPass,
+        newPassword: newPass,
+        confirmPassword: confirmPass,
       );
 
-      Get.back(); // ปิด bottom sheet
+      Get.back();
 
-      // establish session → AuthGate จะ navigate ไป MainPage เอง
+      DialogHelper.showNotification(
+        title: 'สำเร็จ',
+        message: 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว',
+        type: NotificationType.success,
+      );
+
       final authController = Get.find<AuthController>();
       await authController.establishSession(
         token: widget.token,
@@ -108,9 +185,46 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
         userId: widget.userId,
       );
     } catch (e) {
+      String extractErrorMessage(dynamic error) {
+        try {
+          // กรณีใช้ Dio
+          if (error is Exception && error.toString().contains('DioError')) {
+            final dioErr = error as dynamic;
+            if (dioErr.response?.data != null) {
+              final data = dioErr.response?.data;
+              if (data is Map && data['message'] != null) {
+                if (data['message'] is String) return data['message'];
+                if (data['message'] is List && data['message'].isNotEmpty) {
+                  return data['message'][0].toString();
+                }
+              }
+            }
+          }
+        } catch (_) {}
+        // fallback: ใช้ toString
+        return error.toString();
+      }
+
+      String errorMsg = extractErrorMessage(e).toLowerCase();
+      String displayMsg = 'ไม่สามารถเปลี่ยนรหัสผ่านได้ กรุณาตรวจสอบข้อมูลอีกครั้ง';
+      if (
+        errorMsg.contains('old password is incorrect') ||
+        errorMsg.contains('old password') ||
+        errorMsg.contains('รหัสผ่านเดิม') ||
+        errorMsg.contains('401') ||
+        errorMsg.contains('unauthorized')
+      ) {
+        displayMsg = 'รหัสผ่านเดิมไม่ถูกต้อง';
+      } else if (errorMsg.contains('new password and confirm password do not match')) {
+        displayMsg = 'รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน';
+      } else if (errorMsg.contains('new password must be at least')) {
+        displayMsg = 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร';
+      } else if (errorMsg.contains('user not found')) {
+        displayMsg = 'ไม่พบบัญชีผู้ใช้';
+      }
       DialogHelper.showNotification(
         title: 'ไม่สำเร็จ',
-        message: e.toString(),
+        message: displayMsg,
         type: NotificationType.error,
       );
     } finally {
@@ -166,22 +280,60 @@ class _ResetPasswordBottomSheetState extends State<ResetPasswordBottomSheet> {
 
               _shadowField(
                 TextField(
-                  controller: newPassword,
-                  obscureText: obscureNew,
+                  controller: oldPassword,
+                  obscureText: obscureOld,
                   decoration: _inputDecoration(
-                    label: 'รหัสผ่านใหม่',
-                    obscure: obscureNew,
-                    onToggle: () => setState(() => obscureNew = !obscureNew),
+                    label: 'รหัสผ่านเดิม',
+                    obscure: obscureOld,
+                    onToggle: () => setState(() => obscureOld = !obscureOld),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _shadowField(
+                    TextField(
+                      controller: newPassword,
+                      focusNode: passwordFocus,
+                      obscureText: obscureNew,
+                      decoration: _inputDecoration(
+                        label: 'รหัสผ่านใหม่',
+                        obscure: obscureNew,
+                        onToggle: () =>
+                            setState(() => obscureNew = !obscureNew),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  SizedBox(
+                    height: 20,
+                    child: Visibility(
+                      visible: isFocused,
+                      maintainSize: true,
+                      maintainAnimation: true,
+                      maintainState: true,
+                      child: Text(
+                        '*ควรมีอย่างน้อย 8 ตัวอักษร โดยมีทั้งตัวพิมพ์ใหญ่และตัวพิมพ์เล็ก',
+                        style: AppTextStyles.descriptionRegular.copyWith(
+                          fontSize: 11,
+                          color: AppColors.primaryPalette[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Confirm password
               _shadowField(
                 TextField(
                   controller: confirmPassword,
                   obscureText: obscureConfirm,
+
                   decoration: _inputDecoration(
                     label: 'ยืนยันรหัสผ่านใหม่',
                     obscure: obscureConfirm,
