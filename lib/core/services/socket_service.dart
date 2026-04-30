@@ -415,7 +415,7 @@ class SocketService {
   Timer? _qaReconnectTimer;
   String? _qaUrl;
   int _qaReconnectAttempts = 0;
-  static const int _maxReconnectAttempts = 5;
+  static const int _maxReconnectAttempts = -1; // -1 = ไม่จำกัดครั้ง
   static const Duration _reconnectDelay = Duration(seconds: 3);
   static const Duration _pingInterval = Duration(seconds: 25);
 
@@ -477,7 +477,7 @@ class SocketService {
     _qaPingTimer?.cancel();
     _qaReconnectTimer?.cancel();
 
-    if (_qaReconnectAttempts >= _maxReconnectAttempts) {
+    if (_maxReconnectAttempts > 0 && _qaReconnectAttempts >= _maxReconnectAttempts) {
       appLog.warning(
         'DEBUG [Socket]: Max reconnect attempts reached, giving up',
       );

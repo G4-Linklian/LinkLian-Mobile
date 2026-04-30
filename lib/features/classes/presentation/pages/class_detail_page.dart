@@ -685,17 +685,23 @@ class _FilterDropdown extends StatelessWidget {
       offset: const Offset(0, 50),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: AppColors.primaryPalette[300],
-      child: Container(
-        width: 115,
+      child: Container(width: 115,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.primaryPalette[300],
           borderRadius: BorderRadius.circular(24),
         ),
+
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            Icon(
+              LinkLianIcon.filterpost,
+              size: 18,
+              color: AppColors.primaryPalette[700],
+            ),
+            SizedBox(width: 6),
             Text(
               selected.label,
               style: TextStyle(
@@ -704,11 +710,6 @@ class _FilterDropdown extends StatelessWidget {
                 color: AppColors.primaryPalette[900],
                 height: 1.0,
               ),
-            ),
-            Icon(
-              LinkLianIcon.filterpost,
-              size: 18,
-              color: AppColors.primaryPalette[700],
             ),
           ],
         ),
