@@ -158,7 +158,7 @@ class _AIQuizCollectionPageState extends State<AIQuizCollectionPage> {
   String? _formatCreatedAt(Map<String, dynamic> quiz) {
     final createdAt = _parseCreatedAt(quiz);
     if (createdAt == null) return null;
-    return DateFormat('HH:mm • dd/MM/yyyy').format(createdAt);
+    return DateFormat('HH:mm • dd/MM/yyyy').format(createdAt.toLocal());
   }
 
   int _effectiveTotal(int questionCount, QuizAttemptResult? result) {

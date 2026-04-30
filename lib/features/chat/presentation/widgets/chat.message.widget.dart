@@ -292,7 +292,7 @@ class ChatMessageBubble extends StatelessWidget {
 
   static String _formatTime(DateTime? dateTime) {
     if (dateTime == null) return '';
-    return _Formatters.timeFormat.format(dateTime);
+    return _Formatters.timeFormat.format(dateTime.toLocal());
   }
 
   static String _getInitials(String? firstName, String? lastName) {
@@ -378,14 +378,15 @@ class ChatDateSeparator extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final messageDate = DateTime(date.year, date.month, date.day);
+    final localDate = date.toLocal();
+    final messageDate = DateTime(localDate.year, localDate.month, localDate.day);
 
     if (messageDate.isAtSameMomentAs(today)) {
       _dateText = 'วันนี้';
     } else if (messageDate.isAtSameMomentAs(yesterday)) {
       _dateText = 'เมื่อวาน';
     } else {
-      _dateText = _Formatters.dateFormat.format(date);
+      _dateText = _Formatters.dateFormat.format(localDate);
     }
   }
 

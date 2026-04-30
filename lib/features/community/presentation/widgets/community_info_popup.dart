@@ -87,7 +87,7 @@ class _CommunityInfoPopupState extends State<CommunityInfoPopup> {
     String createdFormatted = '';
 
     if (createdRaw != null && createdRaw.isNotEmpty) {
-      final date = DateTime.parse(createdRaw);
+      final date = DateTime.parse(createdRaw).toLocal();
       createdFormatted = DateFormat('d MMMM yyyy', 'th_TH').format(date);
     }
 

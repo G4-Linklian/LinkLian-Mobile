@@ -117,17 +117,18 @@ class _ChatPageState extends State<ChatPage> {
 
   String _formatTime(DateTime? dateTime) {
     if (dateTime == null) return '';
+    final localDateTime = dateTime.toLocal();
     final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    final difference = now.difference(localDateTime);
 
     if (difference.inDays == 0) {
-      return DateFormat('HH:mm').format(dateTime);
+      return DateFormat('HH:mm').format(localDateTime);
     } else if (difference.inDays == 1) {
       return 'เมื่อวาน';
     } else if (difference.inDays < 7) {
       return '${difference.inDays} วันที่แล้ว';
     } else {
-      return DateFormat('dd/MM/yy').format(dateTime);
+      return DateFormat('dd/MM/yy').format(localDateTime);
     }
   }
 

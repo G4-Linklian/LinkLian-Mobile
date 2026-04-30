@@ -645,7 +645,9 @@ class LiveController extends GetxController {
           'qa_live_id': payload['qa_live_id'] ?? qaLiveId.value,
           'post_id': payload['post_id'],
           'attachment_id': changedAttachmentId,
-          'opened_at': payload['opened_at'] ?? DateTime.now().toIso8601String(),
+            'opened_at':
+              payload['opened_at'] ??
+              DateTime.now().toLocal().toIso8601String(),
           if (file != null) 'attachment': Map<String, dynamic>.from(file),
         };
 
@@ -970,7 +972,7 @@ class LiveController extends GetxController {
       'status': 'PENDING',
       'upvote_count': 0,
       'is_local_pending': true,
-      'created_at': DateTime.now().toIso8601String(),
+      'created_at': DateTime.now().toLocal().toIso8601String(),
       if (currentUserAsker.isNotEmpty) 'asker': currentUserAsker,
     };
 

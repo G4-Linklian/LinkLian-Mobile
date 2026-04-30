@@ -58,10 +58,10 @@ class CommunityPostModel {
 
   static DateTime _dateFromJson(dynamic value) {
     if (value is String) {
-      return DateTime.tryParse(value) ?? DateTime.now();
+      return DateTime.tryParse(value)?.toLocal() ?? DateTime.now().toLocal();
     }
     if (value is DateTime) return value;
-    return DateTime.now();
+    return DateTime.now().toLocal();
   }
 
   static List<CommunityAttachmentModel> _attachmentsFromJson(dynamic value) {

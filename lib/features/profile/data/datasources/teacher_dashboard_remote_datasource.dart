@@ -107,7 +107,8 @@ class TeacherDashboardRemoteDataSource {
                 assignment['not_submitted'] ??= 0;
                 assignment['late'] ??= 0;
                 assignment['total_students'] ??= 0;
-                assignment['due_date'] ??= DateTime.now().toIso8601String();
+                assignment['due_date'] ??=
+                  DateTime.now().toLocal().toIso8601String();
               }
             }
           } else {
@@ -126,7 +127,8 @@ class TeacherDashboardRemoteDataSource {
                 live['title'] ??= '';
                 live['question_count'] ??= 0;
                 live['duration'] ??= 0;
-                live['live_date'] ??= DateTime.now().toIso8601String();
+                live['live_date'] ??=
+                  DateTime.now().toLocal().toIso8601String();
                 live['recording_url'] ??= '';
               }
             }
@@ -140,7 +142,8 @@ class TeacherDashboardRemoteDataSource {
                 file['file_id'] ??= '';
                 file['file_name'] ??= '';
                 file['questions'] ??= [];
-                file['upload_date'] ??= DateTime.now().toString();
+                file['upload_date'] ??=
+                  DateTime.now().toLocal().toIso8601String();
               }
             }
           }

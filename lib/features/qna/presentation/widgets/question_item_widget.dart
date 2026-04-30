@@ -55,12 +55,13 @@ class QuestionItemWidget extends StatelessWidget {
       return 'เมื่อสักครู่';
     }
 
-    final diff = DateTime.now().difference(dateTime);
+    final localDateTime = dateTime.toLocal();
+    final diff = DateTime.now().difference(localDateTime);
     if (diff.inMinutes < 1) return 'เมื่อสักครู่';
     if (diff.inMinutes < 60) return '${diff.inMinutes} นาทีที่แล้ว';
     if (diff.inHours < 24) return '${diff.inHours} ชั่วโมงที่แล้ว';
 
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    return '${localDateTime.day}/${localDateTime.month}/${localDateTime.year}';
   }
 
   @override

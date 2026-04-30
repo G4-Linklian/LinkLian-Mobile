@@ -244,11 +244,12 @@ class _StudentSubmissionStickyHeader extends StatelessWidget {
   const _StudentSubmissionStickyHeader({required this.controller});
 
   String _formatDueDate(DateTime date) {
-    final buddhistYear = date.year + 543;
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
+    final localDate = date.toLocal();
+    final buddhistYear = localDate.year + 543;
+    final day = localDate.day.toString().padLeft(2, '0');
+    final month = localDate.month.toString().padLeft(2, '0');
     final yearShort = (buddhistYear % 100).toString().padLeft(2, '0');
-    final time = DateFormat('HH:mm').format(date);
+    final time = DateFormat('HH:mm').format(localDate);
     return '$day/$month/$yearShort $time น.';
   }
 
@@ -1746,7 +1747,7 @@ class _ScoreTab extends StatelessWidget {
                   Icon(Icons.check_circle, size: 14, color: Colors.green[600]),
                   const SizedBox(width: 4),
                   Text(
-                    'ให้คะแนนเมื่อ ${DateFormat('dd/MM/yy HH:mm น.', 'th').format(markedAt)}',
+                    'ให้คะแนนเมื่อ ${DateFormat('dd/MM/yy HH:mm น.', 'th').format(markedAt.toLocal())}',
                     style: TextStyle(fontSize: 12, color: Colors.green[600]),
                   ),
                 ],

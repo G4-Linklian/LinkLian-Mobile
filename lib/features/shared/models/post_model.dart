@@ -91,8 +91,9 @@ class PostModel {
       postType: _stringFromJson(json['post_type']),
       isAnonymous: _parseBool(json['is_anonymous']),
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
+          ? DateTime.tryParse(json['created_at'].toString())?.toLocal() ??
+            DateTime.now().toLocal()
+          : DateTime.now().toLocal(),
       userSysId: user != null
           ? _parseIntNullable(user['user_sys_id'])
           : _parseIntNullable(json['user_sys_id']),
@@ -102,7 +103,7 @@ class PostModel {
       roleName: user?['role_name'] ?? json['role_name'],
       attachments: _parseAttachments(json['attachments']),
       dueDate: json['due_date'] != null
-          ? DateTime.tryParse(json['due_date'].toString())
+          ? DateTime.tryParse(json['due_date'].toString())?.toLocal()
           : null,
       maxScore: json['max_score'] != null
           ? (json['max_score'] is double

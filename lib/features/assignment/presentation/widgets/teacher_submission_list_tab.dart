@@ -540,8 +540,8 @@ class _StudentListTile extends StatelessWidget {
       dueDate != null &&
       student.submittedAt!.isAfter(dueDate!);
 
-  String _formatTime(DateTime dt) =>
-      DateFormat('HH:mm • dd/MM/yy', 'th').format(dt);
+    String _formatTime(DateTime dt) =>
+      DateFormat('HH:mm • dd/MM/yy', 'th').format(dt.toLocal());
 
   @override
   Widget build(BuildContext context) {
