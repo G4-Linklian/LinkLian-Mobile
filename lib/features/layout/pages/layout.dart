@@ -259,16 +259,8 @@ class _MainPageState extends State<MainPage> {
                           size: 32,
                         ),
                       ),
-                    if (!_hideAddIcon) const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => _goTo(const NotificationPage()),
-                      child: Icon(
-                        LinkLianIcon.notification,
-                        color: AppColors.warningPalette[500],
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                    
+                     const SizedBox(width: 12),
                     Obx(() {
                       final count = ChatBadgeService().observe().value;
                       return Stack(
