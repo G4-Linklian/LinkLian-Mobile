@@ -7,7 +7,7 @@ import '../../data/models/group_model.dart';
 import '../../../../core/utils/dialog_helper.dart';
 import '../../../../core/utils/logger.dart';
 
-enum SubmissionFilter { all, submitted, notSubmitted }
+enum SubmissionFilter { all, submitted, late, notSubmitted }
 
 /// Represents one group's submission state (used for group assignments)
 class GroupSubmissionItem {
@@ -294,6 +294,17 @@ class TeacherSubmissionController extends GetxController {
       case SubmissionFilter.submitted:
         studentResult = studentResult.where((s) => s.hasSubmitted).toList();
         break;
+      case SubmissionFilter.late:
+        studentResult = studentResult
+            .where(
+              (s) =>
+                  s.hasSubmitted &&
+                  s.submittedAt != null &&
+                  dueDate != null &&
+                  s.submittedAt!.isAfter(dueDate!),
+            )
+            .toList();
+        break;
       case SubmissionFilter.notSubmitted:
         studentResult = studentResult.where((s) => !s.hasSubmitted).toList();
         break;
@@ -312,6 +323,17 @@ class TeacherSubmissionController extends GetxController {
     switch (selectedFilter.value) {
       case SubmissionFilter.submitted:
         groupResult = groupResult.where((g) => g.hasSubmitted).toList();
+        break;
+      case SubmissionFilter.late:
+        groupResult = groupResult
+            .where(
+              (g) =>
+                  g.hasSubmitted &&
+                  g.submittedAt != null &&
+                  dueDate != null &&
+                  g.submittedAt!.isAfter(dueDate!),
+            )
+            .toList();
         break;
       case SubmissionFilter.notSubmitted:
         groupResult = groupResult.where((g) => !g.hasSubmitted).toList();

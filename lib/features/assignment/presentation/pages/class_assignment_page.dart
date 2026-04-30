@@ -153,10 +153,18 @@ class _ClassAssignmentPageState extends State<ClassAssignmentPage> {
 
             Obx(() {
               if (controller.isLoading.value) {
-                return const SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 400,
-                    child: Center(child: CircularProgressIndicator()),
+                return SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSizes.md,
+                    0,
+                    AppSizes.md,
+                    MediaQuery.of(context).padding.bottom + 80,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (_, index) => const AssignmentCardSkeleton(),
+                      childCount: 5,
+                    ),
                   ),
                 );
               }

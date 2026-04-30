@@ -10,6 +10,7 @@ import '../../data/models/student_submission_status_model.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../../core/utils/file_viewer_page.dart';
 import 'teacher_submission_list_tab.dart';
+import '../pages/student_assignment_detail_page.dart';
 
 const double _kSheetMinSize = 0.25;
 const double _kSheetInitialSize = 0.45;
@@ -291,11 +292,43 @@ class _StudentSubmissionStickyHeader extends StatelessWidget {
   }
 }
 
-class _GroupTab extends StatelessWidget {
+class _GroupTab extends StatefulWidget {
   final AssignmentSubmissionController controller;
 
-  _GroupTab({required this.controller});
-  final TextEditingController _groupNameController = TextEditingController();
+  const _GroupTab({required this.controller});
+
+  @override
+  State<_GroupTab> createState() => _GroupTabState();
+}
+
+class _GroupTabState extends State<_GroupTab> {
+  late final TextEditingController _groupNameController;
+  Worker? _editingWorker;
+
+  AssignmentSubmissionController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupNameController = TextEditingController(
+      text: controller.groupName.value,
+    );
+    _editingWorker = ever(controller.isEditingGroup, (bool editing) {
+      if (editing) {
+        _groupNameController.text = controller.groupName.value;
+        _groupNameController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _groupNameController.text.length),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _groupNameController.dispose();
+    _editingWorker?.dispose();
+    super.dispose();
+  }
 
   Widget _buildAvatar(String? profilePic, String firstName, String lastName) {
     if (profilePic != null && profilePic.isNotEmpty) {
@@ -336,13 +369,6 @@ class _GroupTab extends StatelessWidget {
 
     return Obx(() {
       final isEditing = controller.isEditingGroup.value;
-
-      if (isEditing) {
-        _groupNameController.text = controller.groupName.value;
-        _groupNameController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _groupNameController.text.length),
-        );
-      }
 
       final group = controller.group.value;
 
@@ -472,6 +498,8 @@ class _GroupTab extends StatelessWidget {
           TextField(
             controller: _groupNameController,
             onChanged: (v) => controller.groupName.value = v,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => FocusScope.of(context).unfocus(),
             decoration: InputDecoration(
               hintText: 'ชื่อกลุ่ม',
               hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -480,6 +508,13 @@ class _GroupTab extends StatelessWidget {
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: AppColors.primaryPalette[400]!,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
@@ -1878,6 +1913,9 @@ class _TeacherGradingTab extends StatelessWidget {
                   item: item,
                   isGroup: isGroup,
                   isGraded: true,
+                  assignmentId: tc.assignmentId,
+                  maxScore: tc.maxScore,
+                  subjectName: tc.subjectName,
                 ),
               ),
               const SizedBox(height: 16),
@@ -1898,6 +1936,9 @@ class _TeacherGradingTab extends StatelessWidget {
                   item: item,
                   isGroup: isGroup,
                   isGraded: false,
+                  assignmentId: tc.assignmentId,
+                  maxScore: tc.maxScore,
+                  subjectName: tc.subjectName,
                 ),
               ),
             ],
@@ -1969,12 +2010,49 @@ class _GradingSummaryTile extends StatelessWidget {
   final dynamic item;
   final bool isGroup;
   final bool isGraded;
+  final int? assignmentId;
+  final double? maxScore;
+  final String? subjectName;
 
   const _GradingSummaryTile({
     required this.item,
     required this.isGroup,
     required this.isGraded,
+    this.assignmentId,
+    this.maxScore,
+    this.subjectName,
   });
+
+  void _navigate() {
+    if (assignmentId == null) return;
+    if (isGroup) {
+      final g = item as GroupSubmissionItem;
+      Get.to(
+        () => const StudentAssignmentDetailPage(),
+        arguments: {
+          'groupItem': g,
+          'assignmentId': assignmentId,
+          'maxScore': maxScore,
+          'isGroup': true,
+          'subjectName': subjectName,
+        },
+        transition: Transition.rightToLeft,
+      );
+    } else {
+      final s = item as StudentSubmissionStatusModel;
+      Get.to(
+        () => const StudentAssignmentDetailPage(),
+        arguments: {
+          'student': s,
+          'assignmentId': assignmentId,
+          'maxScore': maxScore,
+          'isGroup': false,
+          'subjectName': subjectName,
+        },
+        transition: Transition.rightToLeft,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1995,7 +2073,10 @@ class _GradingSummaryTile extends StatelessWidget {
       profilePic = s.profilePic;
     }
 
-    return Container(
+    return InkWell(
+      onTap: _navigate,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -2095,6 +2176,7 @@ class _GradingSummaryTile extends StatelessWidget {
             ),
         ],
       ),
-    );
+    ),
+  );
   }
 }

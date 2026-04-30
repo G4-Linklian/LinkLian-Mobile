@@ -71,75 +71,104 @@ class _AssignmentFeedBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Obx(() {
-        if (classFeedController.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return RefreshIndicator(
-          color: AppColors.primaryPalette[500],
-          onRefresh: classFeedController.refreshFeed,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'การบ้านของคุณ',
-                      style: TextStyle(
+        final isLoading = classFeedController.isLoading.value;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header — always visible
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      isLoading ? 'กำลังโหลด...' : 'การบ้านของคุณ',
+                      key: ValueKey(isLoading),
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SemesterSelector(),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: classFeedController.classList.isEmpty
-                      ? ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: const [
-                            SizedBox(height: 200),
-                            Center(child: Text('ไม่พบรายวิชา')),
-                          ],
+                  ),
+                  const SemesterSelector(),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Content — animated switch skeleton ↔ list
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: isLoading
+                      ? ListView.builder(
+                          key: const ValueKey('skeleton'),
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: 4,
+                          itemBuilder: (_, index) =>
+                              const AssignmentClassCardSkeleton(),
                         )
-                      : ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          controller: scrollController,
-                          itemCount: classFeedController.classList.length +
-                              (classFeedController.isLoadingMore.value ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index >= classFeedController.classList.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Center(
-                                    child: CircularProgressIndicator()),
-                              );
-                            }
-                            final c = classFeedController.classList[index];
-                            final roleName = classFeedController.roleName;
-                            return AssignmentClassCard(
-                              data: c,
-                              roleName: roleName,
-                              showStudentCount: false,
-                              onTap: () {
-                                onClassTap({
-                                  'sectionId': c.sectionId,
-                                  'className': c.effectiveClassName,
-                                  'subjectName': c.subjectNameTh.isNotEmpty
-                                      ? c.subjectNameTh
-                                      : c.subjectNameEn,
-                                  'role': roleName,
-                                });
-                              },
-                            );
-                          },
+                      : RefreshIndicator(
+                          key: const ValueKey('content'),
+                          color: AppColors.primaryPalette[500],
+                          onRefresh: classFeedController.refreshFeed,
+                          child: classFeedController.classList.isEmpty
+                              ? ListView(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  children: const [
+                                    SizedBox(height: 200),
+                                    Center(child: Text('ไม่พบรายวิชา')),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  controller: scrollController,
+                                  itemCount:
+                                      classFeedController.classList.length +
+                                          (classFeedController
+                                                  .isLoadingMore.value
+                                              ? 1
+                                              : 0),
+                                  itemBuilder: (context, index) {
+                                    if (index >=
+                                        classFeedController.classList.length) {
+                                      return const Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    }
+                                    final c =
+                                        classFeedController.classList[index];
+                                    final roleName =
+                                        classFeedController.roleName;
+                                    return AssignmentClassCard(
+                                      data: c,
+                                      roleName: roleName,
+                                      showStudentCount: false,
+                                      onTap: () {
+                                        onClassTap({
+                                          'sectionId': c.sectionId,
+                                          'className': c.effectiveClassName,
+                                          'subjectName':
+                                              c.subjectNameTh.isNotEmpty
+                                                  ? c.subjectNameTh
+                                                  : c.subjectNameEn,
+                                          'role': roleName,
+                                        });
+                                      },
+                                    );
+                                  },
+                                ),
                         ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
         }),

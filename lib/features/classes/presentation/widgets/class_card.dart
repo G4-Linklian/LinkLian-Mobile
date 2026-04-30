@@ -375,7 +375,11 @@ class _ClassCardState extends State<ClassCard> {
                 ),
 
                 // ==================== SCHEDULE + LOCATION ====================
-                Container(
+                GestureDetector(
+                  onTap: canExpand
+                      ? () => setState(() => isExpanded = !isExpanded)
+                      : null,
+                  child: Container(
                   padding: const EdgeInsets.all(AppSizes.sm),
                   decoration: const BoxDecoration(
                     color: Color(0xFFFFCF9A),
@@ -392,22 +396,15 @@ class _ClassCardState extends State<ClassCard> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            GestureDetector(
-                              onTap: canExpand
-                                  ? () {
-                                      setState(() => isExpanded = !isExpanded);
-                                    }
-                                  : null,
-                              child: AnimatedRotation(
-                                turns: isExpanded ? 0.5 : 0.0,
-                                duration: const Duration(milliseconds: 500),
-                                curve: Curves.easeInOutBack,
-                                child: Icon(
-                                  canExpand
-                                      ? LinkLianIcon.expand
-                                      : LinkLianIcon.classroom,
-                                  size: AppSizes.iconSm,
-                                ),
+                            AnimatedRotation(
+                              turns: isExpanded ? 0.5 : 0.0,
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeInOutBack,
+                              child: Icon(
+                                canExpand
+                                    ? LinkLianIcon.expand
+                                    : LinkLianIcon.classroom,
+                                size: AppSizes.iconMd,
                               ),
                             ),
                             const SizedBox(width: AppSizes.sm),
@@ -445,6 +442,7 @@ class _ClassCardState extends State<ClassCard> {
                       _LocationChip(schedules: schedules),
                     ],
                   ),
+                ),
                 ),
               ],
             ),

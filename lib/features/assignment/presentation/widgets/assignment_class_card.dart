@@ -10,6 +10,132 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/sizes.dart';
 import '../../../../core/constants/linklian-bg.dart';
 
+// ─── AssignmentClassCardSkeleton ──────────────────────────────────────────────
+
+class AssignmentClassCardSkeleton extends StatefulWidget {
+  const AssignmentClassCardSkeleton({super.key});
+
+  @override
+  State<AssignmentClassCardSkeleton> createState() =>
+      _AssignmentClassCardSkeletonState();
+}
+
+class _AssignmentClassCardSkeletonState
+    extends State<AssignmentClassCardSkeleton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Widget _bar({required double width, double height = 14}) {
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (_, child) => Opacity(
+        opacity: _opacity.value,
+        child: Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: const Color(0xFF9E9E9E),
+            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _fullBar({double height = 14}) {
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (_, child) => Opacity(
+        opacity: _opacity.value,
+        child: Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: const Color(0xFF9E9E9E),
+            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sw = MediaQuery.of(context).size.width;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.md),
+      decoration: BoxDecoration(
+        color: const Color(0xFFBDBDBD),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+      ),
+      padding: const EdgeInsets.all(AppSizes.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Subject name + semester badge
+          Row(
+            children: [
+              Expanded(child: _bar(width: sw * 0.5)),
+              const SizedBox(width: AppSizes.sm),
+              _bar(width: 56, height: 24),
+            ],
+          ),
+          const SizedBox(height: AppSizes.xs),
+          // Class name
+          _bar(width: sw * 0.32),
+          const SizedBox(height: AppSizes.sm + 2),
+          // Progress bar section
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _bar(width: sw * 0.25),
+                  _bar(width: 28),
+                ],
+              ),
+              const SizedBox(height: 3),
+              Row(children: [Expanded(child: _fullBar(height: 4))]),
+            ],
+          ),
+          const SizedBox(height: AppSizes.sm + 2),
+          // Bottom chips
+          Row(
+            children: [
+              _bar(width: 60, height: 26),
+              const SizedBox(width: AppSizes.sm),
+              _bar(width: 88, height: 26),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── AssignmentClassCard ──────────────────────────────────────────────────────
+
 class AssignmentClassCard extends StatefulWidget {
   final ClassFeedModel data;
   final String roleName;
@@ -212,6 +338,20 @@ class _AssignmentClassCardState extends State<AssignmentClassCard> {
     );
   }
 
+  // ─── Loading placeholder ──────────────────────────────────────────────────
+
+  Widget _loadingBar(double widthFraction, double height) {
+    final width = MediaQuery.of(context).size.width * widthFraction;
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: _textColor.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+      ),
+    );
+  }
+
   // ─── Student card ─────────────────────────────────────────────────────────
 
   Widget _buildStudentContent() {
@@ -257,7 +397,10 @@ class _AssignmentClassCardState extends State<AssignmentClassCard> {
         ),
         const SizedBox(height: AppSizes.sm + 2),
 
-        if (_fetched && total > 0) ...[
+        if (!_fetched) ...[
+          _loadingBar(0.75, 24),
+          const SizedBox(height: AppSizes.sm + 2),
+        ] else if (total > 0) ...[
           Row(
             children: [
               if (urgent > 0) ...[
@@ -270,7 +413,20 @@ class _AssignmentClassCardState extends State<AssignmentClassCard> {
           const SizedBox(height: AppSizes.sm + 2),
         ],
 
-        if (_fetched && _upcomingAssignments.isNotEmpty) ...[
+        if (!_fetched) ...[
+          Row(
+            children: [
+              _loadingBar(0.3, 12),
+              const SizedBox(width: AppSizes.sm),
+              _loadingBar(0.2, 12),
+            ],
+          ),
+          const SizedBox(height: 4),
+          _loadingBar(0.68, 10),
+          const SizedBox(height: 3),
+          _loadingBar(0.55, 10),
+          const SizedBox(height: AppSizes.sm + 2),
+        ] else if (_upcomingAssignments.isNotEmpty) ...[
           Row(
             children: [
               Text(
@@ -386,7 +542,17 @@ class _AssignmentClassCardState extends State<AssignmentClassCard> {
               ),
             ),
             const SizedBox(width: AppSizes.sm),
-            if (_fetched && total > 0) _totalAssignmentsBadge(total),
+            if (!_fetched)
+              Container(
+                width: 80,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: _textColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              )
+            else if (total > 0)
+              _totalAssignmentsBadge(total),
           ],
         ),
         const SizedBox(height: AppSizes.xs),
@@ -403,28 +569,11 @@ class _AssignmentClassCardState extends State<AssignmentClassCard> {
         const SizedBox(height: AppSizes.sm + 2),
 
         // Status badge
-        if (_fetched && waitingReview > 0)
+        if (!_fetched)
+          _loadingBar(0.35, 26)
+        else if (waitingReview > 0)
           _teacherBadge('รอตรวจ $waitingReview งาน'),
       ],
-    );
-  }
-
-  Widget _teacherPendingBadge(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
     );
   }
 
